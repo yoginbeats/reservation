@@ -1,4 +1,11 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SUPERLINES - Premium Reservation & Ticketing System
+
+Welcome to the official repository for the **SUPERLINES** reservation and ticketing system. This platform is designed to provide a premium, seamless booking experience for travelers from Bicol to Manila.
+
+## Project Overview
+- **Brand**: SUPERLINES (Inspired by Bicol Isarog aesthetics)
+- **Tech Stack**: Next.js, TypeScript, Tailwind CSS, Supabase (Authentication & Database)
+- **Key Features**: Hero booking widget, Fleet showcase, Secure Login/Register, Client Dashboard.
 
 ## Getting Started
 
