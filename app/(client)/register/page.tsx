@@ -53,9 +53,10 @@ export default function RegisterPage() {
             return;
         }
 
-        setIsLoading(true);
-
         try {
+            console.log("Attempting registration for:", formData.email);
+            console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+
             const { error: signUpError, data } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
@@ -70,32 +71,29 @@ export default function RegisterPage() {
             });
 
             if (signUpError) {
+                console.error("Supabase Registration Error:", signUpError);
                 setError(signUpError.message);
                 return;
             }
 
-            // Success, user created. 
-            // Note: If email confirmation is enabled, they won't be able to login yet.
-            // But we will forward them to login page or dashboard.
-
+            console.log("Registration successful (or email confirmation sent)");
             // If session exists immediately (email confirm disabled or auto-confirm)
             if (data.session) {
-                // If we also need to insert into user_roles table manually, we should do it here via API route or Trigger.
-                // Assuming Trigger handles it or we rely on metadata. 
-                // For now, metadata has role 'client'.
-
+                console.log("Session created, redirecting to reservations");
                 router.refresh();
                 router.push("/reservations");
             } else {
-                // Email confirmation required
-                // In production, this alert might be replaced with a nicer UI
+                console.log("Email confirmation required");
                 alert("Account created! Please check your email to confirm your account.");
-                router.push("/login"); // Or maybe to a "Check Email" page? Defaulting to login for now.
+                router.push("/login");
             }
 
         } catch (err) {
             setError("An unexpected error occurred during registration.");
-            console.error(err);
+            console.error("Unexpected error during registration:", err);
+            if (err instanceof TypeError && err.message === 'Failed to fetch') {
+                console.warn("Network error detected. Check if Supabase URL is reachable.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -104,8 +102,17 @@ export default function RegisterPage() {
     const { strength, label, color } = passwordStrength();
 
     return (
-        <div className="flex min-h-[calc(100vh-80px)] items-center justify-center bg-zinc-50 px-6 py-12 dark:bg-zinc-950">
-            <div className="w-full max-w-md">
+        <div className="relative flex min-h-[calc(100vh-80px)] items-center justify-center px-6 py-12 overflow-hidden">
+            {/* Background Image with Overlay */}
+            <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
+                style={{
+                    backgroundImage: 'url("/hero-bg.jpg")',
+                }}
+            />
+            <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-[2px]" />
+
+            <div className="relative z-10 w-full max-w-md">
                 {/* Logo/Branding */}
                 <div className="mb-10 text-center">
                     <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-white shadow-xl shadow-zinc-200 overflow-hidden border border-zinc-100 dark:shadow-none">

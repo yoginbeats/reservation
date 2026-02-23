@@ -50,11 +50,24 @@ export default async function ClientDashboard() {
 
     return (
         <div className="space-y-10 py-6">
-            <div>
-                <h1 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">Welcome Back, <span className="text-red-600">{userName}!</span></h1>
-                <p className="mt-2 text-lg text-zinc-500">
-                    Manage your reservations and tickets from your personal dashboard.
-                </p>
+            <div className="relative overflow-hidden rounded-3xl p-8 text-white md:p-12">
+                {/* Background Image with Overlay */}
+                <div
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
+                    style={{
+                        backgroundImage: 'url("/hero-bg.jpg")',
+                    }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+
+                <div className="relative z-10">
+                    <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
+                        Welcome Back, <span className="text-white underline decoration-red-400 decoration-4 underline-offset-8">{userName}!</span>
+                    </h1>
+                    <p className="mt-4 text-lg text-white/90 max-w-xl font-medium">
+                        Manage your reservations and tickets from your personal dashboard.
+                    </p>
+                </div>
             </div>
 
             {/* Quick Actions */}

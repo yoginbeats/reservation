@@ -26,17 +26,29 @@ export default async function MyReservationsPage() {
 
     return (
         <div className="container mx-auto max-w-5xl py-10 space-y-8">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Booking History</h1>
-                    <p className="text-muted-foreground">View all your past and current reservations.</p>
+            <div className="relative overflow-hidden rounded-3xl p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-6">
+                {/* Background Image with Overlay */}
+                <div
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    style={{
+                        backgroundImage: 'url("/hero-bg.jpg")',
+                    }}
+                />
+                <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-[2px]" />
+
+                <div className="relative z-10">
+                    <h1 className="text-3xl font-black tracking-tight">Booking <span className="text-red-500">History</span></h1>
+                    <p className="mt-2 text-white/80 font-medium">View all your past and current reservations.</p>
                 </div>
-                <Button asChild>
-                    <Link href="/reservations" className="gap-2">
-                        <CalendarCheck className="h-4 w-4" />
-                        New Booking
-                    </Link>
-                </Button>
+
+                <div className="relative z-10">
+                    <Button asChild className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl px-6 py-6 shadow-lg shadow-red-900/20">
+                        <Link href="/reservations" className="gap-2">
+                            <CalendarCheck className="h-5 w-5" />
+                            New Booking
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             <div className="space-y-4">
@@ -74,7 +86,7 @@ export default async function MyReservationsPage() {
                                                 <div className="space-y-1">
                                                     <div className="text-[10px] font-bold text-zinc-400 uppercase">Status</div>
                                                     <div className={`text-sm font-bold uppercase ${res.status === 'confirmed' ? 'text-green-600' :
-                                                            res.status === 'pending' ? 'text-yellow-600' : 'text-red-600'
+                                                        res.status === 'pending' ? 'text-yellow-600' : 'text-red-600'
                                                         }`}>
                                                         {res.status}
                                                     </div>

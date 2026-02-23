@@ -5,8 +5,15 @@ export default function Home() {
     return (
         <div className="flex flex-col">
             {/* Hero Section */}
-            <section className="relative flex min-h-[85vh] items-center justify-center bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-500 via-red-600 to-red-800 px-6 py-20 text-white">
-                <div className="absolute inset-0 bg-black/20" />
+            <section className="relative flex min-h-[85vh] items-center justify-center px-6 py-20 text-white overflow-hidden">
+                {/* Background Image with Overlay */}
+                <div
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-700 hover:scale-105"
+                    style={{
+                        backgroundImage: 'url("/hero-bg.jpg")',
+                    }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 
                 <div className="container relative z-10 mx-auto max-w-6xl">
                     <div className="grid gap-12 lg:grid-cols-2 lg:items-center">

@@ -27,9 +27,20 @@ export default async function MyTicketsPage() {
 
     return (
         <div className="container mx-auto max-w-5xl py-10 space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">My Digital Tickets</h1>
-                <p className="text-muted-foreground">Present these QR codes at the terminal for boarding.</p>
+            <div className="relative overflow-hidden rounded-3xl p-8 text-white">
+                {/* Background Image with Overlay */}
+                <div
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    style={{
+                        backgroundImage: 'url("/hero-bg.jpg")',
+                    }}
+                />
+                <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-[2px]" />
+
+                <div className="relative z-10">
+                    <h1 className="text-3xl font-black tracking-tight">My Digital <span className="text-red-500">Tickets</span></h1>
+                    <p className="mt-2 text-white/80 font-medium">Present these QR codes at the terminal for boarding.</p>
+                </div>
             </div>
 
             <div className="grid gap-8 md:grid-cols-2">

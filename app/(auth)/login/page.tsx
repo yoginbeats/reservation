@@ -35,21 +35,29 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
+            console.log("Attempting email login for:", email);
+            console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+
             const { error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
             if (error) {
+                console.error("Supabase Auth Error:", error);
                 setError(error.message);
                 return;
             }
 
+            console.log("Login successful, refreshing...");
             router.refresh();
             router.push("/");
         } catch (err) {
             setError("An unexpected error occurred.");
-            console.error(err);
+            console.error("Unexpected error during login:", err);
+            if (err instanceof TypeError && err.message === 'Failed to fetch') {
+                console.warn("Network error detected. Check if Supabase URL is reachable and CORS is configured.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -107,8 +115,17 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex min-h-[calc(100vh-80px)] items-center justify-center bg-zinc-50 px-6 py-12 dark:bg-zinc-950">
-            <div className="w-full max-w-sm">
+        <div className="relative flex min-h-[calc(100vh-80px)] items-center justify-center px-6 py-12 overflow-hidden">
+            {/* Background Image with Overlay */}
+            <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
+                style={{
+                    backgroundImage: 'url("/hero-bg.jpg")',
+                }}
+            />
+            <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-[2px]" />
+
+            <div className="relative z-10 w-full max-w-sm">
                 <div className="mb-10 text-center">
                     <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-white shadow-xl shadow-zinc-200 overflow-hidden border border-zinc-100 dark:shadow-none">
                         <img

@@ -57,9 +57,20 @@ export default async function BookTripPage({ params }: { params: { tripId: strin
             <div className="grid gap-8 lg:grid-cols-3">
                 {/* Seat Selection */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Select Your Seat</h1>
-                        <p className="text-muted-foreground">Pick your preferred seat for your trip from {trip.origin} to {trip.destination}.</p>
+                    <div className="relative overflow-hidden rounded-3xl p-8 text-white">
+                        {/* Background Image with Overlay */}
+                        <div
+                            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                            style={{
+                                backgroundImage: 'url("/hero-bg.jpg")',
+                            }}
+                        />
+                        <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-[2px]" />
+
+                        <div className="relative z-10">
+                            <h1 className="text-3xl font-black tracking-tight">Select Your <span className="text-red-500">Seat</span></h1>
+                            <p className="mt-2 text-white/80 font-medium">Pick your preferred seat for your trip from {trip.origin} to {trip.destination}.</p>
+                        </div>
                     </div>
 
                     <Card className="bg-zinc-50 dark:bg-zinc-900/50">

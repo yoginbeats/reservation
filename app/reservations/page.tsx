@@ -53,10 +53,19 @@ export default async function ReservationsPage() {
 
     return (
         <div className="container mx-auto max-w-5xl py-10 space-y-8">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Available Trips</h1>
-                    <p className="text-muted-foreground">Browse and book your next journey.</p>
+            <div className="relative overflow-hidden rounded-3xl p-8 text-white">
+                {/* Background Image with Overlay */}
+                <div
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    style={{
+                        backgroundImage: 'url("/hero-bg.jpg")',
+                    }}
+                />
+                <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
+
+                <div className="relative z-10">
+                    <h1 className="text-3xl font-black tracking-tight">Available <span className="text-red-500">Trips</span></h1>
+                    <p className="mt-2 text-white/80 font-medium">Browse and book your next journey.</p>
                 </div>
             </div>
 
