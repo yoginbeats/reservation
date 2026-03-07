@@ -125,10 +125,17 @@ export default async function CheckoutPage({ params }: { params: { reservationId
                                 </div>
                             </div>
 
-                            <div className="border-t border-dashed pt-4">
+                            <div className="border-t border-dashed pt-4 space-y-4">
                                 <div className="flex justify-between items-center">
                                     <span className="text-base font-semibold">Total Amount</span>
                                     <span className="text-2xl font-bold text-red-600">₱{reservation.total_price?.toLocaleString()}</span>
+                                </div>
+                                <div className="rounded-lg bg-orange-50 p-3 text-[11px] text-orange-800 border border-orange-200 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/50">
+                                    <p className="font-bold flex items-center gap-1 mb-1">
+                                        <ShieldCheck className="h-3 w-3" />
+                                        REFUND POLICY
+                                    </p>
+                                    <p>Please note that a <strong>20% management fee</strong> will be deducted from your total amount in case of cancellations or refunds.</p>
                                 </div>
                             </div>
                         </CardContent>

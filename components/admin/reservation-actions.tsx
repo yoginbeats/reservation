@@ -31,7 +31,7 @@ export function ReservationActions({ reservationId, status, role, branch, tripOr
     const canPrintManifest = isAdmin || (isBranchAdmin && isLocalTrip);
 
     const handleRefund = async () => {
-        if (!confirm("Are you sure you want to REFUND this transaction? The reservation will also be cancelled. This cannot be undone.")) {
+        if (!confirm("Are you sure you want to REFUND this transaction? The reservation will be cancelled and a 20% management fee will be deducted (80% will be refunded to the customer). This cannot be undone.")) {
             return;
         }
 

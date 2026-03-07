@@ -66,6 +66,8 @@ export async function POST(req: Request) {
 
         const paymongoPaymentId = payments[0].id; // Get the actual payment ID (pay_...)
 
+        const refundAmount = Math.round(payment.amount * 0.8 * 100); // 80% of total price in centavos
+
         // 2. Create the Refund
         const refundResponse = await fetch('https://api.paymongo.com/v1/refunds', {
             method: 'POST',
@@ -77,10 +79,10 @@ export async function POST(req: Request) {
             body: JSON.stringify({
                 data: {
                     attributes: {
-                        amount: Math.round(payment.amount * 100), // full refund in centavos
+                        amount: refundAmount,
                         payment_id: paymongoPaymentId,
                         reason: 'requested_by_customer',
-                        notes: `Refund for reservation ${reservationId}`
+                        notes: `Partial refund (80%) for reservation ${reservationId}. 20% deducted as management fee.`
                     }
                 }
             })
