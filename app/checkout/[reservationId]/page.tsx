@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, CreditCard, Wallet, Smartphone, ArrowRight, CreditCardIcon } from "lucide-react";
 import Link from "next/link";
+import { PayNowButton } from "@/components/checkout/PayNowButton";
 
 export default async function CheckoutPage({ params }: { params: { reservationId: string } }) {
     const { reservationId } = await params;
@@ -132,9 +133,7 @@ export default async function CheckoutPage({ params }: { params: { reservationId
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full h-12 text-lg font-bold" variant="destructive">
-                                PAY NOW
-                            </Button>
+                            <PayNowButton reservationId={reservationId} />
                         </CardFooter>
                     </Card>
 
