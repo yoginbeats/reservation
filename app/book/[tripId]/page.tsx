@@ -6,8 +6,17 @@ import { Armchair, ArrowLeft, Info } from "lucide-react";
 import Link from "next/link";
 import { SeatSelection } from "@/components/seat-selection";
 
-export default async function BookTripPage({ params }: { params: { tripId: string } }) {
+export default async function BookTripPage({
+    params,
+    searchParams
+}: {
+    params: { tripId: string },
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
     const { tripId } = await params;
+    const { passengers } = await searchParams;
+    const passengerCount = passengers ? parseInt(passengers as string) : 1;
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -37,7 +46,8 @@ export default async function BookTripPage({ params }: { params: { tripId: strin
     const takenSeats = new Set(reservedSeats?.map((r: { seat_number: string }) => r.seat_number) || []);
 
     // Generate Seat Map
-    const capacity = trip.buses?.capacity || 45;
+    const busType = trip.buses?.bus_type || "Regular Aircon";
+    const capacity = busType.toLowerCase().includes('regular') ? 49 : 45;
     const seats = [];
     for (let i = 1; i <= capacity; i++) {
         seats.push({
@@ -85,6 +95,8 @@ export default async function BookTripPage({ params }: { params: { tripId: strin
                                 tripId={tripId}
                                 price={trip.price}
                                 userId={user.id}
+                                busType={busType}
+                                passengerCount={passengerCount}
                             />
                         </CardContent>
                     </Card>

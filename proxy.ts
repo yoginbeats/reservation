@@ -15,8 +15,8 @@ export default async function proxy(request: NextRequest) {
     }
 
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        process.env.NEXT_PUBLIC_SUPABASE_URL || "https://tvyibzqxruhywdlsugbo.supabase.co",
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR2eWlienF4cnVoeXdkbHN1Z2JvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MzExNDUsImV4cCI6MjA4NjEwNzE0NX0.kdEua46esGGCuCUj3T-nQs5r1y4-nU5flk0jPFQZK-w",
         {
             cookies: {
                 getAll() {
@@ -31,8 +31,22 @@ export default async function proxy(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Determine Role: Check metadata first, then fallback to DB
+    // Determine Role: Check emails first for branch admins
     let role = user?.user_metadata?.role
+    let branch = null
+
+    if (user?.email === 'superlinescubao@admin.com') {
+        role = 'branch_admin'
+        branch = 'Cubao'
+    } else if (user?.email === 'superlinespitx@admin.com') {
+        role = 'branch_admin'
+        branch = 'PITX'
+    } else if (user?.email === 'superlinesdaet@admin.com') {
+        role = 'branch_admin'
+        branch = 'Daet'
+    } else if (user?.email === 'superlines@admin.com') {
+        role = 'admin'
+    }
 
     if (user && !role) {
         try {
@@ -59,8 +73,7 @@ export default async function proxy(request: NextRequest) {
     const publicPaths = ['/login', '/register']
     const isPublicPath = publicPaths.some(path => url.pathname === path || url.pathname.startsWith(path + '/'))
 
-    // Protect root page - require authentication
-    // Admins go directly to /admin dashboard, clients see the 2-card landing page
+    // Protect root page
     if (url.pathname === '/') {
         if (!user) {
             return NextResponse.redirect(new URL('/login', request.url))
@@ -68,36 +81,53 @@ export default async function proxy(request: NextRequest) {
         if (role === 'admin') {
             return NextResponse.redirect(new URL('/admin', request.url))
         }
+        if (role === 'branch_admin' && branch) {
+            return NextResponse.redirect(new URL(`/admin/${branch.toLowerCase()}`, request.url))
+        }
     }
 
-    // Protect /admin routes - require admin role
+    // Protect /admin routes
     if (url.pathname.startsWith('/admin')) {
         if (!user) {
             return NextResponse.redirect(new URL('/login', request.url))
         }
 
-        if (role !== 'admin') {
-            // Redirect non-admins to client dashboard
+        if (role !== 'admin' && role !== 'branch_admin') {
             return NextResponse.redirect(new URL('/dashboard', request.url))
+        }
+
+        // Specific restrictions for Branch Admins
+        if (role === 'branch_admin' && branch) {
+            // Redirect from generic /admin to their specific branch page
+            if (url.pathname === '/admin') {
+                return NextResponse.redirect(new URL(`/admin/${branch.toLowerCase()}`, request.url))
+            }
+
+            // Block access to Settings, Trips, and Buses
+            const restrictedPaths = ['/admin/settings', '/admin/trips', '/admin/buses']
+            if (restrictedPaths.some(path => url.pathname.startsWith(path))) {
+                return NextResponse.redirect(new URL(`/admin/${branch.toLowerCase()}`, request.url))
+            }
         }
     }
 
-    // Protect /dashboard routes - require being logged in
+    // Protect /dashboard routes
     if (url.pathname.startsWith('/dashboard')) {
         if (!user) {
             return NextResponse.redirect(new URL('/login', request.url))
         }
     }
 
-    // Redirect logged-in users away from auth pages to their respective dashboards
-    // Only redirect if they are visiting login or register. NOT landing page (/).
+    // Auth redirection
     const authPages = ['/login', '/register']
     const isAuthPage = authPages.some(path => url.pathname === path || url.pathname.startsWith(path + '/'))
 
     if (isAuthPage && user) {
-        // Redirect based on role
         if (role === 'admin') {
             return NextResponse.redirect(new URL('/admin', request.url))
+        }
+        if (role === 'branch_admin' && branch) {
+            return NextResponse.redirect(new URL(`/admin/${branch}`, request.url))
         }
         return NextResponse.redirect(new URL('/dashboard', request.url))
     }

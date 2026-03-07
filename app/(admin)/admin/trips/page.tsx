@@ -1,20 +1,55 @@
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, MapPin, Clock, Calendar, Bus, ArrowRight, MoreVertical } from "lucide-react";
+import { Plus, MapPin, Clock, Calendar, Bus, ArrowRight, MoreVertical, Trash2, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
-export default async function TripsAdminPage() {
-    const supabase = await createClient();
+export default function TripsAdminPage() {
+    const supabase = createClient();
+    const [trips, setTrips] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Fetch all trips with bus details
-    const { data: trips, error } = await supabase
-        .from('trips')
-        .select(`
-            *,
-            buses (*)
-        `)
-        .order('departure_time', { ascending: true });
+    const fetchTrips = async () => {
+        setIsLoading(true);
+        const { data, error } = await supabase
+            .from('trips')
+            .select(`
+                *,
+                buses (*)
+            `)
+            .order('departure_time', { ascending: true });
+
+        if (data) setTrips(data);
+        setIsLoading(false);
+    };
+
+    useEffect(() => {
+        fetchTrips();
+    }, []);
+
+    const deleteTrip = async (id: string) => {
+        if (!confirm("Are you sure you want to cancel this trip?")) return;
+
+        const { error } = await supabase.from('trips').delete().eq('id', id);
+        if (error) {
+            toast.error("Error cancelling trip: " + error.message);
+        } else {
+            toast.success("Trip cancelled successfully.");
+            fetchTrips();
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex h-64 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -23,10 +58,12 @@ export default async function TripsAdminPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Trip Schedules</h1>
                     <p className="text-muted-foreground italic">Manage bus routes, schedules, and pricing.</p>
                 </div>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create New Trip
-                </Button>
+                <Link href="/admin/trips/new">
+                    <Button className="bg-blue-600 hover:bg-blue-700">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create New Trip
+                    </Button>
+                </Link>
             </div>
 
             <div className="grid gap-6">
@@ -77,8 +114,24 @@ export default async function TripsAdminPage() {
 
                                         {/* Actions */}
                                         <div className="bg-zinc-50 dark:bg-zinc-900/50 p-6 flex items-center justify-center gap-3">
+                                            <Link href={`/admin/trips/${trip.id}/manifest`}>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="bg-white hover:bg-zinc-50 border-zinc-200 font-bold"
+                                                >
+                                                    View Manifest
+                                                </Button>
+                                            </Link>
                                             <Button variant="outline" size="sm">Edit Schedule</Button>
-                                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">Cancel Trip</Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                onClick={() => deleteTrip(trip.id)}
+                                            >
+                                                Cancel Trip
+                                            </Button>
                                             <Button variant="ghost" size="icon" className="h-8 w-8">
                                                 <MoreVertical className="h-4 w-4" />
                                             </Button>

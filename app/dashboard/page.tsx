@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarCheck, Ticket, Clock, ArrowRight } from "lucide-react";
+import { CalendarCheck, Ticket, Clock, ArrowRight, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { NextTripSpotlight } from "@/components/dashboard/next-trip-spotlight";
 
-export default async function ClientDashboard() {
+export default async function ClientDashboard({
+    searchParams
+}: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+    const { booking } = await searchParams;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -27,14 +33,35 @@ export default async function ClientDashboard() {
         .eq('id', user?.id)
         .single();
 
-    // Fetch upcoming reservations (just fetching latest 3 for now)
-    // Ideally we filter by trip date >= now
+    // Fetch the most immediate upcoming reservation for the Spotlight
+    const { data: upcomingReservations } = await supabase
+        .from('reservations')
+        .select(`
+            id,
+            seat_number,
+            status,
+            trips (
+                origin,
+                destination,
+                departure_time,
+                bus_number
+            )
+        `)
+        .eq('customer_id', user?.id)
+        .eq('status', 'confirmed')
+        .not('trips', 'is', null)
+        .order('trips(departure_time)', { ascending: true })
+        .limit(1);
+
+    const nextTrip = upcomingReservations?.[0];
+
+    // Fetch upcoming reservations (excluding the spotlighted one)
     const { data: reservations } = await supabase
         .from('reservations')
         .select(`
             id,
             total_price,
-            reservation_status,
+            status,
             created_at,
             trips (
                 destination,
@@ -43,13 +70,32 @@ export default async function ClientDashboard() {
             )
         `)
         .eq('customer_id', user?.id)
+        .neq('id', nextTrip?.id || '')
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(5);
 
     const userName = profile?.full_name || user?.email?.split('@')[0] || "Client";
 
     return (
         <div className="space-y-10 py-6">
+            {booking === 'success' && (
+                <div className="flex items-center gap-4 rounded-[2rem] bg-emerald-500 p-6 text-white shadow-xl shadow-emerald-100 dark:shadow-none animate-in fade-in slide-in-from-top-4 duration-1000">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
+                        <Check className="h-6 w-6 stroke-[3]" />
+                    </div>
+                    <div>
+                        <h4 className="font-black uppercase tracking-tighter text-lg leading-none">Booking Successful!</h4>
+                        <p className="text-sm font-medium text-emerald-50/80 mt-1">Your reservation has been secured. See details below.</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Next Trip Spotlight */}
+            {nextTrip && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <NextTripSpotlight reservation={nextTrip as any} />
+                </div>
+            )}
             <div className="relative overflow-hidden rounded-3xl p-8 text-white md:p-12">
                 {/* Background Image with Overlay */}
                 <div
@@ -167,11 +213,11 @@ export default async function ClientDashboard() {
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end gap-3">
-                                            <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-tighter ${res.reservation_status === 'confirmed'
+                                            <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-tighter ${res.status === 'confirmed'
                                                 ? 'bg-green-100 text-green-700'
                                                 : 'bg-yellow-100 text-yellow-700'
                                                 }`}>
-                                                {res.reservation_status}
+                                                {res.status}
                                             </span>
                                             <Button variant="ghost" size="sm" className="h-8 font-bold text-red-600 hover:bg-red-50 hover:text-red-700">Details</Button>
                                         </div>

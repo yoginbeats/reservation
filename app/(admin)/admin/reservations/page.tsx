@@ -1,11 +1,13 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getRole } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CalendarCheck, Search, Filter, Plus, CheckCircle, XCircle } from "lucide-react";
+import { CalendarCheck, Search, Filter, Plus } from "lucide-react";
 import Link from "next/link";
+import { ReservationActions } from "@/components/admin/reservation-actions";
 
 export default async function ReservationsPage() {
+    const { role, branch } = await getRole();
     const supabase = await createClient();
 
     // Fetch All Reservations with Customer and Trip details
@@ -32,10 +34,12 @@ export default async function ReservationsPage() {
                     <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Reservations</h1>
                     <p className="text-muted-foreground italic">Monitor and manage all customer bookings.</p>
                 </div>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Manual Reservation
-                </Button>
+                {role === 'admin' && (
+                    <Button className="bg-blue-600 hover:bg-blue-700">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Manual Reservation
+                    </Button>
+                )}
             </div>
 
             {/* Filters */}
@@ -59,9 +63,10 @@ export default async function ReservationsPage() {
                 <CardContent className="p-0">
                     <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                         {reservations && reservations.length > 0 ? (
-                            reservations.map((res: any) => {
-                                const trip = res.trips;
-                                const customer = Array.isArray(res.profiles) ? res.profiles[0] : res.profiles;
+                            reservations.map((res) => {
+                                const trip = res.trips as { origin: string; destination: string; departure_time: string };
+                                const profiles = res.profiles as { full_name: string; email: string }[] | { full_name: string; email: string };
+                                const customer = Array.isArray(profiles) ? profiles[0] : profiles;
                                 const tripDate = new Date(trip?.departure_time);
 
                                 return (
@@ -89,25 +94,23 @@ export default async function ReservationsPage() {
 
                                             <div className="flex items-center gap-2">
                                                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold uppercase transition-colors ${res.status === 'confirmed'
-                                                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                                        : res.status === 'pending'
-                                                            ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                                                            : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                                    : res.status === 'pending'
+                                                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                                                     }`}>
                                                     {res.status}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            {res.status === 'pending' && (
-                                                <Button size="sm" variant="ghost" className="h-8 text-green-600 hover:text-green-700 hover:bg-green-50">
-                                                    <CheckCircle className="h-4 w-4 mr-1" />
-                                                    Confirm
-                                                </Button>
-                                            )}
-                                            <Button variant="ghost" size="sm" className="h-8">Details</Button>
-                                        </div>
+                                        <ReservationActions
+                                            reservationId={res.id}
+                                            status={res.status}
+                                            role={role}
+                                            branch={branch}
+                                            tripOrigin={trip?.origin}
+                                        />
                                     </div>
                                 );
                             })

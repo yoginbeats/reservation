@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Calendar, MapPin, Search, Star, Shield, Clock, Coffee, Wifi } from "lucide-react";
+import { BookingForm } from "@/components/BookingForm";
 
 export default function Home() {
     return (
@@ -43,47 +44,7 @@ export default function Home() {
                         </div>
 
                         {/* Booking Widget */}
-                        <div className="mx-auto w-full max-w-lg rounded-3xl bg-white p-8 text-zinc-900 shadow-2xl dark:bg-zinc-900 dark:text-zinc-50">
-                            <h3 className="mb-6 text-2xl font-bold">Book Your Trip</h3>
-                            <div className="space-y-4">
-                                <div className="relative">
-                                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-zinc-500">Origin</label>
-                                    <div className="flex items-center gap-3 rounded-xl border bg-zinc-50 px-4 py-3 dark:bg-zinc-800">
-                                        <MapPin className="h-5 w-5 text-red-600" />
-                                        <span className="text-zinc-400">Select starting point...</span>
-                                    </div>
-                                </div>
-                                <div className="relative">
-                                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-zinc-500">Destination</label>
-                                    <div className="flex items-center gap-3 rounded-xl border bg-zinc-50 px-4 py-3 dark:bg-zinc-800">
-                                        <MapPin className="h-5 w-5 text-red-600" />
-                                        <span className="text-zinc-400">Select destination...</span>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-zinc-500">Departure Date</label>
-                                        <div className="flex items-center gap-3 rounded-xl border bg-zinc-50 px-4 py-3 dark:bg-zinc-800">
-                                            <Calendar className="h-5 w-5 text-red-600" />
-                                            <span className="text-zinc-400">Pick date</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-zinc-500">Passengers</label>
-                                        <div className="flex items-center gap-3 rounded-xl border bg-zinc-50 px-4 py-3 dark:bg-zinc-800">
-                                            <span className="text-zinc-900 dark:text-zinc-100 font-medium">1 Adult</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <Link
-                                    href="/dashboard"
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-4 text-lg font-bold text-white transition-all hover:bg-red-700 active:scale-95"
-                                >
-                                    <Search className="h-5 w-5" />
-                                    Check Availability
-                                </Link>
-                            </div>
-                        </div>
+                        <BookingForm />
                     </div>
                 </div>
             </section>
