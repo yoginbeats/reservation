@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, RotateCcw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -29,6 +29,36 @@ export function ReservationActions({ reservationId, status, role, branch, tripOr
     // Permissions logic
     const canCancel = isAdmin || (isBranchAdmin && isLocalTrip);
     const canPrintManifest = isAdmin || (isBranchAdmin && isLocalTrip);
+
+    const handleRefund = async () => {
+        if (!confirm("Are you sure you want to REFUND this transaction? The reservation will also be cancelled. This cannot be undone.")) {
+            return;
+        }
+
+        setLoading('refund');
+        try {
+            const response = await fetch("/api/paymongo/refund", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ reservationId }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to process refund");
+            }
+
+            toast.success("Refund processed and reservation cancelled!");
+            router.refresh();
+        } catch (error: any) {
+            toast.error(error.message || "Refund failed");
+        } finally {
+            setLoading(null);
+        }
+    };
 
     const handleUpdateStatus = async (newStatus: string) => {
         setLoading(newStatus);
@@ -87,6 +117,23 @@ export function ReservationActions({ reservationId, status, role, branch, tripOr
                         <XCircle className="h-4 w-4 mr-1" />
                     )}
                     Cancel
+                </Button>
+            )}
+
+            {status === 'confirmed' && isAdmin && (
+                <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    disabled={!!loading}
+                    onClick={handleRefund}
+                >
+                    {loading === 'refund' ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                        <RotateCcw className="h-4 w-4 mr-1" />
+                    )}
+                    Refund
                 </Button>
             )}
 
