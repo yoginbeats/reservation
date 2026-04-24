@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { UserPlus, Mail, Lock, User, Eye, EyeOff, Ticket, Check } from "lucide-react";
+import { UserPlus, Mail, Lock, User, Eye, EyeOff, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
@@ -116,6 +116,7 @@ export default function RegisterPage() {
                 {/* Logo/Branding */}
                 <div className="mb-10 text-center">
                     <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-white shadow-xl shadow-zinc-200 overflow-hidden border border-zinc-100 dark:shadow-none">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src="/482809688_1079373070897719_6989867294877356725_n.jpg"
                             alt="Logo"

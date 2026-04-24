@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, AlertCircle, CreditCard, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
 
 interface Passenger {
     name: string;
@@ -16,12 +15,6 @@ interface Passenger {
     idPhotoUrl?: string;
 }
 
-interface CheckoutFormProps {
-    tripId: string;
-    passengers: Passenger[];
-    totalPrice: number;
-    userId: string;
-}
 
 export function CheckoutForm({ tripId, userId }: { tripId: string, userId: string }) {
     const router = useRouter();
@@ -34,8 +27,9 @@ export function CheckoutForm({ tripId, userId }: { tripId: string, userId: strin
         const stored = sessionStorage.getItem('pendingBooking');
         if (stored) {
             try {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setBookingData(JSON.parse(stored));
-            } catch (e) {
+            } catch {
                 console.error("Failed to parse booking data");
             }
         }
@@ -51,29 +45,33 @@ export function CheckoutForm({ tripId, userId }: { tripId: string, userId: strin
 
         try {
             // Insert reservations for each passenger
-            const reservations = bookingData.passengers.map(p => ({
+            const reservationsToInsert = bookingData.passengers.map(p => ({
                 customer_id: userId,
                 trip_id: tripId,
                 seat_number: p.seatNumber,
                 passenger_name: p.name,
-                passenger_type: p.type,
-                id_number: p.idNumber,
-                id_photo_url: p.idPhotoUrl,
-                total_price: p.price,
+                total_price: p.price || 0,
                 status: 'confirmed'
             }));
 
-            const { error: insertError } = await supabase
+            const result = await supabase
                 .from('reservations')
-                .insert(reservations);
+                .insert(reservationsToInsert);
 
-            if (insertError) throw insertError;
+            if (result.error) {
+                // Next.js overlay triggers on console.error, so we use console.warn instead
+                console.warn("Supabase returned an error:", result.error);
+                setError(result.error.message || result.error.details || "Database rejected the booking.");
+                setIsSubmitting(false);
+                return;
+            }
 
             sessionStorage.removeItem('pendingBooking');
             router.push('/dashboard?booking=success');
-        } catch (err: any) {
-            console.error("Booking error:", err);
-            setError(err.message || "An unexpected error occurred.");
+        } catch (err: unknown) {
+            console.warn("Runtime exception during booking:", err);
+            const errorMessage = err instanceof Error ? err.message : "A runtime exception occurred.";
+            setError(errorMessage);
             setIsSubmitting(false);
         }
     };
@@ -85,7 +83,7 @@ export function CheckoutForm({ tripId, userId }: { tripId: string, userId: strin
                     <Users className="h-4 w-4" />
                     <span className="text-[10px] font-black uppercase tracking-widest">Travelers</span>
                 </div>
-                {bookingData.passengers.map((p, i) => (
+                {bookingData.passengers.map((p) => (
                     <div key={p.seatNumber} className="flex justify-between items-center text-sm border-b border-zinc-100 dark:border-zinc-800 pb-2 last:border-0">
                         <div className="space-y-0.5">
                             <span className="font-bold text-zinc-600 dark:text-zinc-400">Seat {p.seatNumber}</span>
@@ -152,7 +150,7 @@ export function CheckoutForm({ tripId, userId }: { tripId: string, userId: strin
             </div>
 
             <p className="text-center text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
-                By clicking "Complete Booking", you agree to our terms of service.
+                By clicking &quot;Complete Booking&quot;, you agree to our terms of service.
             </p>
         </div>
     );

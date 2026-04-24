@@ -48,12 +48,6 @@ export function AdminSidebar({ role, branch }: AdminSidebarProps) {
             visible: true
         },
         {
-            title: "Sales",
-            href: "/admin/sales",
-            icon: TrendingUp,
-            visible: true
-        },
-        {
             title: "Users",
             href: "/admin/users",
             icon: Users,

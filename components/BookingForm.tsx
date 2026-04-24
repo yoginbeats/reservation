@@ -20,7 +20,7 @@ export function BookingForm() {
     const [destination, setDestination] = useState("");
     const [departureDate, setDepartureDate] = useState("");
     const [returnDate, setReturnDate] = useState("");
-    const [passengers, setPassengers] = useState(1);
+    const [passengers, setPassengers] = useState<number | string>(1);
 
     const locationOptions: Record<string, string[]> = {
         "Regular Aircon": ["CUBAO", "PITX", "DAET", "TURBINA", "ALABANG"],
@@ -81,7 +81,7 @@ export function BookingForm() {
         if (busType) params.append("busType", busType);
         if (departureDate) params.append("date", departureDate);
         if (tripType === "round-trip" && returnDate) params.append("returnDate", returnDate);
-        params.append("passengers", passengers.toString());
+        params.append("passengers", (passengers || 1).toString());
 
         router.push(`/reservations?${params.toString()}`);
     };
@@ -92,12 +92,28 @@ export function BookingForm() {
                 <h3 className="text-2xl font-black uppercase tracking-tight">Book Your <span className="text-red-600">Trip</span></h3>
 
                 <div className="flex flex-wrap items-center gap-2">
-                    <Tabs value={tripType} onValueChange={(v) => setTripType(v as any)} className="w-fit">
-                        <TabsList className="bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
-                            <TabsTrigger value="one-way" className="rounded-lg px-3 py-1 text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-red-600">One-way</TabsTrigger>
-                            <TabsTrigger value="round-trip" className="rounded-lg px-3 py-1 text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-red-600">Round-trip</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
+                    <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl w-fit">
+                        <button
+                            type="button"
+                            onClick={() => setTripType("one-way")}
+                            className={cn(
+                                "rounded-lg px-3 py-1 text-xs font-bold transition-all",
+                                tripType === "one-way" ? "bg-white text-red-600 shadow-sm dark:bg-zinc-900" : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                            )}
+                        >
+                            One-way
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setTripType("round-trip")}
+                            className={cn(
+                                "rounded-lg px-3 py-1 text-xs font-bold transition-all",
+                                tripType === "round-trip" ? "bg-white text-red-600 shadow-sm dark:bg-zinc-900" : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                            )}
+                        >
+                            Round-trip
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -215,7 +231,10 @@ export function BookingForm() {
                                 min="1"
                                 max="10"
                                 value={passengers}
-                                onChange={(e) => setPassengers(parseInt(e.target.value))}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    setPassengers(isNaN(val) ? "" : val);
+                                }}
                                 className="pl-12 h-14 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700 font-bold transition-all hover:bg-white dark:hover:bg-zinc-700 shadow-sm"
                                 required
                             />

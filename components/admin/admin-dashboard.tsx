@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarCheck, Ticket, Users, TrendingUp } from "lucide-react";
+import { CalendarCheck, Ticket, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
 interface AdminDashboardProps {
@@ -24,18 +24,6 @@ export default async function AdminDashboard({ branchName }: AdminDashboardProps
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
-    // 4. Revenue (Branch-Filtered if branchName provided)
-    let revenueQuery = supabase
-        .from('payments')
-        .select('amount, status, reservations!inner(trip_id, trips!inner(origin))')
-        .eq('status', 'paid');
-
-    if (branchName) {
-        revenueQuery = revenueQuery.eq('reservations.trips.origin', branchName);
-    }
-
-    const { data: payments } = await revenueQuery;
-    const revenue = payments?.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) || 0;
 
     // 5. Recent Activity (Global - View all available seats)
     const { data: recentReservations } = await supabase
@@ -56,7 +44,7 @@ export default async function AdminDashboard({ branchName }: AdminDashboardProps
             </div>
 
             {/* Stats Grid */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-3">
                 <Card className="border-none shadow-sm shadow-zinc-200 dark:shadow-none bg-white dark:bg-zinc-900/50">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Total Reservations</CardTitle>
@@ -87,22 +75,7 @@ export default async function AdminDashboard({ branchName }: AdminDashboardProps
                         <p className="text-xs text-muted-foreground italic pt-1">Registered accounts</p>
                     </CardContent>
                 </Card>
-                <Card className="border-none shadow-sm shadow-zinc-200 dark:shadow-none bg-white dark:bg-zinc-900/50">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-                            {branchName ? `${branchName} Revenue` : 'Total Revenue'}
-                        </CardTitle>
-                        <TrendingUp className="h-4 w-4 text-red-600" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold tracking-tighter text-red-600">
-                            ₱{revenue.toLocaleString()}
-                        </div>
-                        <p className="text-xs text-muted-foreground italic pt-1">
-                            {branchName ? `Collected at ${branchName}` : 'Total collected'}
-                        </p>
-                    </CardContent>
-                </Card>
+
             </div>
 
             {/* Recent Activity */}

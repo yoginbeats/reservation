@@ -48,24 +48,24 @@ export function PassengerForm({ tripId, selectedSeats, price, trip }: PassengerF
 
             const { data } = await supabase
                 .from('reservations')
-                .select('passenger_name, passenger_type, id_number, id_photo_url')
+                .select('passenger_name')
                 .eq('customer_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (data) {
                 // Get unique passengers by name
                 const unique = Array.from(new Map(data.map(item => [item.passenger_name, item])).values());
-                setRecentPassengers(unique.map(p => ({
+                setRecentPassengers(unique.map((p: { passenger_name: string }) => ({
                     name: p.passenger_name,
-                    type: p.passenger_type as any,
-                    idNumber: p.id_number || "",
-                    idPhotoUrl: p.id_photo_url || "",
+                    type: 'regular',
+                    idNumber: "",
+                    idPhotoUrl: "",
                     seatNumber: "" // Placeholder
                 })));
             }
         };
         fetchRecent();
-    }, []);
+    }, [supabase]);
 
     const handleInputChange = (index: number, field: keyof PassengerDetails, value: string) => {
         const newPassengers = [...passengers];
@@ -105,7 +105,7 @@ export function PassengerForm({ tripId, selectedSeats, price, trip }: PassengerF
             const filePath = `id-proofs/${fileName}`;
 
             // Upload to Supabase Storage
-            const { data, error: uploadError } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
                 .from('id-photos')
                 .upload(filePath, file);
 
@@ -118,9 +118,10 @@ export function PassengerForm({ tripId, selectedSeats, price, trip }: PassengerF
 
             handleInputChange(index, 'idPhotoUrl', publicUrl);
             toast.success("ID Photo uploaded successfully!");
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Upload error:", error);
-            toast.error(error.message || "Failed to upload image");
+            const errorMessage = error instanceof Error ? error.message : "Failed to upload image";
+            toast.error(errorMessage);
         } finally {
             setUploadingIndex(null);
         }
@@ -249,7 +250,7 @@ export function PassengerForm({ tripId, selectedSeats, price, trip }: PassengerF
                                                 <button
                                                     key={t.id}
                                                     type="button"
-                                                    onClick={() => handleInputChange(index, 'type', t.id as any)}
+                                                    onClick={() => handleInputChange(index, 'type', t.id as PassengerDetails['type'])}
                                                     className={`
                                                     flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all gap-1.5
                                                     ${passenger.type === t.id
@@ -309,6 +310,7 @@ export function PassengerForm({ tripId, selectedSeats, price, trip }: PassengerF
 
                                                         {passenger.idPhotoUrl ? (
                                                             <div className="relative h-32 w-full rounded-xl overflow-hidden border-2 border-emerald-500 shadow-lg group/preview">
+                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                                                 <img
                                                                     src={passenger.idPhotoUrl}
                                                                     alt="ID Preview"
@@ -485,8 +487,5 @@ export function PassengerForm({ tripId, selectedSeats, price, trip }: PassengerF
             </div>
         </div>
     );
-}
-function setIsSubmitting(arg0: boolean) {
-    throw new Error("Function not implemented.");
 }
 

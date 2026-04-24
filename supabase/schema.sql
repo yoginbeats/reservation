@@ -46,6 +46,9 @@ create table if not exists public.reservations (
     trip_id uuid references public.trips(id) on delete cascade not null,
     seat_number text not null,
     passenger_name text not null,
+    passenger_type text,
+    id_number text,
+    id_photo_url text,
     total_price decimal(10, 2) not null,
     status text not null default 'pending' check (status in ('pending', 'confirmed', 'cancelled')),
     created_at timestamptz default now()
