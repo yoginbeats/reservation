@@ -118,7 +118,7 @@ export default async function ClientDashboard({
 
             {/* Quick Actions */}
             <div className="grid gap-6 md:grid-cols-3">
-                <Link href="/book" className="block">
+                <Link href="/reservations" className="block">
                     <Card className="group h-full cursor-pointer border-2 border-transparent transition-all hover:border-red-600 hover:shadow-xl dark:bg-zinc-900">
                         <CardHeader>
                             <div className="flex items-center justify-between">
@@ -152,7 +152,7 @@ export default async function ClientDashboard({
                     </Card>
                 </Link>
 
-                <Link href="/history" className="block">
+                <Link href="/my-reservations" className="block">
                     <Card className="group h-full cursor-pointer border-2 border-transparent transition-all hover:border-red-600 hover:shadow-xl dark:bg-zinc-900">
                         <CardHeader>
                             <div className="flex items-center justify-between">

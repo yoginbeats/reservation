@@ -1,10 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export function GlobalHeader() {
     const pathname = usePathname();
+    const router = useRouter();
+    const [user, setUser] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const supabase = createClient();
+
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data } = await supabase.auth.getUser();
+            setUser(data?.user || null);
+            setIsLoading(false);
+        };
+        checkUser();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user || null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, [supabase.auth]);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.refresh();
+    };
 
     // Hide header on admin routes to avoid redundancy with admin sidebar
     if (pathname?.startsWith("/admin")) {
@@ -54,12 +80,23 @@ export function GlobalHeader() {
                 </nav>
 
                 <div className="flex items-center gap-4">
-                    <Link
-                        href="/login"
-                        className="rounded-full bg-red-600 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg active:scale-95"
-                    >
-                        Login
-                    </Link>
+                    {!isLoading && (
+                        user ? (
+                            <button
+                                onClick={handleLogout}
+                                className="rounded-full bg-red-600 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg active:scale-95"
+                            >
+                                Logout
+                            </button>
+                        ) : (
+                            <Link
+                                href="/login"
+                                className="rounded-full bg-red-600 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg active:scale-95"
+                            >
+                                Login
+                            </Link>
+                        )
+                    )}
                 </div>
             </div>
         </header>

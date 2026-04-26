@@ -4,14 +4,19 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, MapPin, Clock, Calendar, Bus, ArrowRight, MoreVertical, Trash2, Loader2 } from "lucide-react";
+import { Plus, MapPin, Clock, Calendar, Bus, ArrowRight, MoreVertical, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 export default function TripsAdminPage() {
     const supabase = createClient();
     const [trips, setTrips] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [tripToDelete, setTripToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeletingAll, setIsDeletingAll] = useState(false);
+    const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
 
     const fetchTrips = async () => {
         setIsLoading(true);
@@ -31,14 +36,37 @@ export default function TripsAdminPage() {
         fetchTrips();
     }, []);
 
-    const deleteTrip = async (id: string) => {
-        if (!confirm("Are you sure you want to cancel this trip?")) return;
+    const deleteTrip = async () => {
+        if (!tripToDelete) return;
+        setIsDeleting(true);
 
-        const { error } = await supabase.from('trips').delete().eq('id', id);
+        const { error } = await supabase.from('trips').delete().eq('id', tripToDelete);
+        
+        setIsDeleting(false);
+        setTripToDelete(null);
+
         if (error) {
             toast.error("Error cancelling trip: " + error.message);
         } else {
             toast.success("Trip cancelled successfully.");
+            fetchTrips();
+        }
+    };
+
+    const deleteAllTrips = async () => {
+        if (trips.length === 0) return;
+        setIsDeletingAll(true);
+
+        const tripIds = trips.map((t: any) => t.id);
+        const { error } = await supabase.from('trips').delete().in('id', tripIds);
+        
+        setIsDeletingAll(false);
+        setShowDeleteAllDialog(false);
+
+        if (error) {
+            toast.error("Error deleting all trips: " + error.message);
+        } else {
+            toast.success("All trips have been deleted successfully.");
             fetchTrips();
         }
     };
@@ -58,12 +86,23 @@ export default function TripsAdminPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Trip Schedules</h1>
                     <p className="text-muted-foreground italic">Manage bus routes, schedules, and pricing.</p>
                 </div>
-                <Link href="/admin/trips/new">
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create New Trip
+                <div className="flex items-center gap-3">
+                    <Button 
+                        variant="destructive" 
+                        className="bg-red-600 hover:bg-red-700 transition-all disabled:opacity-50"
+                        onClick={() => setShowDeleteAllDialog(true)}
+                        disabled={trips.length === 0}
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete All Trips
                     </Button>
-                </Link>
+                    <Link href="/admin/trips/new">
+                        <Button className="bg-blue-600 hover:bg-blue-700 transition-all">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create New Trip
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             <div className="grid gap-6">
@@ -123,12 +162,14 @@ export default function TripsAdminPage() {
                                                     View Manifest
                                                 </Button>
                                             </Link>
-                                            <Button variant="outline" size="sm">Edit Schedule</Button>
+                                            <Link href={`/admin/trips/${trip.id}/edit`}>
+                                                <Button variant="outline" size="sm">Edit Schedule</Button>
+                                            </Link>
                                             <Button
                                                 variant="outline"
                                                 size="sm"
                                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                onClick={() => deleteTrip(trip.id)}
+                                                onClick={() => setTripToDelete(trip.id)}
                                             >
                                                 Cancel Trip
                                             </Button>
@@ -156,6 +197,54 @@ export default function TripsAdminPage() {
                     </Card>
                 )}
             </div>
+
+            {/* Cancel Trip Confirmation Dialog */}
+            <Dialog open={!!tripToDelete} onOpenChange={(open) => !open && setTripToDelete(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-red-600">
+                            <AlertTriangle className="h-5 w-5" />
+                            Confirm Cancellation
+                        </DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to cancel this trip? This action cannot be undone and will affect any existing reservations for this schedule.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-4">
+                        <Button variant="outline" onClick={() => setTripToDelete(null)} disabled={isDeleting}>
+                            Keep Trip
+                        </Button>
+                        <Button variant="destructive" className="bg-red-600 hover:bg-red-700 text-white" onClick={deleteTrip} disabled={isDeleting}>
+                            {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                            Yes, Cancel Trip
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete All Trips Confirmation Dialog */}
+            <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-red-600">
+                            <AlertTriangle className="h-5 w-5" />
+                            WARNING: Delete All Trips
+                        </DialogTitle>
+                        <DialogDescription>
+                            Are you absolutely sure you want to delete ALL scheduled trips? This will permanently remove {trips.length} trip{trips.length !== 1 ? 's' : ''} from the database. This action CANNOT be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-4">
+                        <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)} disabled={isDeletingAll}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" className="bg-red-600 hover:bg-red-700 text-white" onClick={deleteAllTrips} disabled={isDeletingAll}>
+                            {isDeletingAll ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                            Yes, Delete All Trips
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

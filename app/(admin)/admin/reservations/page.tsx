@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { CalendarCheck, Search, Filter, Plus } from "lucide-react";
 import Link from "next/link";
 import { ReservationActions } from "@/components/admin/reservation-actions";
+import { ManualReservationButton } from "@/components/admin/manual-reservation-button";
 
 export default async function ReservationsPage() {
     const { role, branch } = await getRole();
@@ -35,10 +36,7 @@ export default async function ReservationsPage() {
                     <p className="text-muted-foreground italic">Monitor and manage all customer bookings.</p>
                 </div>
                 {role === 'admin' && (
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Manual Reservation
-                    </Button>
+                    <ManualReservationButton />
                 )}
             </div>
 

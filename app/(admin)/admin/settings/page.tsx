@@ -59,7 +59,7 @@ export default function SettingsPage() {
             </Card>
 
             <div className="flex justify-end">
-                <Button>
+                <Button className="bg-red-600 hover:bg-red-700 text-white shadow-sm">
                     <Save className="mr-2 h-4 w-4" />
                     Save Changes
                 </Button>

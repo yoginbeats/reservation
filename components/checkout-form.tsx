@@ -22,6 +22,7 @@ export function CheckoutForm({ tripId, userId }: { tripId: string, userId: strin
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [bookingData, setBookingData] = useState<{ passengers: Passenger[], totalPrice: number } | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<'counter' | 'gcash' | 'card'>('counter');
 
     useEffect(() => {
         const stored = sessionStorage.getItem('pendingBooking');
@@ -120,17 +121,45 @@ export function CheckoutForm({ tripId, userId }: { tripId: string, userId: strin
                 </div>
 
                 <div className="space-y-4 mb-8">
-                    <div className="flex justify-between items-center py-2 border-b border-zinc-100 dark:border-zinc-800">
-                        <span className="text-sm text-zinc-500">Payment Method</span>
-                        <div className="flex items-center gap-2">
-                            <CreditCard className="h-4 w-4 text-zinc-400" />
-                            <span className="text-sm font-bold">Pay at Counter / Reservation only</span>
+                    <h5 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-3">Select Payment Method</h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setPaymentMethod('counter')}
+                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-2 ${paymentMethod === 'counter' ? 'border-zinc-900 bg-zinc-50 text-zinc-900 dark:border-white dark:bg-zinc-800 dark:text-white' : 'border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950'}`}
+                        >
+                            <ShieldCheck className="h-6 w-6" />
+                            <span className="text-xs font-bold uppercase text-center">Pay at Counter</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setPaymentMethod('gcash')}
+                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-2 ${paymentMethod === 'gcash' ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' : 'border-zinc-200 bg-white text-zinc-500 hover:border-blue-200 dark:border-zinc-800 dark:bg-zinc-950'}`}
+                        >
+                            <div className="h-6 w-6 rounded-full bg-blue-500 text-white flex items-center justify-center font-black text-[12px]">G</div>
+                            <span className="text-xs font-bold uppercase text-center">GCash</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setPaymentMethod('card')}
+                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-2 ${paymentMethod === 'card' ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' : 'border-zinc-200 bg-white text-zinc-500 hover:border-indigo-200 dark:border-zinc-800 dark:bg-zinc-950'}`}
+                        >
+                            <CreditCard className="h-6 w-6" />
+                            <span className="text-xs font-bold uppercase text-center">Credit / Debit</span>
+                        </button>
+                    </div>
+
+                    {paymentMethod !== 'counter' ? (
+                        <div className="mt-4 flex items-center gap-3 rounded-xl bg-amber-50 p-4 font-medium text-amber-800 dark:bg-amber-900/10 dark:text-amber-400 border border-amber-100 dark:border-amber-900/20 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <AlertCircle className="h-5 w-5 shrink-0" />
+                            <p className="text-xs leading-relaxed">Online payments via PayMongo will be fully connected soon! For now, your reservation will be processed standardly.</p>
                         </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                        <span className="text-sm text-zinc-500">Transaction Fee</span>
-                        <span className="text-sm font-bold text-emerald-600 uppercase">Waived</span>
-                    </div>
+                    ) : (
+                        <div className="mt-4 flex justify-between items-center py-2 px-1">
+                            <span className="text-sm text-zinc-500">Transaction Fee</span>
+                            <span className="text-sm font-bold text-emerald-600 uppercase">Waived</span>
+                        </div>
+                    )}
                 </div>
 
                 <Button

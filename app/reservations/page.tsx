@@ -36,8 +36,10 @@ export default async function ReservationsPage({
         role = roleData?.role || 'client';
     }
 
+    const isManual = params.manual === 'true';
+
     // 2. RBAC Redirection
-    if (role === 'admin') {
+    if (role === 'admin' && !isManual) {
         redirect("/admin/reservations");
     }
 

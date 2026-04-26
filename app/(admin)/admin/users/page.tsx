@@ -11,6 +11,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { AddUserButton } from "@/components/admin/add-user-button";
 
 export default async function UsersPage() {
     const supabase = await createClient();
@@ -36,10 +37,7 @@ export default async function UsersPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Users</h1>
                     <p className="text-muted-foreground">Manage user access and roles.</p>
                 </div>
-                <Button>
-                    <UserCog className="mr-2 h-4 w-4" />
-                    Add User
-                </Button>
+                <AddUserButton />
             </div>
 
             {/* Filters */}

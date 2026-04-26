@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarCheck, Ticket, Users } from "lucide-react";
+import { CalendarCheck, Ticket, Users, Plus, ArrowRight, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-
+import Link from "next/link";
 interface AdminDashboardProps {
     branchName?: string;
 }
@@ -45,7 +45,7 @@ export default async function AdminDashboard({ branchName }: AdminDashboardProps
 
             {/* Stats Grid */}
             <div className="grid gap-6 md:grid-cols-3">
-                <Card className="border-none shadow-sm shadow-zinc-200 dark:shadow-none bg-white dark:bg-zinc-900/50">
+                <Card className="border-0 border-l-4 border-blue-500 shadow-md rounded-lg bg-white dark:bg-zinc-900">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Total Reservations</CardTitle>
                         <CalendarCheck className="h-4 w-4 text-blue-600" />
@@ -55,7 +55,7 @@ export default async function AdminDashboard({ branchName }: AdminDashboardProps
                         <p className="text-xs text-muted-foreground italic pt-1">Lifetime bookings (Global)</p>
                     </CardContent>
                 </Card>
-                <Card className="border-none shadow-sm shadow-zinc-200 dark:shadow-none bg-white dark:bg-zinc-900/50">
+                <Card className="border-0 border-l-4 border-green-500 shadow-md rounded-lg bg-white dark:bg-zinc-900">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Issued Tickets</CardTitle>
                         <Ticket className="h-4 w-4 text-green-600" />
@@ -65,7 +65,7 @@ export default async function AdminDashboard({ branchName }: AdminDashboardProps
                         <p className="text-xs text-muted-foreground italic pt-1">Valid tickets (Global)</p>
                     </CardContent>
                 </Card>
-                <Card className="border-none shadow-sm shadow-zinc-200 dark:shadow-none bg-white dark:bg-zinc-900/50">
+                <Card className="border-0 border-l-4 border-purple-500 shadow-md rounded-lg bg-white dark:bg-zinc-900">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Total Users</CardTitle>
                         <Users className="h-4 w-4 text-purple-600" />
@@ -78,11 +78,65 @@ export default async function AdminDashboard({ branchName }: AdminDashboardProps
 
             </div>
 
+            {/* Quick Actions */}
+            <div className="grid gap-6 md:grid-cols-3 mt-6">
+                <Link href="/admin/reservations" className="block">
+                    <Card className="group h-full cursor-pointer border-2 border-transparent transition-all hover:border-red-600 hover:shadow-xl bg-white dark:bg-zinc-900">
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div className="rounded-2xl bg-red-50 p-4 transition-colors group-hover:bg-red-600 group-hover:text-white dark:bg-red-900/20">
+                                    <Plus className="h-7 w-7 text-red-600 group-hover:text-white transition-colors" />
+                                </div>
+                                <ArrowRight className="h-6 w-6 text-zinc-300 transition-transform group-hover:translate-x-1 group-hover:text-red-600" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <CardTitle className="mb-2 text-xl">Manual Reservation</CardTitle>
+                            <CardDescription className="text-base text-zinc-500">Create a new booking manually.</CardDescription>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                <Link href="/admin/tickets" className="block">
+                    <Card className="group h-full cursor-pointer border-2 border-transparent transition-all hover:border-red-600 hover:shadow-xl bg-white dark:bg-zinc-900">
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div className="rounded-2xl bg-red-50 p-4 transition-colors group-hover:bg-red-600 group-hover:text-white dark:bg-red-900/20">
+                                    <Ticket className="h-7 w-7 text-red-600 group-hover:text-white transition-colors" />
+                                </div>
+                                <ArrowRight className="h-6 w-6 text-zinc-300 transition-transform group-hover:translate-x-1 group-hover:text-red-600" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <CardTitle className="mb-2 text-xl">New Ticket</CardTitle>
+                            <CardDescription className="text-base text-zinc-500">Issue a new ticket for a passenger.</CardDescription>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                <Link href="/admin/users" className="block">
+                    <Card className="group h-full cursor-pointer border-2 border-transparent transition-all hover:border-red-600 hover:shadow-xl bg-white dark:bg-zinc-900">
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div className="rounded-2xl bg-red-50 p-4 transition-colors group-hover:bg-red-600 group-hover:text-white dark:bg-red-900/20">
+                                    <UserPlus className="h-7 w-7 text-red-600 group-hover:text-white transition-colors" />
+                                </div>
+                                <ArrowRight className="h-6 w-6 text-zinc-300 transition-transform group-hover:translate-x-1 group-hover:text-red-600" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <CardTitle className="mb-2 text-xl">Add User</CardTitle>
+                            <CardDescription className="text-base text-zinc-500">Register a new system user.</CardDescription>
+                        </CardContent>
+                    </Card>
+                </Link>
+            </div>
+
             {/* Recent Activity */}
-            <Card className="border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <CardHeader className="bg-zinc-50/50 dark:bg-zinc-900/50 border-b">
-                    <CardTitle>Global Activity</CardTitle>
-                    <CardDescription>Latest reservations and ticket activity across all terminals.</CardDescription>
+            <Card className="border-0 shadow-md rounded-lg bg-white dark:bg-zinc-900 mt-6 overflow-hidden">
+                <CardHeader className="bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800 py-4">
+                    <CardTitle className="text-base font-bold text-red-700 dark:text-red-500 m-0">Global Activity</CardTitle>
+                    <CardDescription className="m-0 mt-1">Latest reservations and ticket activity across all terminals.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
