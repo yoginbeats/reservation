@@ -29,11 +29,12 @@ export function GlobalHeader() {
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
+        router.push("/login");
         router.refresh();
     };
 
-    // Hide header on admin routes to avoid redundancy with admin sidebar
-    if (pathname?.startsWith("/admin")) {
+    // Hide header on admin and auth routes to avoid redundancy and provide a clean UI
+    if (pathname?.startsWith("/admin") || pathname === "/login" || pathname === "/register") {
         return null;
     }
 

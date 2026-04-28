@@ -67,7 +67,7 @@ export default function AboutPage() {
                     <div className="relative">
                         <div className="absolute inset-0 bg-red-600 translate-x-4 translate-y-4 rounded-[2rem] -z-10" />
                         <img 
-                            src="/poster1.jpg" 
+                            src="/superlines-bus.jpg" 
                             alt="Superlines Bus" 
                             className="w-full h-auto aspect-square object-cover rounded-[2rem] shadow-2xl"
                         />

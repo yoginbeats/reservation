@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowLeft, MapPin, Bus, Calendar, DollarSign, Save, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner"; // Assuming sonner is used, if not I'll use alert
+import { toast } from "sonner";
+import { getBusesAction } from "@/app/actions/bus";
+import { addTripAction } from "@/app/actions/trip";
 
 export default function NewTripPage() {
     const router = useRouter();
@@ -27,8 +29,10 @@ export default function NewTripPage() {
 
     useEffect(() => {
         const fetchBuses = async () => {
-            const { data, error } = await supabase.from('buses').select('*');
-            if (data) setBuses(data);
+            const result = await getBusesAction();
+            if (result.success && result.data) {
+                setBuses(result.data);
+            }
         };
         fetchBuses();
     }, []);
@@ -38,20 +42,19 @@ export default function NewTripPage() {
         setIsLoading(true);
 
         try {
-            const { error } = await supabase.from('trips').insert([
-                {
-                    ...formData,
-                    price: parseFloat(formData.price)
-                }
-            ]);
+            const result = await addTripAction({
+                ...formData,
+                price: parseFloat(formData.price)
+            });
 
-            if (error) throw error;
+            if (!result.success) throw new Error(result.error);
 
+            toast.success("Trip scheduled successfully!");
             router.push("/admin/trips");
             router.refresh();
         } catch (error: any) {
             console.error("Error adding trip:", error);
-            alert("Error adding trip: " + error.message);
+            toast.error("Error adding trip: " + error.message);
         } finally {
             setIsLoading(false);
         }

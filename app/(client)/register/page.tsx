@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { UserPlus, Mail, Lock, User, Eye, EyeOff, Check } from "lucide-react";
+import { UserPlus, Mail, Lock, User, Eye, EyeOff, Check, Phone, MessageSquare, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function RegisterPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +25,25 @@ export default function RegisterPage() {
         confirmPassword: "",
     });
     const [acceptTerms, setAcceptTerms] = useState(false);
+    const [authMethod, setAuthMethod] = useState<"email" | "phone">("email");
+    const [registerStep, setRegisterStep] = useState<"input" | "otp">("input");
+    const [phone, setPhone] = useState("");
+    const [otp, setOtp] = useState("");
+    const [countdown, setCountdown] = useState(0);
+    const [canResend, setCanResend] = useState(true);
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (countdown > 0) {
+            timer = setInterval(() => {
+                setCountdown((prev) => prev - 1);
+            }, 1000);
+        } else {
+            setCanResend(true);
+        }
+        return () => clearInterval(timer);
+    }, [countdown]);
+
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
     const supabase = createClient();
@@ -40,23 +60,23 @@ export default function RegisterPage() {
         return { strength: 3, label: "Strong", color: "bg-green-500" };
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleEmailRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setIsLoading(true);
 
         if (formData.password !== formData.confirmPassword) {
             setError("Passwords do not match!");
+            setIsLoading(false);
             return;
         }
         if (!acceptTerms) {
             setError("Please accept the terms and conditions.");
+            setIsLoading(false);
             return;
         }
 
         try {
-            console.log("Attempting registration for:", formData.email);
-            console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-
             const { error: signUpError, data } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
@@ -65,44 +85,127 @@ export default function RegisterPage() {
                     data: {
                         first_name: formData.firstName,
                         last_name: formData.lastName,
-                        role: 'client' // Default role
+                        role: 'client'
                     }
                 }
             });
 
             if (signUpError) {
-                console.error("Supabase Registration Error:", signUpError);
                 setError(signUpError.message);
                 return;
             }
 
-            console.log("Registration successful (or email confirmation sent)");
-            // If session exists immediately (email confirm disabled or auto-confirm)
             if (data.session) {
-                console.log("Session created, redirecting to reservations");
                 router.refresh();
                 router.push("/reservations");
             } else {
-                console.log("Email confirmation required");
                 alert("Account created! Please check your email to confirm your account.");
                 router.push("/login");
             }
-
         } catch (err) {
-            setError("An unexpected error occurred during registration.");
-            console.error("Unexpected error during registration:", err);
-            if (err instanceof TypeError && err.message === 'Failed to fetch') {
-                console.warn("Network error detected. Check if Supabase URL is reachable.");
-            }
+            setError("An unexpected error occurred.");
+            console.error(err);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleSendPhoneOtp = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        setError(null);
+
+        if (!formData.firstName || !formData.lastName) {
+            setError("Please enter your name first.");
+            return;
+        }
+
+        // PH mobile number should be 10 digits (after +63)
+        if (phone.length < 10) {
+            setError("Please enter a valid 10-digit mobile number.");
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const { error } = await supabase.auth.signInWithOtp({
+                phone: `+63${phone}`,
+                options: {
+                    data: {
+                        first_name: formData.firstName,
+                        last_name: formData.lastName,
+                        role: 'client'
+                    }
+                }
+            });
+
+            if (error) {
+                if (error.message.includes("Unsupported phone provider")) {
+                    setError("SMS service not configured. Please set up an SMS provider (like Twilio) in your Supabase Dashboard to support Philippines SIM cards.");
+                } else {
+                    setError(error.message);
+                }
+                return;
+            }
+
+            setRegisterStep("otp");
+            setCountdown(60);
+            setCanResend(false);
+        } catch (err) {
+            setError("Failed to send code.");
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setIsLoading(true);
+
+        try {
+            const { error } = await supabase.auth.verifyOtp({
+                phone: `+63${phone}`,
+                token: otp,
+                type: 'sms',
+            });
+
+            if (error) {
+                setError(error.message);
+                return;
+            }
+
+            router.refresh();
+            router.push("/reservations");
+        } catch (err) {
+            setError("Failed to verify code.");
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        try {
+            setError(null);
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${location.origin}/auth/callback`,
+                },
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            setError(err.message || "Failed to initialize Google login.");
+            console.error(err);
         }
     };
 
     const { strength, label, color } = passwordStrength();
 
     return (
-        <div className="relative flex min-h-[calc(100vh-80px)] items-center justify-center px-6 py-12 overflow-hidden">
+        <div className="relative flex min-h-screen items-center justify-center px-6 py-12 overflow-hidden">
             {/* Background Image with Overlay */}
             <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
@@ -138,163 +241,304 @@ export default function RegisterPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-5">
+                        <Tabs defaultValue="email" onValueChange={(v) => setAuthMethod(v as "email" | "phone")}>
+                            <TabsList className="grid w-full grid-cols-2 mb-6 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl">
+                                <TabsTrigger value="email" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-red-600 data-[state=active]:shadow-sm">Email</TabsTrigger>
+                                <TabsTrigger value="phone" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-red-600 data-[state=active]:shadow-sm">SMS / Phone</TabsTrigger>
+                            </TabsList>
+
                             {error && (
-                                <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-100 italic">
+                                <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-100 italic mb-5">
                                     {error}
                                 </div>
                             )}
 
-                            {/* Name Fields */}
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="firstName" className="text-xs font-black uppercase tracking-wider text-zinc-500">First Name</Label>
-                                    <div className="relative">
-                                        <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                                        <Input
-                                            id="firstName"
-                                            placeholder="Pedro"
-                                            value={formData.firstName}
-                                            onChange={handleChange}
-                                            className="pl-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="lastName" className="text-xs font-black uppercase tracking-wider text-zinc-500">Last Name</Label>
-                                    <Input
-                                        id="lastName"
-                                        placeholder="Gil"
-                                        value={formData.lastName}
-                                        onChange={handleChange}
-                                        className="h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Email Field */}
-                            <div className="space-y-2">
-                                <Label htmlFor="email" className="text-xs font-black uppercase tracking-wider text-zinc-500">Email Address</Label>
-                                <div className="relative">
-                                    <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="name@gmail.com"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        className="pl-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Password Field */}
-                            <div className="space-y-2">
-                                <Label htmlFor="password" className="text-xs font-black uppercase tracking-wider text-zinc-500">Password</Label>
-                                <div className="relative">
-                                    <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                                    <Input
-                                        id="password"
-                                        type={showPassword ? "text" : "password"}
-                                        placeholder="Create a strong password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        className="pl-12 pr-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-600"
-                                    >
-                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                    </button>
-                                </div>
-                                {/* Password Strength Indicator */}
-                                {formData.password && (
-                                    <div className="space-y-1 px-1">
-                                        <div className="flex gap-1.5">
-                                            {[1, 2, 3].map((level) => (
-                                                <div
-                                                    key={level}
-                                                    className={`h-1.5 flex-1 rounded-full ${strength >= level ? color : "bg-zinc-200 dark:bg-zinc-700"
-                                                        }`}
+                            {/* Email Registration */}
+                            <TabsContent value="email">
+                                <form onSubmit={handleEmailRegister} className="space-y-5">
+                                    {/* Name Fields (Same for both) */}
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="firstName" className="text-xs font-black uppercase tracking-wider text-zinc-500">First Name</Label>
+                                            <div className="relative">
+                                                <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                                                <Input
+                                                    id="firstName"
+                                                    placeholder="Eugene"
+                                                    value={formData.firstName}
+                                                    onChange={handleChange}
+                                                    className="pl-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
+                                                    required
                                                 />
-                                            ))}
+                                            </div>
                                         </div>
-                                        <p className="text-[10px] font-bold uppercase tracking-tight text-zinc-400">Security Level: {label}</p>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="lastName" className="text-xs font-black uppercase tracking-wider text-zinc-500">Last Name</Label>
+                                            <Input
+                                                id="lastName"
+                                                placeholder="Rasco"
+                                                value={formData.lastName}
+                                                onChange={handleChange}
+                                                className="h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
+                                                required
+                                            />
+                                        </div>
                                     </div>
-                                )}
-                            </div>
 
-                            {/* Confirm Password Field */}
-                            <div className="space-y-2">
-                                <Label htmlFor="confirmPassword" className="text-xs font-black uppercase tracking-wider text-zinc-500">Confirm Password</Label>
-                                <div className="relative">
-                                    <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                                    <Input
-                                        id="confirmPassword"
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        placeholder="Confirm your password"
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                        className="pl-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-600"
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email" className="text-xs font-black uppercase tracking-wider text-zinc-500">Email Address</Label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                                            <Input
+                                                id="email"
+                                                type="email"
+                                                placeholder="name@gmail.com"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                                className="pl-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="password" className="text-xs font-black uppercase tracking-wider text-zinc-500">Password</Label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                                            <Input
+                                                id="password"
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="Create a strong password"
+                                                value={formData.password}
+                                                onChange={handleChange}
+                                                className="pl-12 pr-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-600"
+                                            >
+                                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
+                                        {formData.password && (
+                                            <div className="space-y-1 px-1">
+                                                <div className="flex gap-1.5">
+                                                    {[1, 2, 3].map((level) => (
+                                                        <div
+                                                            key={level}
+                                                            className={`h-1.5 flex-1 rounded-full ${strength >= level ? color : "bg-zinc-200 dark:bg-zinc-700"
+                                                                }`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <p className="text-[10px] font-bold uppercase tracking-tight text-zinc-400">Security Level: {label}</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="confirmPassword" className="text-xs font-black uppercase tracking-wider text-zinc-500">Confirm Password</Label>
+                                        <div className="relative">
+                                            <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                                            <Input
+                                                id="confirmPassword"
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                placeholder="Confirm your password"
+                                                value={formData.confirmPassword}
+                                                onChange={handleChange}
+                                                className="pl-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-600"
+                                            >
+                                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Terms Checkbox */}
+                                    <div className="flex items-start space-x-3 pt-2">
+                                        <Checkbox
+                                            id="terms"
+                                            checked={acceptTerms}
+                                            onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
+                                            className="rounded-md border-zinc-300 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600 mt-1"
+                                        />
+                                        <label htmlFor="terms" className="text-sm font-medium leading-relaxed text-zinc-600 dark:text-zinc-400">
+                                            I agree to the{" "}
+                                            <Link href="/terms" className="font-bold text-red-600 hover:underline">
+                                                Terms of Service
+                                            </Link>{" "}
+                                            and{" "}
+                                            <Link href="/privacy" className="font-bold text-red-600 hover:underline">
+                                                Privacy Policy
+                                            </Link>
+                                        </label>
+                                    </div>
+
+                                    <Button
+                                        type="submit"
+                                        className="w-full h-12 rounded-xl bg-red-600 text-white font-bold text-lg hover:bg-red-700 shadow-lg shadow-red-200 dark:shadow-none transition-all active:scale-95 mt-4"
+                                        disabled={isLoading || !acceptTerms}
                                     >
-                                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                    </button>
-                                    {formData.confirmPassword && formData.password === formData.confirmPassword && (
-                                        <Check className="absolute right-12 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-500" />
+                                        {isLoading ? (
+                                            <span className="flex items-center gap-2">
+                                                <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                                Creating account...
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center gap-2">
+                                                <UserPlus className="h-5 w-5" />
+                                                Create Account
+                                            </span>
+                                        )}
+                                    </Button>
+                                </form>
+                            </TabsContent>
+
+                            {/* Phone Registration */}
+                            <TabsContent value="phone">
+                                <form onSubmit={registerStep === 'input' ? handleSendPhoneOtp : handleVerifyPhoneOtp} className="space-y-5">
+                                    {registerStep === 'input' ? (
+                                        <>
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="firstName" className="text-xs font-black uppercase tracking-wider text-zinc-500">First Name</Label>
+                                                    <div className="relative">
+                                                        <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                                                        <Input
+                                                            id="firstName"
+                                                            placeholder="Eugene"
+                                                            value={formData.firstName}
+                                                            onChange={handleChange}
+                                                            className="pl-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="lastName" className="text-xs font-black uppercase tracking-wider text-zinc-500">Last Name</Label>
+                                                    <Input
+                                                        id="lastName"
+                                                        placeholder="Rasco"
+                                                        value={formData.lastName}
+                                                        onChange={handleChange}
+                                                        className="h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="phone" className="text-xs font-black uppercase tracking-wider text-zinc-500">Phone Number (Philippines)</Label>
+                                                <div className="flex gap-2">
+                                                    <div className="flex h-12 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-100 px-4 text-sm font-bold text-zinc-600 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400">
+                                                        +63
+                                                    </div>
+                                                    <div className="relative flex-1">
+                                                        <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                                                        <Input
+                                                            id="phone"
+                                                            type="tel"
+                                                            placeholder="912 345 6789"
+                                                            value={phone}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                                                setPhone(val);
+                                                            }}
+                                                            className="pl-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">
+                                                    Enter your 10-digit mobile number (e.g., 9123456789).
+                                                </p>
+                                            </div>
+
+                                            {/* Terms Checkbox */}
+                                            <div className="flex items-start space-x-3 pt-2">
+                                                <Checkbox
+                                                    id="terms-phone"
+                                                    checked={acceptTerms}
+                                                    onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
+                                                    className="rounded-md border-zinc-300 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600 mt-1"
+                                                />
+                                                <label htmlFor="terms-phone" className="text-sm font-medium leading-relaxed text-zinc-600 dark:text-zinc-400">
+                                                    I agree to the{" "}
+                                                    <Link href="/terms" className="font-bold text-red-600 hover:underline">
+                                                        Terms of Service
+                                                    </Link>
+                                                </label>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="otp" className="text-xs font-black uppercase tracking-wider text-zinc-500">Verification Code</Label>
+                                                <div className="relative">
+                                                    <MessageSquare className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                                                    <Input
+                                                        id="otp"
+                                                        type="text"
+                                                        placeholder="123456"
+                                                        value={otp}
+                                                        onChange={(e) => setOtp(e.target.value)}
+                                                        className="pl-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 text-center text-xl font-bold tracking-[1em] focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <Button
+                                                    variant="link"
+                                                    type="button"
+                                                    onClick={() => setRegisterStep("input")}
+                                                    className="px-0 h-auto text-xs font-bold text-zinc-500"
+                                                >
+                                                    Change details? Go back
+                                                </Button>
+
+                                                {canResend ? (
+                                                    <Button
+                                                        variant="link"
+                                                        type="button"
+                                                        onClick={() => handleSendPhoneOtp()}
+                                                        className="px-0 h-auto text-xs font-bold text-red-600"
+                                                    >
+                                                        Resend Code
+                                                    </Button>
+                                                ) : (
+                                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">
+                                                        Resend in {countdown}s
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
                                     )}
-                                </div>
-                            </div>
 
-                            {/* Terms Checkbox */}
-                            <div className="flex items-start space-x-3 pt-2">
-                                <Checkbox
-                                    id="terms"
-                                    checked={acceptTerms}
-                                    onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
-                                    className="rounded-md border-zinc-300 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600 mt-1"
-                                />
-                                <label htmlFor="terms" className="text-sm font-medium leading-relaxed text-zinc-600 dark:text-zinc-400">
-                                    I agree to the{" "}
-                                    <Link href="/terms" className="font-bold text-red-600 hover:underline">
-                                        Terms of Service
-                                    </Link>{" "}
-                                    and{" "}
-                                    <Link href="/privacy" className="font-bold text-red-600 hover:underline">
-                                        Privacy Policy
-                                    </Link>
-                                </label>
-                            </div>
-
-                            {/* Submit Button */}
-                            <Button
-                                type="submit"
-                                className="w-full h-12 rounded-xl bg-red-600 text-white font-bold text-lg hover:bg-red-700 shadow-lg shadow-red-200 dark:shadow-none transition-all active:scale-95 mt-4"
-                                disabled={isLoading || !acceptTerms}
-                            >
-                                {isLoading ? (
-                                    <span className="flex items-center gap-2">
-                                        <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                        Creating account...
-                                    </span>
-                                ) : (
-                                    <span className="flex items-center gap-2">
-                                        <UserPlus className="h-5 w-5" />
-                                        Create Account
-                                    </span>
-                                )}
-                            </Button>
+                                    <Button
+                                        type="submit"
+                                        className="w-full h-12 rounded-xl bg-red-600 text-white font-bold text-lg hover:bg-red-700 shadow-lg shadow-red-200 dark:shadow-none transition-all active:scale-95 mt-4"
+                                        disabled={isLoading || (registerStep === 'input' && !acceptTerms)}
+                                    >
+                                        {isLoading ? "Processing..." : (
+                                            registerStep === 'input' ? (
+                                                <span className="flex items-center gap-2">
+                                                    Send Verification Code <ArrowRight className="h-5 w-5" />
+                                                </span>
+                                            ) : "Verify & Create Account"
+                                        )}
+                                    </Button>
+                                </form>
+                            </TabsContent>
+                        </Tabs>
 
                             <div className="relative my-8 text-center">
                                 <Separator />
@@ -305,7 +549,12 @@ export default function RegisterPage() {
 
                             {/* Social Login Placeholder */}
                             <div className="grid gap-3">
-                                <Button variant="outline" type="button" className="w-full h-12 rounded-xl border-zinc-200 font-bold hover:bg-zinc-50 active:scale-95">
+                                <Button 
+                                    variant="outline" 
+                                    type="button" 
+                                    onClick={handleGoogleLogin}
+                                    className="w-full h-12 rounded-xl border-zinc-200 font-bold hover:bg-zinc-50 active:scale-95"
+                                >
                                     <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
                                         <path
                                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -327,7 +576,6 @@ export default function RegisterPage() {
                                     Continue with Google
                                 </Button>
                             </div>
-                        </form>
 
                         {/* Login Link */}
                         <div className="mt-10 text-center text-sm">

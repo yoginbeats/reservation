@@ -77,7 +77,9 @@ export default async function ReservationsPage() {
                                             <div className="space-y-1">
                                                 <p className="font-bold text-zinc-900 dark:text-zinc-50 uppercase tracking-tight">#{res.id.slice(0, 8)}</p>
                                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                    <span className="font-medium text-blue-600">{customer?.full_name || "Unknown"}</span>
+                                                    <span className="font-medium text-blue-600">
+                                                        {res.passenger_name || (customer?.full_name !== 'New User' ? customer?.full_name : null) || "Walk-in Guest"}
+                                                    </span>
                                                     <span>•</span>
                                                     <span>Seat {res.seat_number}</span>
                                                 </div>
@@ -103,6 +105,7 @@ export default async function ReservationsPage() {
                                         </div>
 
                                         <ReservationActions
+                                            reservation={res}
                                             reservationId={res.id}
                                             status={res.status}
                                             role={role}

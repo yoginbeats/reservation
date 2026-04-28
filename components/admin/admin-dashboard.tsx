@@ -159,7 +159,7 @@ export default async function AdminDashboard({ branchName }: AdminDashboardProps
                                                 )}
                                             </div>
                                             <p className="text-xs text-muted-foreground italic">
-                                                By <span className="font-medium text-blue-600">{customer?.full_name || 'Unknown'}</span> • {new Date(res.created_at).toLocaleDateString()}
+                                                By <span className="font-medium text-blue-600">{res.passenger_name || customer?.full_name || 'Walk-in Guest'}</span> • {new Date(res.created_at).toLocaleDateString()}
                                             </p>
                                         </div>
                                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${res.status === 'confirmed'

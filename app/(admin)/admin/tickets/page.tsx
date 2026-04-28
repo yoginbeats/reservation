@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { TicketList } from "@/components/admin/ticket-list";
+import { NewTicketButton } from "@/components/admin/new-ticket-button";
 
 export default async function TicketsPage() {
     const supabase = await createClient();
@@ -33,6 +34,7 @@ export default async function TicketsPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Tickets</h1>
                     <p className="text-muted-foreground">Issue and validate event tickets seamlessly.</p>
                 </div>
+                <NewTicketButton />
             </div>
 
             <TicketList initialTickets={tickets || []} />

@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Bus, Pencil, Check, X, Plus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertTriangle } from "lucide-react";
+import { getBusesAction, addBusAction, updateBusAction, deleteBusAction, deleteAllBusesAction } from "@/app/actions/bus";
 
 type BusRow = {
     id: string;
@@ -27,13 +30,16 @@ export default function BusesAdminPage() {
     const [isAdding, setIsAdding] = useState(false);
     const [newBus, setNewBus] = useState({ bus_number: "", bus_type: "Regular Aircon", capacity: 49 });
     const [isLoadingAdd, setIsLoadingAdd] = useState(false);
+    const [isDeletingAll, setIsDeletingAll] = useState(false);
+    const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
 
     const fetchBuses = async () => {
-        const { data, error } = await supabase
-            .from("buses")
-            .select("*")
-            .order("bus_number", { ascending: true });
-        if (data) setBuses(data);
+        const result = await getBusesAction();
+        if (result.success && result.data) {
+            setBuses(result.data);
+        } else {
+            toast.error("Failed to load buses: " + result.error);
+        }
     };
 
     useEffect(() => { fetchBuses(); }, []);
@@ -50,13 +56,10 @@ export default function BusesAdminPage() {
 
     const saveEdit = async (id: string) => {
         setIsSaving(true);
-        const { error } = await supabase
-            .from("buses")
-            .update(editValues)
-            .eq("id", id);
+        const result = await updateBusAction(id, editValues);
 
-        if (error) {
-            toast.error("Failed to update bus: " + error.message);
+        if (!result.success) {
+            toast.error("Failed to update bus: " + result.error);
         } else {
             toast.success("Bus updated successfully!");
             setEditingId(null);
@@ -69,9 +72,9 @@ export default function BusesAdminPage() {
     const addBus = async () => {
         if (!newBus.bus_number.trim()) return;
         setIsLoadingAdd(true);
-        const { error } = await supabase.from("buses").insert([newBus]);
-        if (error) {
-            toast.error("Failed to add bus: " + error.message);
+        const result = await addBusAction(newBus);
+        if (!result.success) {
+            toast.error("Failed to add bus: " + result.error);
         } else {
             toast.success(`Bus ${newBus.bus_number} added!`);
             setNewBus({ bus_number: "", bus_type: "Regular Aircon", capacity: 49 });
@@ -84,12 +87,34 @@ export default function BusesAdminPage() {
     const deleteBus = async (id: string, busNumber: string) => {
         if (!confirm(`Are you sure you want to delete bus ${busNumber}? This may affect existing trips.`)) return;
 
-        const { error } = await supabase.from("buses").delete().eq("id", id);
-        if (error) {
-            toast.error("Failed to delete bus: " + error.message);
+        const result = await deleteBusAction(id);
+        if (!result.success) {
+            toast.error("Failed to delete bus: " + result.error);
         } else {
             toast.success(`Bus ${busNumber} deleted.`);
             await fetchBuses();
+        }
+    };
+
+    const deleteAllBuses = async () => {
+        if (buses.length === 0) return;
+        setIsDeletingAll(true);
+
+        try {
+            const result = await deleteAllBusesAction();
+
+            if (!result.success) {
+                toast.error("Failed to delete all buses: " + result.error);
+            } else {
+                toast.success("All buses, trips, and reservations have been cleared.");
+                await fetchBuses();
+            }
+        } catch (err) {
+            toast.error("An unexpected error occurred.");
+            console.error(err);
+        } finally {
+            setIsDeletingAll(false);
+            setShowDeleteAllDialog(false);
         }
     };
 
@@ -100,13 +125,24 @@ export default function BusesAdminPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Manage Buses</h1>
                     <p className="text-muted-foreground italic">Edit bus numbers, types, and capacity.</p>
                 </div>
-                <Button
-                    className="bg-blue-600 hover:bg-blue-700"
-                    onClick={() => setIsAdding(true)}
-                >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Bus
-                </Button>
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="destructive"
+                        className="bg-red-600 hover:bg-red-700 transition-all disabled:opacity-50"
+                        onClick={() => setShowDeleteAllDialog(true)}
+                        disabled={buses.length === 0}
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete All
+                    </Button>
+                    <Button
+                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={() => setIsAdding(true)}
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Bus
+                    </Button>
+                </div>
             </div>
 
             {/* Add New Bus Form */}
@@ -270,6 +306,30 @@ export default function BusesAdminPage() {
                     );
                 })}
             </div>
+
+            {/* Delete All Confirmation Dialog */}
+            <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-red-600">
+                            <AlertTriangle className="h-5 w-5" />
+                            WARNING: Delete All Buses
+                        </DialogTitle>
+                        <DialogDescription>
+                            Are you absolutely sure you want to delete ALL buses? This will also permanently remove all associated trips and reservations. This action CANNOT be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-4">
+                        <Button variant="outline" onClick={() => setShowDeleteAllDialog(false)} disabled={isDeletingAll}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" className="bg-red-600 hover:bg-red-700 text-white" onClick={deleteAllBuses} disabled={isDeletingAll}>
+                            {isDeletingAll ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                            Yes, Delete Everything
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

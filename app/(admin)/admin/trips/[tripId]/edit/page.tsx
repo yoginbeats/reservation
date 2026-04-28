@@ -11,6 +11,8 @@ import { ArrowLeft, MapPin, Bus, Calendar, DollarSign, Save, Loader2 } from "luc
 import Link from "next/link";
 import { toast } from "sonner";
 import { use } from "react";
+import { getBusesAction } from "@/app/actions/bus";
+import { getTripAction, updateTripAction } from "@/app/actions/trip";
 
 export default function EditTripPage({ params }: { params: Promise<{ tripId: string }> }) {
     const router = useRouter();
@@ -34,17 +36,16 @@ export default function EditTripPage({ params }: { params: Promise<{ tripId: str
             setIsFetching(true);
             
             // Fetch buses
-            const { data: busesData } = await supabase.from('buses').select('*');
-            if (busesData) setBuses(busesData);
+            const busesResult = await getBusesAction();
+            if (busesResult.success && busesResult.data) {
+                setBuses(busesResult.data);
+            }
 
             // Fetch trip details
-            const { data: tripData, error } = await supabase
-                .from('trips')
-                .select('*')
-                .eq('id', tripId)
-                .single();
+            const tripResult = await getTripAction(tripId);
 
-            if (tripData) {
+            if (tripResult.success && tripResult.data) {
+                const tripData = tripResult.data;
                 // Format datetime-local string (YYYY-MM-DDThh:mm)
                 const date = new Date(tripData.departure_time);
                 const offset = date.getTimezoneOffset() * 60000; // Local timezone offset
@@ -57,7 +58,7 @@ export default function EditTripPage({ params }: { params: Promise<{ tripId: str
                     departure_time: localISOTime,
                     price: tripData.price.toString()
                 });
-            } else if (error) {
+            } else {
                 toast.error("Error fetching trip details");
                 router.push("/admin/trips");
             }
@@ -72,15 +73,15 @@ export default function EditTripPage({ params }: { params: Promise<{ tripId: str
         setIsLoading(true);
 
         try {
-            const { error } = await supabase.from('trips').update({
+            const result = await updateTripAction(tripId, {
                 origin: formData.origin,
                 destination: formData.destination,
                 bus_id: formData.bus_id,
                 departure_time: new Date(formData.departure_time).toISOString(),
                 price: parseFloat(formData.price)
-            }).eq('id', tripId);
+            });
 
-            if (error) throw error;
+            if (!result.success) throw new Error(result.error);
 
             toast.success("Trip schedule updated successfully!");
             router.push("/admin/trips");

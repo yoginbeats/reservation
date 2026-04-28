@@ -80,14 +80,14 @@ export default async function TripSchedulePage() {
                                                         <p className="text-3xl font-black text-red-600">₱{trip.price}</p>
                                                     </div>
                                                     <Button asChild className="hidden sm:inline-flex h-12 rounded-full px-8 text-sm font-bold shadow-lg shadow-red-500/20 active:scale-95 bg-red-600 hover:bg-zinc-900 dark:hover:bg-white dark:hover:text-zinc-900 transition-all mt-4">
-                                                        <Link href={`/book/${trip.id}/seats`}>Reserve Seat</Link>
+                                                        <Link href={`/book/${trip.id}`}>Reserve Seat</Link>
                                                     </Button>
                                                 </div>
                                             </div>
 
                                             {/* Mobile Button Only */}
-                                            <Button asChild className="sm:hidden w-full h-12 mt-6 rounded-xl font-bold bg-zinc-900 text-white">
-                                                <Link href={`/book/${trip.id}/seats`}>Reserve Seat</Link>
+                                            <Button asChild className="sm:hidden w-full h-12 mt-6 rounded-full font-bold bg-red-600 text-white shadow-lg shadow-red-500/20 active:scale-95">
+                                                <Link href={`/book/${trip.id}`}>Reserve Seat</Link>
                                             </Button>
                                         </CardContent>
                                     </div>

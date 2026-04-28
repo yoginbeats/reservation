@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Ticket as TicketIcon } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -18,9 +18,9 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-export function ManualReservationButton({
-    title = "Manual Reservation",
-    className = "bg-blue-600 hover:bg-blue-700",
+export function NewTicketButton({
+    title = "New Ticket",
+    className = "bg-red-600 hover:bg-red-700",
     icon = <Plus className="mr-2 h-4 w-4" />
 }: {
     title?: string;
@@ -114,7 +114,7 @@ export function ManualReservationButton({
 
             if (error) throw error;
 
-            toast.success("Manual reservation created successfully!");
+            toast.success("Ticket issued successfully!");
             setIsOpen(false);
             setFormData({
                 tripId: "",
@@ -124,7 +124,7 @@ export function ManualReservationButton({
             });
             router.refresh();
         } catch (error: any) {
-            console.error("Error creating reservation:", error);
+            console.error("Error issuing ticket:", error);
             toast.error("Error: " + error.message);
         } finally {
             setIsLoading(false);
@@ -142,15 +142,18 @@ export function ManualReservationButton({
             <DialogContent className="sm:max-w-[500px]">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
-                        <DialogTitle>Manual Booking</DialogTitle>
+                        <DialogTitle className="flex items-center gap-2">
+                            <TicketIcon className="h-5 w-5 text-red-600" />
+                            Issue New Ticket
+                        </DialogTitle>
                         <DialogDescription>
-                            Create a new reservation directly from the admin dashboard (e.g. for walk-in passengers).
+                            Directly issue a confirmed ticket for a passenger (e.g. counter sales).
                         </DialogDescription>
                     </DialogHeader>
                     
                     <div className="grid gap-4 py-4">
                         <div className="space-y-2">
-                            <Label htmlFor="tripId">Select Trip</Label>
+                            <Label htmlFor="tripId" className="text-xs font-bold uppercase tracking-tight text-zinc-500">1. Select Trip Route</Label>
                             {isFetchingTrips ? (
                                 <div className="h-10 border rounded-md px-3 py-2 flex items-center text-sm text-muted-foreground">
                                     <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading upcoming trips...
@@ -161,7 +164,7 @@ export function ManualReservationButton({
                                     value={formData.tripId}
                                     onChange={(e) => setFormData({ ...formData, tripId: e.target.value })}
                                     required
-                                    className="w-full h-10 rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 appearance-none"
+                                    className="w-full h-10 rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-600 dark:border-zinc-800 dark:bg-zinc-950 appearance-none"
                                 >
                                     <option value="" disabled>Select a scheduled trip</option>
                                     {trips.map((trip) => {
@@ -181,17 +184,18 @@ export function ManualReservationButton({
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="passengerName">Passenger Name</Label>
+                                <Label htmlFor="passengerName" className="text-xs font-bold uppercase tracking-tight text-zinc-500">2. Passenger Name</Label>
                                 <Input
                                     id="passengerName"
                                     placeholder="Juan Dela Cruz"
                                     value={formData.passengerName}
                                     onChange={(e) => setFormData({ ...formData, passengerName: e.target.value })}
                                     required
+                                    className="focus-visible:ring-red-600"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="seatNumber">Seat Number</Label>
+                                <Label htmlFor="seatNumber" className="text-xs font-bold uppercase tracking-tight text-zinc-500">3. Seat Assignment</Label>
                                 <Input
                                     id="seatNumber"
                                     type="number"
@@ -201,19 +205,20 @@ export function ManualReservationButton({
                                     value={formData.seatNumber}
                                     onChange={(e) => setFormData({ ...formData, seatNumber: e.target.value })}
                                     required
+                                    className="focus-visible:ring-red-600"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="type">Passenger Type (Discount)</Label>
+                            <Label htmlFor="type" className="text-xs font-bold uppercase tracking-tight text-zinc-500">4. Ticket Type</Label>
                             <select
                                 id="type"
                                 value={formData.type}
                                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                className="w-full h-10 rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 appearance-none"
+                                className="w-full h-10 rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-600 dark:border-zinc-800 dark:bg-zinc-950 appearance-none"
                             >
-                                <option value="regular">Regular (No Discount)</option>
+                                <option value="regular">Regular Fare (No Discount)</option>
                                 <option value="student">Student (20% Off)</option>
                                 <option value="senior">Senior Citizen (20% Off)</option>
                                 <option value="pwd">PWD (20% Off)</option>
@@ -221,14 +226,14 @@ export function ManualReservationButton({
                         </div>
 
                         {selectedTrip && (
-                            <div className="mt-2 rounded-lg bg-zinc-50 p-4 border border-zinc-100 dark:bg-zinc-900/50 dark:border-zinc-800">
+                            <div className="mt-2 rounded-xl bg-red-50 p-4 border border-red-100 dark:bg-red-900/10 dark:border-red-900/20">
                                 <div className="flex justify-between items-center text-sm">
-                                    <span className="text-zinc-500 font-medium">Base Fare</span>
-                                    <span>₱{selectedTrip.price.toLocaleString()}</span>
+                                    <span className="text-red-800/60 dark:text-red-200/60 font-bold uppercase tracking-tight">Base Fare</span>
+                                    <span className="text-red-900 dark:text-red-100 font-bold">₱{selectedTrip.price.toLocaleString()}</span>
                                 </div>
-                                <div className="flex justify-between items-center mt-2">
-                                    <span className="text-zinc-900 dark:text-zinc-100 font-bold">Total to Collect</span>
-                                    <span className="text-xl font-black text-red-600">₱{calculatedPrice.toLocaleString()}</span>
+                                <div className="flex justify-between items-center mt-2 pt-2 border-t border-red-200 dark:border-red-800/30">
+                                    <span className="text-red-900 dark:text-red-100 font-black uppercase tracking-tight">Total Payment Due</span>
+                                    <span className="text-2xl font-black text-red-600">₱{calculatedPrice.toLocaleString()}</span>
                                 </div>
                             </div>
                         )}
@@ -238,9 +243,9 @@ export function ManualReservationButton({
                         <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={isLoading || !formData.tripId} className="bg-blue-600 hover:bg-blue-700">
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Confirm Reservation
+                        <Button type="submit" disabled={isLoading || !formData.tripId} className="bg-red-600 hover:bg-red-700 text-white font-bold tracking-tight">
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TicketIcon className="mr-2 h-4 w-4" />}
+                            Issue Ticket
                         </Button>
                     </DialogFooter>
                 </form>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,20 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [phone, setPhone] = useState("");
     const [otp, setOtp] = useState("");
+    const [countdown, setCountdown] = useState(0);
+    const [canResend, setCanResend] = useState(true);
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (countdown > 0) {
+            timer = setInterval(() => {
+                setCountdown((prev) => prev - 1);
+            }, 1000);
+        } else {
+            setCanResend(true);
+        }
+        return () => clearInterval(timer);
+    }, [countdown]);
 
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
@@ -44,7 +58,6 @@ export default function LoginPage() {
             });
 
             if (error) {
-                console.error("Supabase Auth Error:", error);
                 setError(error.message);
                 return;
             }
@@ -63,22 +76,36 @@ export default function LoginPage() {
         }
     };
 
-    const handleSendOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSendOtp = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         setError(null);
+
+        // PH mobile number should be 10 digits (after +63)
+        if (phone.length < 10) {
+            setError("Please enter a valid 10-digit mobile number.");
+            return;
+        }
+
         setIsLoading(true);
 
         try {
+            console.log("Sending OTP to:", `+63${phone}`);
             const { error } = await supabase.auth.signInWithOtp({
-                phone: phone,
+                phone: `+63${phone}`,
             });
 
             if (error) {
-                setError(error.message);
+                if (error.message.includes("Unsupported phone provider")) {
+                    setError("SMS service not configured. Please set up an SMS provider (like Twilio) in your Supabase Dashboard to support Philippines SIM cards.");
+                } else {
+                    setError(error.message);
+                }
                 return;
             }
 
             setLoginStep("otp-input");
+            setCountdown(60);
+            setCanResend(false);
         } catch (err) {
             setError("Failed to send OTP.");
             console.error(err);
@@ -94,7 +121,7 @@ export default function LoginPage() {
 
         try {
             const { error } = await supabase.auth.verifyOtp({
-                phone: phone,
+                phone: `+63${phone}`,
                 token: otp,
                 type: 'sms',
             });
@@ -114,8 +141,24 @@ export default function LoginPage() {
         }
     };
 
+    const handleGoogleLogin = async () => {
+        try {
+            setError(null);
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${location.origin}/auth/callback`,
+                },
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            setError(err.message || "Failed to initialize Google login.");
+            console.error(err);
+        }
+    };
+
     return (
-        <div className="relative flex min-h-[calc(100vh-80px)] items-center justify-center px-6 py-12 overflow-hidden">
+        <div className="relative flex min-h-screen items-center justify-center px-6 py-12 overflow-hidden">
             {/* Background Image with Overlay */}
             <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
@@ -236,21 +279,29 @@ export default function LoginPage() {
 
                                     {loginStep === 'phone-input' ? (
                                         <div className="space-y-2">
-                                            <Label htmlFor="phone" className="text-xs font-black uppercase tracking-wider text-zinc-500">Phone Number</Label>
-                                            <div className="relative">
-                                                <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                                                <Input
-                                                    id="phone"
-                                                    type="tel"
-                                                    placeholder="+1234567890"
-                                                    value={phone}
-                                                    onChange={(e) => setPhone(e.target.value)}
-                                                    className="pl-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
-                                                    required
-                                                />
+                                            <Label htmlFor="phone" className="text-xs font-black uppercase tracking-wider text-zinc-500">Phone Number (Philippines)</Label>
+                                            <div className="flex gap-2">
+                                                <div className="flex h-12 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-100 px-4 text-sm font-bold text-zinc-600 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400">
+                                                    +63
+                                                </div>
+                                                <div className="relative flex-1">
+                                                    <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                                                    <Input
+                                                        id="phone"
+                                                        type="tel"
+                                                        placeholder="912 345 6789"
+                                                        value={phone}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                                            setPhone(val);
+                                                        }}
+                                                        className="pl-12 h-12 rounded-xl border-zinc-200 bg-zinc-50 focus-visible:ring-red-500 dark:bg-zinc-800 dark:border-zinc-700"
+                                                        required
+                                                    />
+                                                </div>
                                             </div>
                                             <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">
-                                                Enter number with country code (e.g., +63 for PH).
+                                                Enter your 10-digit mobile number (e.g., 9123456789).
                                             </p>
                                         </div>
                                     ) : (
@@ -268,14 +319,31 @@ export default function LoginPage() {
                                                     required
                                                 />
                                             </div>
-                                            <Button
-                                                variant="link"
-                                                type="button"
-                                                onClick={() => setLoginStep("phone-input")}
-                                                className="px-0 text-xs font-bold text-red-600"
-                                            >
-                                                Wrong number? Go back
-                                            </Button>
+                                            <div className="flex items-center justify-between">
+                                                <Button
+                                                    variant="link"
+                                                    type="button"
+                                                    onClick={() => setLoginStep("phone-input")}
+                                                    className="px-0 h-auto text-xs font-bold text-zinc-500 hover:text-red-600"
+                                                >
+                                                    Wrong number? Go back
+                                                </Button>
+
+                                                {canResend ? (
+                                                    <Button
+                                                        variant="link"
+                                                        type="button"
+                                                        onClick={() => handleSendOtp()}
+                                                        className="px-0 h-auto text-xs font-bold text-red-600"
+                                                    >
+                                                        Resend Code
+                                                    </Button>
+                                                ) : (
+                                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">
+                                                        Resend in {countdown}s
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
 
@@ -300,7 +368,12 @@ export default function LoginPage() {
                         </div>
 
                         <div className="grid gap-3">
-                            <Button variant="outline" type="button" className="w-full h-12 rounded-xl border-zinc-200 font-bold hover:bg-zinc-50 active:scale-95">
+                            <Button 
+                                variant="outline" 
+                                type="button" 
+                                onClick={handleGoogleLogin}
+                                className="w-full h-12 rounded-xl border-zinc-200 font-bold hover:bg-zinc-50 active:scale-95"
+                            >
                                 <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
                                     <path
                                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

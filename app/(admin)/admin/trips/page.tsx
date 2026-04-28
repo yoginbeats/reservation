@@ -8,6 +8,7 @@ import { Plus, MapPin, Clock, Calendar, Bus, ArrowRight, MoreVertical, Trash2, L
 import Link from "next/link";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { getTripsAction, deleteTripAction, deleteAllTripsAction } from "@/app/actions/trip";
 
 export default function TripsAdminPage() {
     const supabase = createClient();
@@ -20,15 +21,13 @@ export default function TripsAdminPage() {
 
     const fetchTrips = async () => {
         setIsLoading(true);
-        const { data, error } = await supabase
-            .from('trips')
-            .select(`
-                *,
-                buses (*)
-            `)
-            .order('departure_time', { ascending: true });
+        const result = await getTripsAction();
 
-        if (data) setTrips(data);
+        if (result.success && result.data) {
+            setTrips(result.data);
+        } else {
+            toast.error("Error loading trips: " + result.error);
+        }
         setIsLoading(false);
     };
 
@@ -40,13 +39,13 @@ export default function TripsAdminPage() {
         if (!tripToDelete) return;
         setIsDeleting(true);
 
-        const { error } = await supabase.from('trips').delete().eq('id', tripToDelete);
+        const result = await deleteTripAction(tripToDelete);
         
         setIsDeleting(false);
         setTripToDelete(null);
 
-        if (error) {
-            toast.error("Error cancelling trip: " + error.message);
+        if (!result.success) {
+            toast.error("Error cancelling trip: " + result.error);
         } else {
             toast.success("Trip cancelled successfully.");
             fetchTrips();
@@ -57,14 +56,13 @@ export default function TripsAdminPage() {
         if (trips.length === 0) return;
         setIsDeletingAll(true);
 
-        const tripIds = trips.map((t: any) => t.id);
-        const { error } = await supabase.from('trips').delete().in('id', tripIds);
+        const result = await deleteAllTripsAction();
         
         setIsDeletingAll(false);
         setShowDeleteAllDialog(false);
 
-        if (error) {
-            toast.error("Error deleting all trips: " + error.message);
+        if (!result.success) {
+            toast.error("Error deleting all trips: " + result.error);
         } else {
             toast.success("All trips have been deleted successfully.");
             fetchTrips();
@@ -192,7 +190,9 @@ export default function TripsAdminPage() {
                                 <h3 className="text-xl font-bold">No trips scheduled</h3>
                                 <p className="text-muted-foreground">Start by creating a new trip schedule for Superlines.</p>
                             </div>
-                            <Button className="bg-blue-600">Add First Trip</Button>
+                            <Link href="/admin/trips/new">
+                                <Button className="bg-blue-600">Add First Trip</Button>
+                            </Link>
                         </CardContent>
                     </Card>
                 )}
