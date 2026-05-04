@@ -28,7 +28,7 @@ export function CheckoutForm({ tripId, userId }: { tripId: string, userId: strin
         const stored = sessionStorage.getItem('pendingBooking');
         if (stored) {
             try {
-                // eslint-disable-next-line react-hooks/set-state-in-effect
+                 
                 setBookingData(JSON.parse(stored));
             } catch {
                 console.error("Failed to parse booking data");

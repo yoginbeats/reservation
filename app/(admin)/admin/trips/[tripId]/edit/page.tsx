@@ -130,28 +130,36 @@ export default function EditTripPage({ params }: { params: Promise<{ tripId: str
                                     <MapPin className="h-4 w-4 text-red-600" />
                                     Origin
                                 </Label>
-                                <Input
+                                <select
                                     id="origin"
-                                    placeholder="e.g. PITX"
                                     value={formData.origin}
                                     onChange={(e) => setFormData({ ...formData, origin: e.target.value })}
                                     required
-                                    className="rounded-xl"
-                                />
+                                    className="w-full h-10 rounded-xl border border-zinc-200 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 appearance-none"
+                                >
+                                    <option value="" disabled>Select origin</option>
+                                    <option value="Cubao">Cubao</option>
+                                    <option value="PITX">PITX</option>
+                                    <option value="Daet">Daet</option>
+                                </select>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="destination" className="flex items-center gap-2">
                                     <MapPin className="h-4 w-4 text-red-600" />
                                     Destination
                                 </Label>
-                                <Input
+                                <select
                                     id="destination"
-                                    placeholder="e.g. Daet"
                                     value={formData.destination}
                                     onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
                                     required
-                                    className="rounded-xl"
-                                />
+                                    className="w-full h-10 rounded-xl border border-zinc-200 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 appearance-none"
+                                >
+                                    <option value="" disabled>Select destination</option>
+                                    <option value="Cubao">Cubao</option>
+                                    <option value="PITX">PITX</option>
+                                    <option value="Daet">Daet</option>
+                                </select>
                             </div>
                         </div>
 

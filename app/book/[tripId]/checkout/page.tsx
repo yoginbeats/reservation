@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { notFound, redirect } from "next/navigation";
 import { CheckoutForm } from "@/components/checkout-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,7 @@ export default async function CheckoutPage({
     if (!user) redirect("/login");
 
     // Fetch Trip Details
-    const { data: trip, error } = await supabase
+    const { data: trip, error } = await supabaseAdmin
         .from('trips')
         .select(`
             *,

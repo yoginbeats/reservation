@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { notFound, redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ export default async function BookTripPage({
     if (!user) redirect("/login");
 
     // Fetch Trip and Bus Details
-    const { data: trip, error: tripError } = await supabase
+    const { data: trip, error: tripError } = await supabaseAdmin
         .from('trips')
         .select(`
             *,
@@ -101,20 +102,7 @@ export default async function BookTripPage({
                         </CardContent>
                     </Card>
 
-                    <div className="flex items-center justify-center gap-6 text-sm">
-                        <div className="flex items-center gap-2">
-                            <div className="h-4 w-4 rounded border-2 border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900" />
-                            <span>Available</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="h-4 w-4 rounded border-2 border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800/50" />
-                            <span>Reserved</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="h-4 w-4 rounded border-2 border-blue-600 bg-blue-600" />
-                            <span>Selected</span>
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* Trip Summary */}

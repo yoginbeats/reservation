@@ -3,7 +3,10 @@
 import { QRCodeSVG } from "qrcode.react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, Clock, User, Armchair, Bus, Printer, Download, Share2 } from "lucide-react";
+import { MapPin, Calendar, Clock, User, Armchair, Bus, Printer, Download, Share2, Loader2 } from "lucide-react";
+import { useRef, useState } from "react";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
 
 interface BoardingPassProps {
     reservation: {
@@ -21,6 +24,9 @@ interface BoardingPassProps {
 }
 
 export function BoardingPass({ reservation }: BoardingPassProps) {
+    const ticketRef = useRef<HTMLDivElement>(null);
+    const [isSharing, setIsSharing] = useState(false);
+
     const trip = reservation.trips;
     if (!trip) return null;
 
@@ -32,6 +38,48 @@ export function BoardingPass({ reservation }: BoardingPassProps) {
         trip: `${trip.origin}-${trip.destination}`
     });
 
+    const handleShare = async () => {
+        if (!ticketRef.current) return;
+        
+        try {
+            setIsSharing(true);
+            // Small delay to ensure the UI is fully painted before capturing
+            await new Promise(resolve => setTimeout(resolve, 100));
+            const canvas = await html2canvas(ticketRef.current, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: null, // Transparent background so border-radius works
+                logging: false,
+            });
+            
+            const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+            if (!blob) throw new Error("Could not generate image");
+
+            const file = new File([blob], `ticket-${reservation.id.slice(0, 8)}.png`, { type: 'image/png' });
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'My Boarding Pass',
+                    text: `Here is my boarding pass for my trip from ${trip.origin} to ${trip.destination}!`,
+                    files: [file]
+                });
+                toast.success("Ticket shared successfully!");
+            } else {
+                const link = document.createElement('a');
+                link.download = `ticket-${reservation.id.slice(0, 8)}.png`;
+                link.href = URL.createObjectURL(blob);
+                link.click();
+                URL.revokeObjectURL(link.href);
+                toast.success("Ticket downloaded as image!");
+            }
+        } catch (error) {
+            console.error("Error sharing ticket:", error);
+            toast.error("Failed to share ticket.");
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
     return (
         <div className="max-w-2xl mx-auto space-y-8 print:p-0">
             {/* Header / Actions (Hidden on Print) */}
@@ -42,15 +90,16 @@ export function BoardingPass({ reservation }: BoardingPassProps) {
                         <Printer className="h-4 w-4" />
                         Print
                     </Button>
-                    <Button variant="outline" size="sm" className="rounded-full gap-2">
-                        <Share2 className="h-4 w-4" />
-                        Share
+                    <Button variant="outline" size="sm" onClick={handleShare} disabled={isSharing} className="rounded-full gap-2">
+                        {isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
+                        {isSharing ? "Generating..." : "Share Image"}
                     </Button>
                 </div>
             </div>
 
             {/* The Ticket UI */}
-            <Card className="overflow-hidden border-0 shadow-2xl rounded-[2.5rem] bg-white text-zinc-950 relative">
+            <div ref={ticketRef} className="rounded-[2.5rem] bg-transparent">
+                <Card className="overflow-hidden border-0 shadow-2xl rounded-[2.5rem] bg-white text-zinc-950 relative">
                 {/* Perforated Edge Effect */}
                 <div className="absolute top-[65%] left-0 -translate-x-1/2 w-6 h-6 rounded-full bg-zinc-50 dark:bg-zinc-950 z-20" />
                 <div className="absolute top-[65%] right-0 translate-x-1/2 w-6 h-6 rounded-full bg-zinc-50 dark:bg-zinc-950 z-20" />
@@ -132,6 +181,7 @@ export function BoardingPass({ reservation }: BoardingPassProps) {
                     </div>
                 </CardContent>
             </Card>
+            </div>
 
             {/* Footer Instructions (Hidden on Print) */}
             <div className="rounded-[2rem] bg-zinc-100 dark:bg-zinc-900/50 p-6 flex gap-4 items-start print:hidden">

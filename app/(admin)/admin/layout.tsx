@@ -21,10 +21,10 @@ export default async function AdminLayout({
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                            Welcome, <span className="font-bold">{role === 'admin' ? 'Super Administrator' : `${branch} Admin`}</span>
+                            Welcome, <span className="font-bold">{role === 'admin' ? 'Administrator' : `${branch} Admin`}</span>
                         </div>
                         <div className="h-9 w-9 rounded-full bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 flex items-center justify-center text-red-700 dark:text-red-400 font-bold uppercase shadow-sm">
-                            {role === 'admin' ? 'SA' : branch?.charAt(0) || 'U'}
+                            {role === 'admin' ? 'A' : branch?.charAt(0) || 'U'}
                         </div>
                     </div>
                 </header>

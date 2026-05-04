@@ -310,7 +310,7 @@ export function PassengerForm({ tripId, selectedSeats, price, trip }: PassengerF
 
                                                         {passenger.idPhotoUrl ? (
                                                             <div className="relative h-32 w-full rounded-xl overflow-hidden border-2 border-emerald-500 shadow-lg group/preview">
-                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                { }
                                                                 <img
                                                                     src={passenger.idPhotoUrl}
                                                                     alt="ID Preview"

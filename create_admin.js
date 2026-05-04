@@ -23,8 +23,8 @@ async function main() {
   if (error) {
     console.error('Error creating account:', error.message);
     if (error.message.includes('already registered')) {
-        console.log('\nAccount is already registered!');
-        console.log('If you forgot the password, you need to reset it in your Supabase Dashboard.');
+      console.log('\nAccount is already registered!');
+      console.log('If you forgot the password, you need to reset it in your Supabase Dashboard.');
     }
   } else {
     console.log('Success! Account created.');
@@ -35,25 +35,25 @@ async function main() {
 
   console.log('\nCreating branch admin accounts...');
   const branches = ['cubao', 'pitx', 'daet'];
-  
+
   for (const branch of branches) {
-      const email = `superlines${branch}@admin.com`;
-      const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: 'Password123!',
-        options: {
-          data: {
-            role: 'branch_admin',
-            first_name: branch.toUpperCase(),
-            last_name: 'Admin'
-          }
+    const email = `superlines${branch}@admin.com`;
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: 'Password123!',
+      options: {
+        data: {
+          role: 'branch_admin',
+          first_name: branch.toUpperCase(),
+          last_name: 'Admin'
         }
-      });
-      if (error && !error.message.includes('already registered')) {
-          console.error(`Error creating ${email}:`, error.message);
-      } else {
-          console.log(`- ${email} created (Password123!)`);
       }
+    });
+    if (error && !error.message.includes('already registered')) {
+      console.error(`Error creating ${email}:`, error.message);
+    } else {
+      console.log(`- ${email} created (Password123!)`);
+    }
   }
 }
 

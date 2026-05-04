@@ -219,7 +219,7 @@ export default function RegisterPage() {
                 {/* Logo/Branding */}
                 <div className="mb-10 text-center">
                     <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-white shadow-xl shadow-zinc-200 overflow-hidden border border-zinc-100 dark:shadow-none">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        { }
                         <img
                             src="/482809688_1079373070897719_6989867294877356725_n.jpg"
                             alt="Logo"

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,7 @@ export default async function ReservationsPage({
     }
 
     // 3. Fetch Available Trips (Client Context)
-    let query = supabase
+    let query = supabaseAdmin
         .from('trips')
         .select(`
             id, 

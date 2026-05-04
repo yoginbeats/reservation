@@ -29,11 +29,12 @@ export function NextTripSpotlight({ reservation }: NextTripSpotlightProps) {
     } | null>(null);
 
     const trip = reservation.trips;
-    if (!trip) return null;
-
-    const departureDate = new Date(trip.departure_time);
 
     useEffect(() => {
+        if (!trip?.departure_time) return;
+        
+        const departureDate = new Date(trip.departure_time);
+        
         const timer = setInterval(() => {
             const now = new Date();
             const difference = departureDate.getTime() - now.getTime();
@@ -53,7 +54,10 @@ export function NextTripSpotlight({ reservation }: NextTripSpotlightProps) {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [departureDate]);
+    }, [trip?.departure_time]);
+
+    if (!trip) return null;
+    const departureDate = new Date(trip.departure_time);
 
     return (
         <Card className="relative overflow-hidden border-0 bg-zinc-950 text-white shadow-2xl rounded-[2.5rem]">
