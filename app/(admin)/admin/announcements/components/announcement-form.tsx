@@ -11,6 +11,9 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { addAnnouncementAction, updateAnnouncementAction } from "@/app/actions/announcement";
 
+import { createClient } from "@/lib/supabase/client";
+import { ImagePlus, X } from "lucide-react";
+
 interface AnnouncementFormProps {
     initialData?: any;
     onSuccess: () => void;
@@ -18,11 +21,15 @@ interface AnnouncementFormProps {
 }
 
 export function AnnouncementForm({ initialData, onSuccess, onCancel }: AnnouncementFormProps) {
+    const supabase = createClient();
     const [isLoading, setIsLoading] = useState(false);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         title: "",
         content: "",
-        is_active: true
+        is_active: true,
+        image_url: ""
     });
 
     useEffect(() => {
@@ -30,8 +37,12 @@ export function AnnouncementForm({ initialData, onSuccess, onCancel }: Announcem
             setFormData({
                 title: initialData.title,
                 content: initialData.content,
-                is_active: initialData.is_active
+                is_active: initialData.is_active,
+                image_url: initialData.image_url || ""
             });
+            if (initialData.image_url) {
+                setImagePreview(initialData.image_url);
+            }
         }
     }, [initialData]);
 
@@ -42,6 +53,20 @@ export function AnnouncementForm({ initialData, onSuccess, onCancel }: Announcem
 
     const handleSwitchChange = (checked: boolean) => {
         setFormData(prev => ({ ...prev, is_active: checked }));
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const removeImage = () => {
+        setImageFile(null);
+        setImagePreview(null);
+        setFormData(prev => ({ ...prev, image_url: "" }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -55,8 +80,37 @@ export function AnnouncementForm({ initialData, onSuccess, onCancel }: Announcem
         setIsLoading(true);
 
         try {
+            let finalImageUrl = formData.image_url;
+
+            // Upload image if a new file was selected
+            if (imageFile) {
+                const fileExt = imageFile.name.split('.').pop();
+                const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('announcements')
+                    .upload(fileName, imageFile);
+
+                if (uploadError) {
+                    console.error("Upload error:", uploadError);
+                    toast.error("Failed to upload image. Please check bucket permissions.");
+                    setIsLoading(false);
+                    return;
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('announcements')
+                    .getPublicUrl(fileName);
+                
+                finalImageUrl = publicUrl;
+            }
+
+            const payload = {
+                ...formData,
+                image_url: finalImageUrl
+            };
+
             if (initialData) {
-                const result = await updateAnnouncementAction(initialData.id, formData);
+                const result = await updateAnnouncementAction(initialData.id, payload);
                 if (result.success) {
                     toast.success("Announcement updated successfully.");
                     onSuccess();
@@ -64,7 +118,7 @@ export function AnnouncementForm({ initialData, onSuccess, onCancel }: Announcem
                     toast.error("Failed to update announcement: " + result.error);
                 }
             } else {
-                const result = await addAnnouncementAction(formData);
+                const result = await addAnnouncementAction(payload);
                 if (result.success) {
                     toast.success("Announcement created successfully.");
                     onSuccess();
@@ -99,6 +153,36 @@ export function AnnouncementForm({ initialData, onSuccess, onCancel }: Announcem
                         required 
                     />
                 </div>
+                
+                {/* Image Upload Section */}
+                <div className="space-y-2">
+                    <Label>Cover Image (Optional)</Label>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-300 dark:border-zinc-700 border-dashed rounded-md relative overflow-hidden group">
+                        {imagePreview ? (
+                            <div className="relative w-full h-40">
+                                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-md" />
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button type="button" variant="destructive" size="sm" onClick={removeImage} className="gap-2">
+                                        <X className="w-4 h-4" /> Remove Image
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-1 text-center">
+                                <ImagePlus className="mx-auto h-12 w-12 text-zinc-400" />
+                                <div className="flex text-sm text-zinc-600 dark:text-zinc-400 justify-center">
+                                    <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-red-600 hover:text-red-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-red-500">
+                                        <span>Upload a file</span>
+                                        <input id="file-upload" name="file-upload" type="file" className="sr-only" accept="image/*" onChange={handleImageChange} />
+                                    </label>
+                                    <p className="pl-1">or drag and drop</p>
+                                </div>
+                                <p className="text-xs text-zinc-500">PNG, JPG, GIF up to 5MB</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 <div className="space-y-2">
                     <Label htmlFor="content">Content</Label>
                     <textarea 

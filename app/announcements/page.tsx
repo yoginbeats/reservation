@@ -72,6 +72,15 @@ export default async function AnnouncementsPage() {
                                             <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 mb-4 tracking-tight group-hover:text-red-600 transition-colors">
                                                 {announcement.title}
                                             </h2>
+                                            {announcement.image_url && (
+                                                <div className="mb-6 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm max-w-2xl">
+                                                    <img 
+                                                        src={announcement.image_url} 
+                                                        alt={announcement.title} 
+                                                        className="w-full max-h-96 object-cover hover:scale-105 transition-transform duration-500"
+                                                    />
+                                                </div>
+                                            )}
                                             <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
                                                 {announcement.content}
                                             </p>

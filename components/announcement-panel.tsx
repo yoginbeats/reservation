@@ -27,6 +27,9 @@ export async function AnnouncementPanel() {
                     <div className="flex gap-8 whitespace-nowrap animate-marquee">
                         {announcements.map((announcement: any) => (
                             <div key={announcement.id} className="flex items-center gap-2">
+                                {announcement.image_url && (
+                                    <img src={announcement.image_url} alt="Announcement" className="h-8 w-auto rounded object-cover shadow-sm mr-1" />
+                                )}
                                 <span className="font-bold text-red-100">{announcement.title}:</span>
                                 <span className="text-white/90">{announcement.content}</span>
                                 <span className="text-red-400 mx-4">•</span>
@@ -35,6 +38,9 @@ export async function AnnouncementPanel() {
                         {/* Duplicate for seamless looping if there are multiple */}
                         {announcements.map((announcement: any) => (
                             <div key={`dup-${announcement.id}`} className="flex items-center gap-2">
+                                {announcement.image_url && (
+                                    <img src={announcement.image_url} alt="Announcement" className="h-8 w-auto rounded object-cover shadow-sm mr-1" />
+                                )}
                                 <span className="font-bold text-red-100">{announcement.title}:</span>
                                 <span className="text-white/90">{announcement.content}</span>
                                 <span className="text-red-400 mx-4">•</span>
