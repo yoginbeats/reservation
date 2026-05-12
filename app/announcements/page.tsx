@@ -89,7 +89,7 @@ export default async function AnnouncementsPage() {
                                                     )}
                                                 </div>
                                             )}
-                                            <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                                            <p className="text-justify text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
                                                 {announcement.content}
                                             </p>
                                         </div>
