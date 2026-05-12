@@ -71,14 +71,12 @@ export default async function MyTicketsPage() {
                                                 </Badge>
                                             )}
                                             
-                                            {res.status !== 'cancelled' && (
-                                                <div className="flex items-center gap-2">
-                                                    <Button asChild className="rounded-full bg-zinc-800 px-4 py-1 h-auto text-[10px] font-bold text-white shadow-md transition-all hover:bg-zinc-700 hover:shadow-lg active:scale-95 uppercase tracking-widest">
-                                                        <Link href="/dashboard">Rebook</Link>
-                                                    </Button>
-                                                    <CancelTicketButton reservationId={res.id} />
-                                                </div>
-                                            )}
+                                            <div className="flex items-center gap-2">
+                                                <Button asChild className="rounded-full bg-zinc-800 px-4 py-1 h-auto text-[10px] font-bold text-white shadow-md transition-all hover:bg-zinc-700 hover:shadow-lg active:scale-95 uppercase tracking-widest">
+                                                    <Link href="/dashboard">Rebook</Link>
+                                                </Button>
+                                                <CancelTicketButton reservationId={res.id} />
+                                            </div>
                                         </div>
                                     </div>
                                 </CardHeader>
