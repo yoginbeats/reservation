@@ -190,7 +190,7 @@ export function AnnouncementForm({ initialData, onSuccess, onCancel }: Announcem
                     >
                         {imagePreview ? (
                             <div className="relative w-full h-40">
-                                {imagePreview.match(/\.(mp4|webm|ogg|mov)$/i) || imagePreview.startsWith('data:video/') ? (
+                                {(imageFile && imageFile.type.startsWith('video/')) || (!imageFile && imagePreview.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i)) ? (
                                     <video src={imagePreview} className="w-full h-full object-cover rounded-md" controls muted />
                                 ) : (
                                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-md" />
