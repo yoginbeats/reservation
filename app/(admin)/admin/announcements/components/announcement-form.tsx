@@ -10,6 +10,7 @@ import { DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/co
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { addAnnouncementAction, updateAnnouncementAction } from "@/app/actions/announcement";
+import { cn } from "@/lib/utils";
 
 import { createClient } from "@/lib/supabase/client";
 import { ImagePlus, X } from "lucide-react";
@@ -23,6 +24,7 @@ interface AnnouncementFormProps {
 export function AnnouncementForm({ initialData, onSuccess, onCancel }: AnnouncementFormProps) {
     const supabase = createClient();
     const [isLoading, setIsLoading] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [formData, setFormData] = useState({
@@ -58,6 +60,26 @@ export function AnnouncementForm({ initialData, onSuccess, onCancel }: Announcem
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            const file = e.dataTransfer.files[0];
             setImageFile(file);
             setImagePreview(URL.createObjectURL(file));
         }
@@ -157,7 +179,15 @@ export function AnnouncementForm({ initialData, onSuccess, onCancel }: Announcem
                 {/* Image Upload Section */}
                 <div className="space-y-2">
                     <Label>Cover Media (Optional)</Label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-300 dark:border-zinc-700 border-dashed rounded-md relative overflow-hidden group">
+                    <div 
+                        className={cn(
+                            "mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md relative overflow-hidden group transition-colors",
+                            isDragging ? "border-red-500 bg-red-50 dark:bg-red-900/10" : "border-zinc-300 dark:border-zinc-700"
+                        )}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                    >
                         {imagePreview ? (
                             <div className="relative w-full h-40">
                                 {imagePreview.match(/\.(mp4|webm|ogg|mov)$/i) || imagePreview.startsWith('data:video/') ? (
