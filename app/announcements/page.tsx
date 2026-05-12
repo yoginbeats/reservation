@@ -78,7 +78,6 @@ export default async function AnnouncementsPage() {
                                                         <video 
                                                             src={announcement.image_url} 
                                                             className="w-full max-h-96 object-cover bg-black"
-                                                            controls
                                                             autoPlay
                                                         />
                                                     ) : (
