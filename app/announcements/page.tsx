@@ -80,8 +80,6 @@ export default async function AnnouncementsPage() {
                                                             className="w-full max-h-96 object-cover bg-black"
                                                             controls
                                                             autoPlay
-                                                            muted
-                                                            loop
                                                         />
                                                     ) : (
                                                         <img 
