@@ -80,19 +80,19 @@ export default async function AdminDashboard({ branchName }: AdminDashboardProps
 
             {/* Quick Actions */}
             <div className="grid gap-6 md:grid-cols-3 mt-6">
-                <Link href="/admin/reservations" className="block">
+                <Link href="/admin/walk-in" className="block">
                     <Card className="group h-full cursor-pointer border-2 border-transparent transition-all hover:border-red-600 hover:shadow-xl bg-white dark:bg-zinc-900">
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <div className="rounded-2xl bg-red-50 p-4 transition-colors group-hover:bg-red-600 group-hover:text-white dark:bg-red-900/20">
-                                    <Plus className="h-7 w-7 text-red-600 group-hover:text-white transition-colors" />
+                                    <UserPlus className="h-7 w-7 text-red-600 group-hover:text-white transition-colors" />
                                 </div>
                                 <ArrowRight className="h-6 w-6 text-zinc-300 transition-transform group-hover:translate-x-1 group-hover:text-red-600" />
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <CardTitle className="mb-2 text-xl">Manual Reservation</CardTitle>
-                            <CardDescription className="text-base text-zinc-500">Create a new booking manually.</CardDescription>
+                            <CardTitle className="mb-2 text-xl">Walk-in Booking</CardTitle>
+                            <CardDescription className="text-base text-zinc-500">Process a walk-in passenger.</CardDescription>
                         </CardContent>
                     </Card>
                 </Link>

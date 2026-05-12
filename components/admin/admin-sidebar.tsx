@@ -24,12 +24,7 @@ export function AdminSidebar({ role, branch, className }: AdminSidebarProps) {
             icon: LayoutDashboard,
             visible: true
         },
-        {
-            title: "Reservations",
-            href: "/admin/reservations",
-            icon: CalendarCheck,
-            visible: true
-        },
+
         {
             title: "Trips",
             href: "/admin/trips",
