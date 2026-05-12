@@ -41,6 +41,13 @@ export async function cancelReservationAction(reservationId: string) {
         return { success: false, error: "Failed to cancel reservation" };
     }
 
+    // Update associated tickets
+    const { supabaseAdmin } = await import('@/lib/supabase/admin');
+    await supabaseAdmin
+        .from('tickets')
+        .update({ status: 'cancelled' })
+        .eq('reservation_id', reservationId);
+
     revalidatePath('/my-tickets');
     return { success: true };
 }
