@@ -30,8 +30,10 @@ export async function cancelReservationAction(reservationId: string) {
         return { success: false, error: "Already cancelled" };
     }
 
-    // Cancel the reservation
-    const { error: updateError } = await supabase
+    const { supabaseAdmin } = await import('@/lib/supabase/admin');
+
+    // Cancel the reservation using Admin client to bypass RLS
+    const { error: updateError } = await supabaseAdmin
         .from('reservations')
         .update({ status: 'cancelled' })
         .eq('id', reservationId);
@@ -41,8 +43,7 @@ export async function cancelReservationAction(reservationId: string) {
         return { success: false, error: "Failed to cancel reservation" };
     }
 
-    // Update associated tickets
-    const { supabaseAdmin } = await import('@/lib/supabase/admin');
+    // Update associated tickets using Admin client
     await supabaseAdmin
         .from('tickets')
         .update({ status: 'cancelled' })
