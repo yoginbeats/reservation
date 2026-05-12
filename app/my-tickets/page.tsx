@@ -23,7 +23,7 @@ export default async function MyTicketsPage() {
             )
         `)
         .eq('customer_id', user.id)
-        .eq('status', 'confirmed')
+        .in('status', ['confirmed', 'cancelled'])
         .order('created_at', { ascending: false });
 
     return (
