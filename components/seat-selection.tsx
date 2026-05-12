@@ -20,6 +20,9 @@ interface SeatSelectionProps {
     userId: string;
     busType?: string;
     passengerCount: number;
+    returnDate?: string;
+    returnOrigin?: string;
+    returnDestination?: string;
 }
 
 interface LayoutRow {
@@ -29,7 +32,7 @@ interface LayoutRow {
     isLast?: boolean;
 }
 
-export function SeatSelection({ seats, tripId, price, userId, busType = "Regular Aircon", passengerCount }: SeatSelectionProps) {
+export function SeatSelection({ seats, tripId, price, userId, busType = "Regular Aircon", passengerCount, returnDate, returnOrigin, returnDestination }: SeatSelectionProps) {
     const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const router = useRouter();
@@ -52,7 +55,11 @@ export function SeatSelection({ seats, tripId, price, userId, busType = "Regular
     const handleContinue = () => {
         if (selectedSeats.length === 0) return;
         setIsSubmitting(true);
-        router.push(`/book/${tripId}/passengers?seats=${selectedSeats.join(',')}`);
+        let url = `/book/${tripId}/passengers?seats=${selectedSeats.join(',')}`;
+        if (returnDate) {
+            url += `&returnDate=${returnDate}&returnOrigin=${returnOrigin}&returnDestination=${returnDestination}`;
+        }
+        router.push(url);
     };
 
     const totalPrice = selectedSeats.length * price;

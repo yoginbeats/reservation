@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, AlertCircle, CreditCard, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 interface Passenger {
     name: string;
@@ -21,7 +22,7 @@ export function CheckoutForm({ tripId, userId }: { tripId: string, userId: strin
     const supabase = createClient();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [bookingData, setBookingData] = useState<{ passengers: Passenger[], totalPrice: number } | null>(null);
+    const [bookingData, setBookingData] = useState<{ passengers: Passenger[], totalPrice: number, returnDate?: string, returnOrigin?: string, returnDestination?: string } | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<'counter' | 'gcash' | 'card'>('counter');
 
     useEffect(() => {
@@ -68,7 +69,12 @@ export function CheckoutForm({ tripId, userId }: { tripId: string, userId: strin
             }
 
             sessionStorage.removeItem('pendingBooking');
-            router.push('/dashboard?booking=success');
+            if (bookingData.returnDate) {
+                toast.success("Outbound trip booked! Now, select your return trip.", { duration: 6000 });
+                router.push(`/reservations?origin=${bookingData.returnOrigin}&destination=${bookingData.returnDestination}&date=${bookingData.returnDate}&passengers=${bookingData.passengers.length}&isReturnTrip=true`);
+            } else {
+                router.push('/dashboard?booking=success');
+            }
         } catch (err: unknown) {
             console.warn("Runtime exception during booking:", err);
             const errorMessage = err instanceof Error ? err.message : "A runtime exception occurred.";

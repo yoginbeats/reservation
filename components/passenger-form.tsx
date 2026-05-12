@@ -29,9 +29,12 @@ interface PassengerFormProps {
         departure_time: string;
         price: number;
     };
+    returnDate?: string;
+    returnOrigin?: string;
+    returnDestination?: string;
 }
 
-export function PassengerForm({ tripId, selectedSeats, price, trip }: PassengerFormProps) {
+export function PassengerForm({ tripId, selectedSeats, price, trip, returnDate, returnOrigin, returnDestination }: PassengerFormProps) {
     const router = useRouter();
     const [passengers, setPassengers] = useState<PassengerDetails[]>(
         selectedSeats.map(seat => ({ name: "", seatNumber: seat, type: 'regular', idNumber: "", idPhotoUrl: "" }))
@@ -146,7 +149,10 @@ export function PassengerForm({ tripId, selectedSeats, price, trip }: PassengerF
                     ...p,
                     price: calculatePassengerPrice(p.type)
                 })),
-                totalPrice: totalDiscountedPrice
+                totalPrice: totalDiscountedPrice,
+                returnDate,
+                returnOrigin,
+                returnDestination
             };
 
             sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));

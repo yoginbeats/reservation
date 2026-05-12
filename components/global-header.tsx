@@ -68,13 +68,19 @@ export function GlobalHeader() {
                     </Link>
                     <Link
                         href="/schedule"
-                        className="text-sm font-semibold text-zinc-600 transition-colors hover:text-red-600 dark:text-zinc-400"
+                        className={`text-sm font-semibold transition-colors hover:text-red-600 ${pathname === "/schedule" ? "text-red-600" : "text-zinc-600 dark:text-zinc-400"}`}
                     >
                         Trip Schedule
                     </Link>
                     <Link
+                        href="/announcements"
+                        className={`text-sm font-semibold transition-colors hover:text-red-600 ${pathname === "/announcements" ? "text-red-600" : "text-zinc-600 dark:text-zinc-400"}`}
+                    >
+                        Announcements
+                    </Link>
+                    <Link
                         href="/about"
-                        className="text-sm font-semibold text-zinc-600 transition-colors hover:text-red-600 dark:text-zinc-400"
+                        className={`text-sm font-semibold transition-colors hover:text-red-600 ${pathname === "/about" ? "text-red-600" : "text-zinc-600 dark:text-zinc-400"}`}
                     >
                         About Us
                     </Link>

@@ -10,8 +10,8 @@ export default async function AdminLayout({
     const { role, branch } = await getRole();
 
     return (
-        <div className="flex min-h-screen bg-slate-100 dark:bg-zinc-950">
-            <AdminSidebar role={role} branch={branch} className="hidden md:flex" />
+        <div className="flex min-h-screen bg-slate-100 dark:bg-zinc-950 print:block print:bg-white print:min-h-0">
+            <AdminSidebar role={role} branch={branch} className="hidden md:flex print:hidden" />
             {/* Main Content Wrapper */}
             <div className="flex-1 flex flex-col min-w-0 print:block">
                 {/* Admin Topbar */}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CalendarCheck, Ticket, Users, Settings, MapPin, TrendingUp, Bus } from "lucide-react";
+import { LayoutDashboard, CalendarCheck, Ticket, Users, Settings, MapPin, TrendingUp, Bus, Bell, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminLogoutButton } from "@/components/admin-logout-button";
 
@@ -37,6 +37,12 @@ export function AdminSidebar({ role, branch, className }: AdminSidebarProps) {
             visible: isAdmin
         },
         {
+            title: "Walk-in",
+            href: "/admin/walk-in",
+            icon: UserPlus,
+            visible: true
+        },
+        {
             title: "Buses",
             href: "/admin/buses",
             icon: Bus,
@@ -59,13 +65,19 @@ export function AdminSidebar({ role, branch, className }: AdminSidebarProps) {
             href: "/admin/settings",
             icon: Settings,
             visible: isAdmin
+        },
+        {
+            title: "Announcements",
+            href: "/admin/announcements",
+            icon: Bell,
+            visible: isAdmin
         }
     ];
 
     return (
         <aside className={cn("w-64 border-r-0 bg-red-700 dark:bg-red-950 print:hidden text-white shadow-xl z-10 flex-shrink-0 flex-col", className)}>
-            <div className="flex h-full flex-col">
-                <div className="flex items-center justify-center h-[72px] border-b border-red-600/50 dark:border-red-900/50 px-4">
+            <div className="flex h-full flex-col print:hidden">
+                <div className="flex items-center justify-center h-[72px] border-b border-red-600/50 dark:border-red-900/50 px-4 print:hidden">
                     <Link href="/admin" className="flex items-center gap-3 w-full justify-center">
                         <img src="/482809688_1079373070897719_6989867294877356725_n.jpg" alt="Logo" className="h-10 w-10 object-contain rounded-full bg-white p-0.5" />
                         <span className="text-xl font-black uppercase tracking-tighter text-white">
@@ -73,8 +85,8 @@ export function AdminSidebar({ role, branch, className }: AdminSidebarProps) {
                         </span>
                     </Link>
                 </div>
-                <div className="flex-1 space-y-1 p-4 overflow-y-auto">
-                    <p className="mb-4 px-2 text-xs font-semibold uppercase tracking-wider text-red-200">
+                <div className="flex-1 space-y-1 p-4 overflow-y-auto print:hidden">
+                    <p className="mb-4 px-2 text-xs font-semibold uppercase tracking-wider text-red-200 print:hidden">
                         {isAdmin ? "Main Admin" : `${branch} Admin`}
                     </p>
                     {links.filter(link => link.visible).map((link) => {

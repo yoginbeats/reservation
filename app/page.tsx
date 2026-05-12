@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { Calendar, MapPin, Search, Star, Shield, Clock, Coffee, Wifi } from "lucide-react";
 import { BookingForm } from "@/components/BookingForm";
+import { AnnouncementPanel } from "@/components/announcement-panel";
 
 export default function Home() {
     return (
         <div className="flex flex-col">
+            <AnnouncementPanel />
             {/* Hero Section */}
             <section className="relative flex min-h-[85vh] items-center justify-center px-6 py-20 text-white overflow-hidden">
                 {/* Background Image with Overlay */}
@@ -59,46 +61,37 @@ export default function Home() {
                         <p className="mt-4 text-zinc-600 dark:text-zinc-400">Experience a high-end bus travel experience with our specialized classes.</p>
                     </div>
 
-                    <div className="grid gap-8 md:grid-cols-3">
-                        {/* Elite Class */}
+                    <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
+                        {/* Regular Aircon */}
                         <div className="group rounded-3xl border bg-white p-8 transition-all hover:border-red-500 hover:shadow-xl dark:bg-zinc-900">
                             <div className="mb-6 inline-flex rounded-2xl bg-red-50 p-4 text-red-600 dark:bg-red-900/20">
                                 <Wifi className="h-6 w-6" />
                             </div>
-                            <h3 className="mb-3 text-xl font-bold">Elite Class</h3>
-                            <p className="mb-6 text-sm text-zinc-500">2+1 configuration with extra legroom and free Wi-Fi for your comfort.</p>
+                            <h3 className="mb-3 text-xl font-bold">Regular Aircon</h3>
+                            <p className="mb-6 text-sm text-zinc-500">Standard 2x2 configuration, fully air-conditioned for a comfortable and secure journey.</p>
                             <ul className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-                                <li className="flex items-center gap-2">✓ Reclining Seats</li>
-                                <li className="flex items-center gap-2">✓ USB Charging Ports</li>
-                                <li className="flex items-center gap-2">✓ On-board Toilet</li>
+                                <li className="flex items-center gap-2">✓ Comfortable Seats</li>
+                                <li className="flex items-center gap-2">✓ Full Air-conditioning</li>
+                                <li className="flex items-center gap-2">✓ Audio/Video Entertainment</li>
+                                <li className="flex items-center gap-2">✓ Gadget Charging Ports</li>
+                                <li className="flex items-center gap-2">✓ 24/7 CCTV Monitoring</li>
                             </ul>
                         </div>
 
-                        {/* Sleeper Class */}
-                        <div className="group rounded-3xl border bg-white p-8 transition-all hover:border-red-500 hover:shadow-xl dark:bg-zinc-900">
-                            <div className="mb-6 inline-flex rounded-2xl bg-red-50 p-4 text-red-600 dark:bg-red-900/20">
-                                <Clock className="h-6 w-6" />
-                            </div>
-                            <h3 className="mb-3 text-xl font-bold">Sleeper Class</h3>
-                            <p className="mb-6 text-sm text-zinc-500">Perfect for long overnight journeys. Flat-bed seats for a restful sleep.</p>
-                            <ul className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-                                <li className="flex items-center gap-2">✓ 180° Flat Beds</li>
-                                <li className="flex items-center gap-2">✓ Privacy Curtains</li>
-                                <li className="flex items-center gap-2">✓ Blanket & Pillow</li>
-                            </ul>
-                        </div>
-
-                        {/* Skybus Premier */}
+                        {/* First Class & Deluxe */}
                         <div className="group rounded-3xl border bg-white p-8 transition-all hover:border-red-500 hover:shadow-xl dark:bg-zinc-900">
                             <div className="mb-6 inline-flex rounded-2xl bg-red-50 p-4 text-red-600 dark:bg-red-900/20">
                                 <Coffee className="h-6 w-6" />
                             </div>
-                            <h3 className="mb-3 text-xl font-bold">Skybus Premier</h3>
-                            <p className="mb-6 text-sm text-zinc-500">The most luxurious experience. 2x1 seating with maximum legroom.</p>
+                            <h3 className="mb-3 text-xl font-bold">Deluxe / First Class</h3>
+                            <p className="mb-6 text-sm text-zinc-500">Premium seating options featuring a spacious configuration and upgraded amenities for a superior travel experience.</p>
                             <ul className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-                                <li className="flex items-center gap-2">✓ Lazy Boy Seats</li>
-                                <li className="flex items-center gap-2">✓ Personalized Screen</li>
-                                <li className="flex items-center gap-2">✓ Snack & Drink</li>
+                                <li className="flex items-center gap-2">✓ Limited Stops for faster travel</li>
+                                <li className="flex items-center gap-2">✓ Upgraded Seats with dedicated Leg Rest</li>
+                                <li className="flex items-center gap-2">✓ On-board Toilet Facility</li>
+                                <li className="flex items-center gap-2">✓ USB/Gadget Charging Ports</li>
+                                <li className="flex items-center gap-2">✓ Personalized Audio/Video System</li>
+                                <li className="flex items-center gap-2">✓ 24/7 CCTV Monitoring</li>
                             </ul>
                         </div>
                     </div>

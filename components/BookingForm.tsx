@@ -153,7 +153,7 @@ export function BookingForm() {
                                 required
                             >
                                 <option value="" disabled>Select Starting Point</option>
-                                {currentOrigins.map((loc) => (
+                                {currentOrigins.filter(loc => loc !== destination).map((loc) => (
                                     <option key={loc} value={loc}>{loc}</option>
                                 ))}
                             </select>
@@ -173,7 +173,7 @@ export function BookingForm() {
                                 required
                             >
                                 <option value="" disabled>Select Destination</option>
-                                {availableDestinations.map((loc) => (
+                                {availableDestinations.filter(loc => loc !== origin).map((loc) => (
                                     <option key={loc} value={loc}>{loc}</option>
                                 ))}
                             </select>
@@ -251,9 +251,6 @@ export function BookingForm() {
                 </Button>
             </form>
 
-            <p className="mt-6 text-center text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                Trusted by 50,000+ happy travelers this year
-            </p>
         </div>
     );
 }

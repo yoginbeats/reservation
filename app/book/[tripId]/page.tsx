@@ -15,7 +15,7 @@ export default async function BookTripPage({
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
     const { tripId } = await params;
-    const { passengers } = await searchParams;
+    const { passengers, returnDate, returnOrigin, returnDestination } = await searchParams;
     const passengerCount = passengers ? parseInt(passengers as string) : 1;
 
     const supabase = await createClient();
@@ -98,6 +98,9 @@ export default async function BookTripPage({
                                 userId={user.id}
                                 busType={busType}
                                 passengerCount={passengerCount}
+                                returnDate={returnDate as string}
+                                returnOrigin={returnOrigin as string}
+                                returnDestination={returnDestination as string}
                             />
                         </CardContent>
                     </Card>

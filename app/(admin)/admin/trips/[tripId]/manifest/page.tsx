@@ -235,12 +235,26 @@ export default async function TripManifestPage({
             <style dangerouslySetInnerHTML={{
                 __html: `
                 @media print {
-                    @page { size: A4; margin: 10mm 15mm; }
-                    body { background: white !important; color: black !important; font-size: 10pt !important; }
-                    .container { max-width: 100% !important; border: none !important; padding: 0 !important; margin: 0 !important; }
+                    @page { size: A4; margin: 10mm 10mm; }
+                    html, body { 
+                        background: white !important; 
+                        color: black !important; 
+                        font-size: 10pt !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                    }
+                    /* Ensure main layout containers don't add margins */
+                    main, .flex-1, .container { 
+                        max-width: 100% !important; 
+                        width: 100% !important; 
+                        border: none !important; 
+                        padding: 0 !important; 
+                        margin: 0 !important; 
+                    }
                     
                     /* Hide only interactive UI elements */
-                    button, a, .TooltipContent, .Toaster, [data-sidebar], .mb-2 { display: none !important; }
+                    button, a, .TooltipContent, .Toaster, [data-sidebar], aside, header, .mb-2 { display: none !important; }
                     
                     /* Remove shadows and reset layout */
                     .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl { 

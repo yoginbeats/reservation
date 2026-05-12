@@ -17,6 +17,8 @@ export default async function ReservationsPage({
     const destination = params.destination as string | undefined;
     const busType = params.busType as string | undefined;
     const date = params.date as string | undefined;
+    const returnDate = params.returnDate as string | undefined;
+    const isReturnTrip = params.isReturnTrip === 'true';
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -105,7 +107,9 @@ export default async function ReservationsPage({
                 <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm" />
 
                 <div className="relative z-10">
-                    <h1 className="text-3xl font-black tracking-tight">Available <span className="text-red-500">Trips</span></h1>
+                    <h1 className="text-3xl font-black tracking-tight">
+                        {isReturnTrip ? "Select Your" : "Available"} <span className="text-red-500">{isReturnTrip ? "Return Trip" : "Trips"}</span>
+                    </h1>
                     <p className="mt-2 text-white/80 font-medium">
                         {origin && destination ? (
                             <>Showing trips from <span className="text-red-400 font-bold">{origin}</span> to <span className="text-red-400 font-bold">{destination}</span></>
@@ -215,7 +219,7 @@ export default async function ReservationsPage({
                                                 asChild
                                                 disabled={availableSeats === 0}
                                             >
-                                                <Link href={`/book/${trip.id}${params.passengers ? `?passengers=${params.passengers}` : ''}`}>
+                                                <Link href={`/book/${trip.id}?passengers=${params.passengers || 1}${returnDate ? `&returnDate=${returnDate}&returnOrigin=${destination}&returnDestination=${origin}` : ''}`}>
                                                     {availableSeats === 0 ? "Sold Out" : "Select Seat"}
                                                 </Link>
                                             </Button>

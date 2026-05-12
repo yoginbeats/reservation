@@ -14,7 +14,7 @@ export default async function PassengerDetailsPage({
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
     const { tripId } = await params;
-    const { seats } = await searchParams;
+    const { seats, returnDate, returnOrigin, returnDestination } = await searchParams;
 
     if (!seats) {
         redirect(`/book/${tripId}`);
@@ -56,6 +56,9 @@ export default async function PassengerDetailsPage({
                     selectedSeats={selectedSeats}
                     price={trip.price}
                     trip={trip}
+                    returnDate={returnDate as string}
+                    returnOrigin={returnOrigin as string}
+                    returnDestination={returnDestination as string}
                 />
             </div>
         </div>

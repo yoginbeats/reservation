@@ -13,12 +13,12 @@ export default function AboutPage() {
             {/* Hero Section */}
             <div className="relative h-[60vh] min-h-[500px] w-full overflow-hidden bg-zinc-900">
                 <div 
-                    className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity scale-105 animate-in zoom-in duration-1000"
+                    className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity"
                     style={{ backgroundImage: "url('/hero-bg.jpg')" }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
                 
-                <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center z-10 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-150">
+                <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center z-10">
                     <div className="flex h-20 w-20 items-center justify-center mb-6 rounded-3xl bg-white shadow-2xl">
                         <img src="/482809688_1079373070897719_6989867294877356725_n.jpg" alt="Logo" className="w-14 h-14 object-contain" />
                     </div>
@@ -31,47 +31,47 @@ export default function AboutPage() {
                 </div>
             </div>
 
-            {/* Core Values Section */}
-            <div className="container mx-auto px-4 sm:px-6 py-24">
-                <div className="grid gap-12 lg:grid-cols-2 items-center">
-                    <div className="space-y-8">
-                        <div>
-                            <h2 className="text-sm font-black uppercase tracking-widest text-red-600 mb-2">Our Philosophy</h2>
-                            <h3 className="text-4xl font-black tracking-tighter uppercase text-zinc-900 dark:text-zinc-50">
-                                Redefining Travel <br /> Standards
-                            </h3>
-                        </div>
-                        <p className="text-lg text-zinc-500 font-medium leading-relaxed">
-                            Superlines is not just a transit company—we are your dedicated travel partners. 
-                            We continuously upgrade our fleet and rigorously train our staff to guarantee that every journey is smooth, secure, and incredibly comfortable.
-                        </p>
-                        
-                        <div className="grid sm:grid-cols-2 gap-6 pt-6 border-t border-zinc-100 dark:border-zinc-900">
-                            <div className="space-y-3">
-                                <div className="h-12 w-12 rounded-2xl bg-red-50 text-red-600 dark:bg-red-900/20 flex items-center justify-center">
-                                    <ShieldCheck className="h-6 w-6" />
-                                </div>
-                                <h4 className="font-bold text-zinc-900 dark:text-zinc-50">Uncompromising Safety</h4>
-                                <p className="text-sm text-zinc-500">State-of-the-art dispatch and highly trained dual-driver deployments per trip.</p>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="h-12 w-12 rounded-2xl bg-zinc-100 text-zinc-600 dark:bg-zinc-900 flex items-center justify-center">
-                                    <Clock className="h-6 w-6" />
-                                </div>
-                                <h4 className="font-bold text-zinc-900 dark:text-zinc-50">Pinpoint Punctuality</h4>
-                                <p className="text-sm text-zinc-500">Optimized scheduling algorithms to ensure departures and arrivals are always on time.</p>
-                            </div>
-                        </div>
-                    </div>
+            {/* Company Profile Section */}
+            <div className="container mx-auto px-4 sm:px-6 py-16">
+                <div className="mb-8">
+                    <h2 className="text-sm font-black uppercase tracking-widest text-red-600 mb-2">Company Profile</h2>
+                    <h3 className="text-4xl font-black tracking-tighter uppercase text-zinc-900 dark:text-zinc-50">
+                        The Story of Superlines Transportation Co., Inc.
+                    </h3>
+                </div>
+                
+                <div className="text-sm text-zinc-500 font-medium leading-relaxed space-y-4 text-justify">
+                    <p>The Story of SUPERLINES TRANSPORTATION CO., INC. is a story of success. From its humble beginning, its one unit minibus rose to the present fleet of more than a hundred modern luxury buses.</p>
                     
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-red-600 translate-x-4 translate-y-4 rounded-[2rem] -z-10" />
-                        <img 
-                            src="/superlines-bus.jpg" 
-                            alt="Superlines Bus" 
-                            className="w-full h-auto aspect-square object-cover rounded-[2rem] shadow-2xl"
-                        />
+                    <p>On January 11, 1975, young MANOLET ORTIZ LAVIDES founded Superlines Transportation Company, a single proprietorship whose main business address is his birthplace, Atimonan, Quezon. After acquiring a single unit of brand-new 35-seater Mazda minibus, the fledgling Manager had made it run in the Atimonan – Lucena route. Soon thereafter, he acquired another one (1) brand-new 35-seater mini bus and then followed by three (3) more 45-seater units to run Lucena – Calauag line.</p>
+
+                    <div className="grid lg:grid-cols-2 gap-8 my-6">
+                        <div className="space-y-4">
+                            <p>In the middle of 1975, with the acquisition of ten (10) brand-new units and new lines, Manolet O. Lavides thought of shifting from sole proprietorship to a corporation. Upon consultation with his family and some close relatives, he finally decided to form a family corporation with him as the President and General Manager. He was also the Chief Operations Officer, the purchaser, OIC of the Drivers and Conductors rolled into one. From 1975 to 1989 these were the positions he held until the last national elections. At present, he is the Consultant and Chairman of the Board of STCI.</p>
+                            
+                            <p>In February 1977, with the granting of a new franchise, Superlines Transportation Company Incorporated (STCI) ran the Cubao – Sta. Elena, Camarines Norte line with a brand new fleet of ten (10) units of mini buses. With this line, Bicol Region ultimately opened its door wide to Superlines Transportation Company Incorporated for more fleet and opportunities.</p>
+                            
+                            <p>The following year, 1978, STCI was granted the franchise of Cubao – Daet (Cam. Norte) line. The company fielded fifteen (15) brand new units of ISUZU buses with longer and spacious bodies. Since then, newer and luxurious aircon units have plied this route to the satisfaction and comfort for the riding public.</p>
+                            
+                            <p>To pursue his career of public service, President and General Manager Manolet O. Lavides ran for the congressional seat in the Fourth District of Quezon which he won handily. Upon assumption of office, the neophyte Congressman relinquished his position to his brother Lawrence lest he be doubted for having a conflict of interest.</p>
+                            
+                            <p>From March 1987 up to July 1989 he purchased thirty (30) brand new Nissan units from Columbia Motors in staggered delivery and cash basis from Don Pepito Alvarez. From August 1989 to August 1991 he opened a Letter of Credit and bought twenty-six (26) units of Leyland Tiger from India. In 1992, he went to Tokyo and directly ordered fifty (50) CQR ISUZU 6RB1 units.</p>
+                            
+                            <p>From December 1993 to September 1994, twenty (20) brand new units imported for less than a year.</p>
+                            <p>Then on December 15, 1995, five (5) brand new air conditioned units were acquired from Diamond Motors, and from January 1998 to April 1998, another batch of ten (10) FUSO 6D22 units were added and substituted to the old units.</p>
+                            <p>Since then, at least twenty (20) units have been regularly added to the entire fleet every year which is the practice of big transportation companies.</p>
+                        </div>
+                        <div className="relative h-full min-h-[350px]">
+                            <img 
+                                src="/superlines-bus.jpg" 
+                                alt="Superlines Bus" 
+                                className="w-full h-full object-cover object-center shadow-md"
+                            />
+                        </div>
                     </div>
+
+                    <p>At present, a total of one hundred fifty-five (155) units have been operating from Cubao, Quezon City to all municipalities in the 4th district Quezon including Bondoc Peninsula. All municipalities in Camarines Norte such as Daet, Labo, Talisay, Vinzons, Paracale/ Panganiban going to Naga and several towns in Camarines Sur and Albay including Legazpi City and vice versa with an average of eighty-five (85) to one hundred twenty (120) units in actual daily operation. Main terminal and garage in Bicol region is located at Daet, Camarines Norte with a total area of 28,000 square meters.</p>
+                    <p>With the pending applications for new franchise with the LTFRB STCI aims to penetrate the Visayas region and hopefully up to the Mindanao area where people clamor for adequate means of transportation in which Superlines whose readiness to bring its services with warmth, sincerity, and hospitality to the people is the approximate solution.</p>
                 </div>
             </div>
 

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Ticket, Calendar, MapPin, Clock, QrCode, Download, Share2 } from "lucide-react";
 import Link from "next/link";
+import { CancelTicketButton } from "@/components/cancel-ticket-button";
 
 export default async function MyTicketsPage() {
     const supabase = await createClient();
@@ -59,9 +60,17 @@ export default async function MyTicketsPage() {
                                                 Electronic Boarding Pass
                                             </CardDescription>
                                         </div>
-                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                            CONFIRMED
-                                        </Badge>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                CONFIRMED
+                                            </Badge>
+                                            <div className="flex items-center gap-2">
+                                                <Button asChild className="rounded-full bg-zinc-800 px-4 py-1 h-auto text-[10px] font-bold text-white shadow-md transition-all hover:bg-zinc-700 hover:shadow-lg active:scale-95 uppercase tracking-widest">
+                                                    <Link href="/dashboard">Rebook</Link>
+                                                </Button>
+                                                <CancelTicketButton reservationId={res.id} />
+                                            </div>
+                                        </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-6 space-y-6">
