@@ -28,7 +28,11 @@ export async function AnnouncementPanel() {
                         {announcements.map((announcement: any) => (
                             <div key={announcement.id} className="flex items-center gap-2">
                                 {announcement.image_url && (
-                                    <img src={announcement.image_url} alt="Announcement" className="h-8 w-auto rounded object-cover shadow-sm mr-1" />
+                                    announcement.image_url.match(/\.(mp4|webm|ogg|mov)$/i) ? (
+                                        <video src={announcement.image_url} className="h-8 w-auto rounded object-cover shadow-sm mr-1" autoPlay muted loop playsInline />
+                                    ) : (
+                                        <img src={announcement.image_url} alt="Announcement" className="h-8 w-auto rounded object-cover shadow-sm mr-1" />
+                                    )
                                 )}
                                 <span className="font-bold text-red-100">{announcement.title}:</span>
                                 <span className="text-white/90">{announcement.content}</span>
@@ -39,7 +43,11 @@ export async function AnnouncementPanel() {
                         {announcements.map((announcement: any) => (
                             <div key={`dup-${announcement.id}`} className="flex items-center gap-2">
                                 {announcement.image_url && (
-                                    <img src={announcement.image_url} alt="Announcement" className="h-8 w-auto rounded object-cover shadow-sm mr-1" />
+                                    announcement.image_url.match(/\.(mp4|webm|ogg|mov)$/i) ? (
+                                        <video src={announcement.image_url} className="h-8 w-auto rounded object-cover shadow-sm mr-1" autoPlay muted loop playsInline />
+                                    ) : (
+                                        <img src={announcement.image_url} alt="Announcement" className="h-8 w-auto rounded object-cover shadow-sm mr-1" />
+                                    )
                                 )}
                                 <span className="font-bold text-red-100">{announcement.title}:</span>
                                 <span className="text-white/90">{announcement.content}</span>

@@ -74,11 +74,22 @@ export default async function AnnouncementsPage() {
                                             </h2>
                                             {announcement.image_url && (
                                                 <div className="mb-6 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm max-w-2xl">
-                                                    <img 
-                                                        src={announcement.image_url} 
-                                                        alt={announcement.title} 
-                                                        className="w-full max-h-96 object-cover hover:scale-105 transition-transform duration-500"
-                                                    />
+                                                    {announcement.image_url.match(/\.(mp4|webm|ogg|mov)$/i) ? (
+                                                        <video 
+                                                            src={announcement.image_url} 
+                                                            className="w-full max-h-96 object-cover bg-black"
+                                                            controls
+                                                            autoPlay
+                                                            muted
+                                                            loop
+                                                        />
+                                                    ) : (
+                                                        <img 
+                                                            src={announcement.image_url} 
+                                                            alt={announcement.title} 
+                                                            className="w-full max-h-96 object-cover hover:scale-105 transition-transform duration-500"
+                                                        />
+                                                    )}
                                                 </div>
                                             )}
                                             <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">

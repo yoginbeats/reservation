@@ -156,14 +156,18 @@ export function AnnouncementForm({ initialData, onSuccess, onCancel }: Announcem
                 
                 {/* Image Upload Section */}
                 <div className="space-y-2">
-                    <Label>Cover Image (Optional)</Label>
+                    <Label>Cover Media (Optional)</Label>
                     <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-300 dark:border-zinc-700 border-dashed rounded-md relative overflow-hidden group">
                         {imagePreview ? (
                             <div className="relative w-full h-40">
-                                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-md" />
+                                {imagePreview.match(/\.(mp4|webm|ogg|mov)$/i) || imagePreview.startsWith('data:video/') ? (
+                                    <video src={imagePreview} className="w-full h-full object-cover rounded-md" controls muted />
+                                ) : (
+                                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-md" />
+                                )}
                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Button type="button" variant="destructive" size="sm" onClick={removeImage} className="gap-2">
-                                        <X className="w-4 h-4" /> Remove Image
+                                        <X className="w-4 h-4" /> Remove Media
                                     </Button>
                                 </div>
                             </div>
@@ -173,11 +177,11 @@ export function AnnouncementForm({ initialData, onSuccess, onCancel }: Announcem
                                 <div className="flex text-sm text-zinc-600 dark:text-zinc-400 justify-center">
                                     <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-red-600 hover:text-red-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-red-500">
                                         <span>Upload a file</span>
-                                        <input id="file-upload" name="file-upload" type="file" className="sr-only" accept="image/*" onChange={handleImageChange} />
+                                        <input id="file-upload" name="file-upload" type="file" className="sr-only" accept="image/*,video/mp4,video/webm" onChange={handleImageChange} />
                                     </label>
                                     <p className="pl-1">or drag and drop</p>
                                 </div>
-                                <p className="text-xs text-zinc-500">PNG, JPG, GIF up to 5MB</p>
+                                <p className="text-xs text-zinc-500">PNG, JPG, GIF, MP4, WEBM up to 20MB</p>
                             </div>
                         )}
                     </div>
