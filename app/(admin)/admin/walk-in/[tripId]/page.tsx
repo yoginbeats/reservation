@@ -209,6 +209,22 @@ export default function WalkInBookingForm({ params }: { params: Promise<{ tripId
                             })}
                         </div>
                     </div>
+                    
+                    {/* Legend */}
+                    <div className="mt-8 flex items-center justify-center gap-6 w-full pt-6 border-t border-zinc-100 dark:border-zinc-900">
+                        <div className="flex items-center gap-2">
+                            <div className="h-3 w-3 rounded-full bg-blue-600"></div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Available</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="h-3 w-3 rounded-full bg-red-600"></div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Reserved</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="h-3 w-3 rounded-full bg-emerald-600"></div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Selected</span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Booking Form */}
@@ -299,8 +315,11 @@ export default function WalkInBookingForm({ params }: { params: Promise<{ tripId
 function SeatButton({ num, taken, selected, onClick }: { num: number, taken: boolean, selected: boolean, onClick: () => void }) {
     if (taken) {
         return (
-            <div className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-100 text-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 cursor-not-allowed">
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-lg border-2 border-red-600 bg-red-600 text-white cursor-not-allowed shadow-sm">
                 <Armchair className="h-4 w-4" />
+                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[7px] font-black border border-red-600 bg-white text-red-600">
+                    {num}
+                </span>
             </div>
         );
     }
@@ -309,11 +328,11 @@ function SeatButton({ num, taken, selected, onClick }: { num: number, taken: boo
         <button
             onClick={onClick}
             className={`
-                relative flex h-9 w-9 items-center justify-center rounded-lg border-2 transition-all cursor-pointer
-                hover:border-red-400 hover:scale-105 active:scale-95
+                relative flex h-9 w-9 items-center justify-center rounded-lg border-2 transition-all cursor-pointer shadow-sm
+                hover:scale-105 active:scale-95
                 ${selected 
-                    ? 'border-red-600 bg-red-600 text-white shadow-md' 
-                    : 'border-zinc-200 bg-white text-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 hover:bg-red-50 dark:hover:bg-red-950'
+                    ? 'border-emerald-600 bg-emerald-600 text-white shadow-md' 
+                    : 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-700'
                 }
             `}
         >
@@ -321,8 +340,8 @@ function SeatButton({ num, taken, selected, onClick }: { num: number, taken: boo
             <span className={`
                 absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[7px] font-black border
                 ${selected 
-                    ? 'bg-white text-red-600 border-red-600' 
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-white dark:border-zinc-950'
+                    ? 'bg-white text-emerald-600 border-emerald-600' 
+                    : 'bg-white text-blue-600 border-blue-600'
                 }
             `}>
                 {num}

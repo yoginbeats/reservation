@@ -145,16 +145,6 @@ export function NextTripSpotlight({ reservation }: NextTripSpotlightProps) {
                             </div>
                         )}
 
-                        <Button
-                            asChild
-                            className="w-full h-16 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-lg gap-3 shadow-xl shadow-red-900/20 active:scale-95 transition-all uppercase tracking-tight"
-                        >
-                            <Link href={`/my-tickets/${reservation.id}`}>
-                                <Ticket className="h-6 w-6" />
-                                View Boarding Pass
-                                <ArrowRight className="h-5 w-5 ml-auto" />
-                            </Link>
-                        </Button>
                     </div>
                 </div>
             </CardContent>

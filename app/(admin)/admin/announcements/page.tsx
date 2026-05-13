@@ -15,7 +15,7 @@ export default function AnnouncementsAdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [announcementToDelete, setAnnouncementToDelete] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    
+
     // Modal states
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingAnnouncement, setEditingAnnouncement] = useState<any | null>(null);
@@ -41,7 +41,7 @@ export default function AnnouncementsAdminPage() {
         setIsDeleting(true);
 
         const result = await deleteAnnouncementAction(announcementToDelete);
-        
+
         setIsDeleting(false);
         setAnnouncementToDelete(null);
 
@@ -162,10 +162,10 @@ export default function AnnouncementsAdminPage() {
             {/* Form Dialog */}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent className="sm:max-w-[500px]">
-                    <AnnouncementForm 
-                        initialData={editingAnnouncement} 
-                        onSuccess={handleFormSuccess} 
-                        onCancel={() => setIsFormOpen(false)} 
+                    <AnnouncementForm
+                        initialData={editingAnnouncement}
+                        onSuccess={handleFormSuccess}
+                        onCancel={() => setIsFormOpen(false)}
                     />
                 </DialogContent>
             </Dialog>

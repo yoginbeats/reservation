@@ -1,9 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, ArrowRight, History, Clock } from "lucide-react";
 import Link from "next/link";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
+import { BoardingPass } from "@/components/dashboard/boarding-pass";
 
 export default async function MyReservationsPage() {
     const supabase = await createClient();
@@ -12,7 +15,7 @@ export default async function MyReservationsPage() {
     if (!user) redirect("/login");
 
     // Fetch All Reservations
-    const { data: reservations, error } = await supabase
+    const { data: reservations, error } = await supabaseAdmin
         .from('reservations')
         .select(`
             *,
@@ -81,7 +84,7 @@ export default async function MyReservationsPage() {
                                                 <div className="space-y-1">
                                                     <div className="text-[10px] font-bold text-zinc-400 uppercase">Seat</div>
                                                     <div className="text-sm font-semibold">Seat {res.seat_number}</div>
-                                                    <div className="text-xs text-muted-foreground">{trip.buses?.bus_number}</div>
+                                                    <div className="text-xs text-muted-foreground">{trip.buses?.bus_number || 'TBA'}</div>
                                                 </div>
                                                 <div className="space-y-1">
                                                     <div className="text-[10px] font-bold text-zinc-400 uppercase">Status</div>
@@ -108,7 +111,21 @@ export default async function MyReservationsPage() {
                                                     <Link href={`/checkout/${res.id}`}>Complete Payment</Link>
                                                 </Button>
                                             ) : null}
-                                            <Button variant="ghost" size="sm" className="flex-1">Details</Button>
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="ghost" size="sm" className="flex-1">Details</Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="max-w-2xl bg-transparent border-none shadow-none p-0 sm:max-w-2xl" showCloseButton={false}>
+                                                    <DialogTitle className="sr-only">Boarding Pass Details</DialogTitle>
+                                                    <BoardingPass reservation={{
+                                                        ...res,
+                                                        trips: {
+                                                            ...res.trips,
+                                                            bus_number: res.trips?.buses?.bus_number
+                                                        }
+                                                    }} />
+                                                </DialogContent>
+                                            </Dialog>
                                         </div>
                                     </div>
                                 </CardContent>

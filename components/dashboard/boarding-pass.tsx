@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Calendar, Clock, User, Armchair, Bus, Printer, Download, Share2, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
-import html2canvas from "html2canvas";
+import { toJpeg } from "html-to-image";
 import { toast } from "sonner";
 
 interface BoardingPassProps {
@@ -45,17 +45,17 @@ export function BoardingPass({ reservation }: BoardingPassProps) {
             setIsSharing(true);
             // Small delay to ensure the UI is fully painted before capturing
             await new Promise(resolve => setTimeout(resolve, 100));
-            const canvas = await html2canvas(ticketRef.current, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: null, // Transparent background so border-radius works
-                logging: false,
+            const dataUrl = await toJpeg(ticketRef.current, {
+                quality: 0.9,
+                pixelRatio: 2,
+                backgroundColor: '#ffffff',
             });
             
-            const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
             if (!blob) throw new Error("Could not generate image");
 
-            const file = new File([blob], `ticket-${reservation.id.slice(0, 8)}.png`, { type: 'image/png' });
+            const file = new File([blob], `ticket-${reservation.id.slice(0, 8)}.jpg`, { type: 'image/jpeg' });
 
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
@@ -66,7 +66,7 @@ export function BoardingPass({ reservation }: BoardingPassProps) {
                 toast.success("Ticket shared successfully!");
             } else {
                 const link = document.createElement('a');
-                link.download = `ticket-${reservation.id.slice(0, 8)}.png`;
+                link.download = `ticket-${reservation.id.slice(0, 8)}.jpg`;
                 link.href = URL.createObjectURL(blob);
                 link.click();
                 URL.revokeObjectURL(link.href);

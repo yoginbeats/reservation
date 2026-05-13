@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Ticket, Clock, ArrowRight, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { NextTripSpotlight } from "@/components/dashboard/next-trip-spotlight";
 
 export default async function ClientDashboard({
@@ -34,7 +35,7 @@ export default async function ClientDashboard({
         .single();
 
     // Fetch the most immediate upcoming reservation for the Spotlight
-    const { data: upcomingReservations } = await supabase
+    const { data: upcomingReservations, error: upcomingError } = await supabaseAdmin
         .from('reservations')
         .select(`
             id,
@@ -44,7 +45,9 @@ export default async function ClientDashboard({
                 origin,
                 destination,
                 departure_time,
-                bus_number
+                buses (
+                    bus_number
+                )
             )
         `)
         .eq('customer_id', user?.id)
@@ -56,7 +59,7 @@ export default async function ClientDashboard({
     const nextTrip = upcomingReservations?.[0];
 
     // Fetch upcoming reservations (excluding the spotlighted one)
-    const { data: reservations } = await supabase
+    const { data: reservations, error: resError } = await supabaseAdmin
         .from('reservations')
         .select(`
             id,
@@ -66,11 +69,13 @@ export default async function ClientDashboard({
             trips (
                 destination,
                 origin,
-                departure_time
+                departure_time,
+                buses (
+                    bus_number
+                )
             )
         `)
         .eq('customer_id', user?.id)
-        .neq('id', nextTrip?.id || '')
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -209,13 +214,15 @@ export default async function ClientDashboard({
                                                     ? new Date(trip.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                                     : 'Time TBA'}</span>
                                                 <span className="h-1 w-1 rounded-full bg-zinc-300" />
-                                                <span>{trip?.bus_number || 'Bus Pending'}</span>
+                                                <span>{trip?.buses?.bus_number || 'Bus Pending'}</span>
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-end gap-3">
                                             <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-tighter ${res.status === 'confirmed'
                                                 ? 'bg-green-100 text-green-700'
-                                                : 'bg-yellow-100 text-yellow-700'
+                                                : res.status === 'cancelled'
+                                                    ? 'bg-red-100 text-red-700'
+                                                    : 'bg-yellow-100 text-yellow-700'
                                                 }`}>
                                                 {res.status}
                                             </span>
