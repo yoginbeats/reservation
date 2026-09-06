@@ -58,6 +58,8 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
+            const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+
             const { error: signUpError, data } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
@@ -66,7 +68,8 @@ export default function RegisterPage() {
                     data: {
                         first_name: formData.firstName,
                         last_name: formData.lastName,
-                        role: 'client' // Default role
+                        full_name: fullName,
+                        role: 'PASSENGER'
                     }
                 }
             });
@@ -82,11 +85,14 @@ export default function RegisterPage() {
                 return;
             }
 
-            // Also insert into profiles and user_roles table if user object is returned
-            if (data.user) {
-                const fullName = `${formData.firstName} ${formData.lastName}`.trim();
-                await supabase.from('profiles').upsert({ id: data.user.id, full_name: fullName });
-                await supabase.from('user_roles').upsert({ user_id: data.user.id, role: 'PASSENGER' });
+            // Safely attempt DB profile & role insert if session is active
+            if (data.user && data.session) {
+                try {
+                    await supabase.from('profiles').upsert({ id: data.user.id, full_name: fullName });
+                    await supabase.from('user_roles').upsert({ user_id: data.user.id, role: 'PASSENGER' });
+                } catch (dbErr) {
+                    console.warn("Profile database sync warning:", dbErr);
+                }
             }
 
             // If session exists immediately (email confirmation disabled)
