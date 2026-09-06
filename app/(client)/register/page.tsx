@@ -25,6 +25,7 @@ export default function RegisterPage() {
     });
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const router = useRouter();
     const supabase = createClient();
 
@@ -43,6 +44,7 @@ export default function RegisterPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setSuccessMessage(null);
 
         if (formData.password !== formData.confirmPassword) {
             setError("Passwords do not match!");
@@ -70,27 +72,30 @@ export default function RegisterPage() {
             });
 
             if (signUpError) {
-                setError(signUpError.message);
+                if (signUpError.message?.toLowerCase().includes('rate limit')) {
+                    setError("Supabase email rate limit reached. Please wait a few minutes or check your inbox if you already tried registering.");
+                } else if (signUpError.message?.toLowerCase().includes('already registered')) {
+                    setError("This email address is already registered. Please go to the Login page to sign in.");
+                } else {
+                    setError(signUpError.message);
+                }
                 return;
             }
 
-            // Success, user created. 
-            // Note: If email confirmation is enabled, they won't be able to login yet.
-            // But we will forward them to login page or dashboard.
+            // Also insert into profiles and user_roles table if user object is returned
+            if (data.user) {
+                const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+                await supabase.from('profiles').upsert({ id: data.user.id, full_name: fullName });
+                await supabase.from('user_roles').upsert({ user_id: data.user.id, role: 'PASSENGER' });
+            }
 
-            // If session exists immediately (email confirm disabled or auto-confirm)
+            // If session exists immediately (email confirmation disabled)
             if (data.session) {
-                // If we also need to insert into user_roles table manually, we should do it here via API route or Trigger.
-                // Assuming Trigger handles it or we rely on metadata. 
-                // For now, metadata has role 'client'.
-
                 router.refresh();
                 router.push("/reservations");
             } else {
-                // Email confirmation required
-                // In production, this alert might be replaced with a nicer UI
-                alert("Account created! Please check your email to confirm your account.");
-                router.push("/login"); // Or maybe to a "Check Email" page? Defaulting to login for now.
+                // Email confirmation required by Supabase Auth
+                setSuccessMessage("Account created successfully! A confirmation link has been sent to your Gmail address. Please check your inbox (and Spam folder) to verify your account before logging in.");
             }
 
         } catch (err: any) {
@@ -132,6 +137,21 @@ export default function RegisterPage() {
                             {error && (
                                 <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm dark:bg-red-900/20 dark:text-red-400">
                                     {error}
+                                </div>
+                            )}
+
+                            {successMessage && (
+                                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-lg text-sm dark:bg-emerald-950/40 dark:text-emerald-300 space-y-2">
+                                    <div className="font-bold flex items-center gap-2">
+                                        <Check className="h-5 w-5 text-emerald-600" />
+                                        <span>Check Your Email</span>
+                                    </div>
+                                    <p>{successMessage}</p>
+                                    <div className="pt-2">
+                                        <Button variant="outline" size="sm" asChild className="w-full">
+                                            <Link href="/login">Go to Login</Link>
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
 
