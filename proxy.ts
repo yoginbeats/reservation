@@ -29,88 +29,104 @@ export default async function proxy(request: NextRequest) {
         }
     )
 
-    const { data: { user } } = await supabase.auth.getUser()
+    let user: any = null;
+    let role: string = 'PASSENGER';
 
-    // Determine Role: Check metadata first, then fallback to DB
-    let role = user?.user_metadata?.role
+    try {
+        const { data: userData } = await supabase.auth.getUser();
+        user = userData?.user || null;
 
-    if (user && !role) {
-        try {
+        if (user) {
+            role = user.user_metadata?.role || role;
             const { data: roleData } = await supabase
                 .from('user_roles')
                 .select('role')
                 .eq('user_id', user.id)
-                .single()
+                .single();
 
-            if (roleData) {
-                role = roleData.role
+            if (roleData?.role) {
+                role = roleData.role;
             }
-        } catch (error) {
-            console.error('Error fetching user role:', error)
         }
+    } catch (err) {
+        console.warn('Supabase Auth connection offline/paused in middleware:', err);
     }
 
-    // Default to client if no role found
-    if (!role) role = 'client'
+    // Default & Standardize role string
+    if (!role) role = 'PASSENGER'
+    if (role === 'admin') role = 'ADMIN'
+    if (role === 'client') role = 'PASSENGER'
 
     const url = new URL(request.url)
 
-    // Define public paths that don't require authentication
-    const publicPaths = ['/login', '/register', "/"]
-    const isPublicPath = publicPaths.some(path => url.pathname === path || url.pathname.startsWith(path + '/'))
-
-    // Protect root page - require authentication
-    // Admins go directly to /admin dashboard, clients see the 2-card landing page
-    // if (url.pathname === '/') {
-    //     if (!user) {
-    //         return NextResponse.redirect(new URL('/login', request.url))
-    //     }
-    //     if (role === 'admin') {
-    //         return NextResponse.redirect(new URL('/admin', request.url))
-    //     }
-    // }
-    // Root page behavior
-        if (url.pathname === '/') {
-            // If admin, send to admin dashboard
-            if (user && role === 'admin') {
-                return NextResponse.redirect(new URL('/admin', request.url))
-            }
-
-            // Otherwise allow access to "/"
-            return response
+    // Helper to get role home page
+    const getRoleHomePage = (userRole: string) => {
+        switch (userRole) {
+            case 'ADMIN': return '/admin'
+            case 'TELLER': return '/teller'
+            case 'CONDUCTOR': return '/conductor'
+            default: return '/dashboard'
         }
+    }
 
+    // Root page behavior
+    if (url.pathname === '/') {
+        if (user && role === 'ADMIN') {
+            return NextResponse.redirect(new URL('/admin', request.url))
+        }
+        if (user && role === 'TELLER') {
+            return NextResponse.redirect(new URL('/teller', request.url))
+        }
+        if (user && role === 'CONDUCTOR') {
+            return NextResponse.redirect(new URL('/conductor', request.url))
+        }
+        return response
+    }
 
-    // Protect /admin routes - require admin role
+    // Protect /admin routes - require ADMIN role
     if (url.pathname.startsWith('/admin')) {
         if (!user) {
             return NextResponse.redirect(new URL('/login', request.url))
         }
-
-        if (role !== 'admin') {
-            // Redirect non-admins to client dashboard
-            return NextResponse.redirect(new URL('/dashboard', request.url))
+        if (role !== 'ADMIN') {
+            return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
         }
     }
 
-    // Protect /dashboard routes - require being logged in
-    if (url.pathname.startsWith('/dashboard')) {
+    // Protect /teller routes - require TELLER or ADMIN role
+    if (url.pathname.startsWith('/teller')) {
         if (!user) {
-            return NextResponse.redirect(new URL('/', request.url))
+            return NextResponse.redirect(new URL('/login', request.url))
+        }
+        if (role !== 'TELLER' && role !== 'ADMIN') {
+            return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
+        }
+    }
+
+    // Protect /conductor routes - require CONDUCTOR or ADMIN role
+    if (url.pathname.startsWith('/conductor')) {
+        if (!user) {
+            return NextResponse.redirect(new URL('/login', request.url))
+        }
+        if (role !== 'CONDUCTOR' && role !== 'ADMIN') {
+            return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
+        }
+    }
+
+    // Protect passenger routes (/dashboard, /book, /my-tickets) - require being logged in
+    const passengerRoutes = ['/dashboard', '/book', '/my-tickets', '/reservations']
+    if (passengerRoutes.some(p => url.pathname.startsWith(p))) {
+        if (!user) {
+            return NextResponse.redirect(new URL('/login', request.url))
         }
     }
 
     // Redirect logged-in users away from auth pages to their respective dashboards
-    // Only redirect if they are visiting login or register. NOT landing page (/).
     const authPages = ['/login', '/register']
     const isAuthPage = authPages.some(path => url.pathname === path || url.pathname.startsWith(path + '/'))
 
     if (isAuthPage && user) {
-        // Redirect based on role
-        if (role === 'admin') {
-            return NextResponse.redirect(new URL('/admin', request.url))
-        }
-        return NextResponse.redirect(new URL('/dashboard', request.url))
+        return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
     }
 
     return response

@@ -47,9 +47,14 @@ export default function LoginPage() {
 
             router.refresh();
             router.push("/");
-        } catch (err) {
-            setError("An unexpected error occurred.");
-            console.error(err);
+        } catch (err: any) {
+            console.error("Email Login Error:", err);
+            const errMsg = err?.message || String(err);
+            if (errMsg.includes('Failed to fetch') || errMsg.includes('fetch')) {
+                setError("Unable to connect to Supabase backend server. Please verify your Supabase project is active and unpaused in your Supabase Dashboard, or update NEXT_PUBLIC_SUPABASE_URL in .env.local.");
+            } else {
+                setError(errMsg || "An unexpected error occurred during login.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -61,19 +66,36 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            const { error } = await supabase.auth.signInWithOtp({
-                phone: phone,
+            // E.164 formatting helper for Philippines numbers
+            let formattedPhone = phone.trim();
+            if (formattedPhone.startsWith('09')) {
+                formattedPhone = '+63' + formattedPhone.slice(1);
+            } else if (!formattedPhone.startsWith('+')) {
+                formattedPhone = '+' + formattedPhone;
+            }
+
+            const { error: otpError } = await supabase.auth.signInWithOtp({
+                phone: formattedPhone,
             });
 
-            if (error) {
-                setError(error.message);
+            if (otpError) {
+                if (otpError.message?.toLowerCase().includes('provider') || otpError.message?.toLowerCase().includes('disabled') || otpError.message?.toLowerCase().includes('fetch')) {
+                    setError("SMS Phone Auth provider is not enabled in your Supabase project. Please sign in using Email & Password or enable Phone Provider in Supabase Dashboard.");
+                } else {
+                    setError(otpError.message);
+                }
                 return;
             }
 
             setLoginStep("otp-input");
-        } catch (err) {
-            setError("Failed to send OTP.");
-            console.error(err);
+        } catch (err: any) {
+            console.error("Phone OTP Login Error:", err);
+            const errMsg = err?.message || String(err);
+            if (errMsg.includes('Failed to fetch') || errMsg.includes('fetch')) {
+                setError("SMS Phone Auth is not enabled in your Supabase project (or network request failed). Please sign in using Email & Password or enable Phone Provider in Supabase Dashboard.");
+            } else {
+                setError(errMsg || "Failed to send SMS OTP. Please check phone provider settings in Supabase.");
+            }
         } finally {
             setIsLoading(false);
         }

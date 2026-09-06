@@ -28,8 +28,51 @@ export const createClient = async () => {
     )
 }
 
-export const getRole = async () => {
+export const getUserWithRoleAndTerminal = async () => {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    return user?.user_metadata?.role || 'client'
+
+    if (!user) {
+        return { user: null, role: null, terminal: null }
+    }
+
+    let role = user.user_metadata?.role
+    let terminal = null
+
+    // Check user_roles table
+    const { data: roleData } = await supabase
+        .from('user_roles')
+        .select(`
+            role,
+            terminal_id,
+            terminals (
+                id,
+                name,
+                location
+            )
+        `)
+        .eq('user_id', user.id)
+        .single()
+
+    if (roleData) {
+        role = roleData.role || role
+        const t = roleData.terminals as any
+        terminal = Array.isArray(t) ? t[0] : t
+    }
+
+    if (!role) {
+        role = 'PASSENGER'
+    }
+
+    // Standardize legacy 'client' role to PASSENGER
+    if (role === 'client') role = 'PASSENGER'
+    if (role === 'admin') role = 'ADMIN'
+
+    return { user, role, terminal }
 }
+
+export const getRole = async () => {
+    const { role } = await getUserWithRoleAndTerminal()
+    return role || 'PASSENGER'
+}
+

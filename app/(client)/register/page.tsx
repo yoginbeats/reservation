@@ -93,9 +93,14 @@ export default function RegisterPage() {
                 router.push("/login"); // Or maybe to a "Check Email" page? Defaulting to login for now.
             }
 
-        } catch (err) {
-            setError("An unexpected error occurred during registration.");
-            console.error(err);
+        } catch (err: any) {
+            console.error("Registration error:", err);
+            const errMsg = err?.message || String(err);
+            if (errMsg.includes('Failed to fetch') || errMsg.includes('fetch')) {
+                setError("Unable to connect to Supabase backend server. Please verify that your Supabase project is active and unpaused in your Supabase Dashboard, or update NEXT_PUBLIC_SUPABASE_URL in .env.local with your active project URL.");
+            } else {
+                setError(errMsg || "An unexpected error occurred during registration.");
+            }
         } finally {
             setIsLoading(false);
         }
