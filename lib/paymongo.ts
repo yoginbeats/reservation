@@ -44,7 +44,7 @@ export async function createPayMongoCheckoutSession(params: CheckoutSessionParam
                                 quantity: 1,
                             },
                         ],
-                        payment_method_types: ['card', 'gcash', 'paymaya', 'grab_pay'],
+                        payment_method_types: ['gcash'],
                         success_url: params.successUrl,
                         cancel_url: params.cancelUrl,
                         description: params.description,

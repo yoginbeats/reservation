@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SeatPicker } from "@/components/seat-picker";
-import { Bus, MapPin, Calendar, Clock, CreditCard, ArrowRight, Check, AlertCircle } from "lucide-react";
+import { Bus, MapPin, Calendar, Clock, Wallet, ArrowRight, Check, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function BookTripPage() {
@@ -304,13 +304,13 @@ export default function BookTripPage() {
                         <Button
                             type="submit"
                             size="lg"
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
                             disabled={submitting}
                         >
-                            {submitting ? "Initiating PayMongo Checkout..." : (
+                            {submitting ? "Redirecting to GCash Payment..." : (
                                 <span className="flex items-center gap-2">
-                                    <CreditCard className="h-5 w-5" />
-                                    Pay Online via PayMongo (₱{selectedTrip.fare_amount || 850})
+                                    <Wallet className="h-5 w-5" />
+                                    Pay via GCash (₱{selectedTrip.fare_amount || 850})
                                 </span>
                             )}
                         </Button>
