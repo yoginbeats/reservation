@@ -1,260 +1,345 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { CalendarCheck, ShieldCheck, Bus, MapPin, ArrowRight, QrCode, CreditCard, Sparkles, Clock, CheckCircle2 } from "lucide-react";
+import { 
+    MapPin, 
+    Calendar, 
+    Users, 
+    Search, 
+    ShieldCheck, 
+    Clock, 
+    Star, 
+    Megaphone,
+    ArrowRight
+} from "lucide-react";
 
 export default function Home() {
-    return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50">
-            {/* HERO SECTION */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-zinc-900 via-red-950 to-zinc-900 text-white py-20 lg:py-28 px-4 sm:px-6">
-                {/* Background Glow Overlay */}
-                <div className="absolute top-0 right-1/4 h-96 w-96 rounded-full bg-red-600/20 blur-3xl pointer-events-none" />
-                <div className="absolute bottom-0 left-10 h-80 w-80 rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
+    const router = useRouter();
+    const [tripType, setTripType] = useState<"one-way" | "round-trip">("one-way");
+    const [serviceClass, setServiceClass] = useState<"REGULAR AIRCON" | "DELUXE" | "FIRST CLASS">("REGULAR AIRCON");
+    const [origin, setOrigin] = useState("Cubao");
+    const [destination, setDestination] = useState("Daet");
+    const [departureDate, setDepartureDate] = useState("");
+    const [passengers, setPassengers] = useState("1");
 
-                <div className="container mx-auto max-w-6xl relative z-10">
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.push(`/book?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`);
+    };
+
+    return (
+        <div className="min-h-screen bg-zinc-950 font-sans text-white">
+            {/* ANNOUNCEMENT RED BANNER BAR */}
+            <div className="bg-gradient-to-r from-red-700 via-red-600 to-red-700 px-4 py-2.5 text-xs text-white shadow-inner">
+                <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-red-950/80 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white border border-red-400/30">
+                            <Megaphone className="h-3.5 w-3.5 text-red-300" />
+                            Announcements
+                        </span>
+                        <p className="truncate text-xs font-semibold text-red-50">
+                            <span className="font-extrabold text-amber-300">New Ride, Better Journey:</span> We&apos;re happy to announce that a new bus unit has officially arrived and is now ready to serve our passengers! Enjoy a safer, smoother, and more comfortable trip.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* HERO SECTION WITH SCENIC HIGHWAY BACKGROUND */}
+            <section className="relative min-h-[calc(100vh-120px)] flex items-center justify-center overflow-hidden bg-cover bg-center bg-no-repeat py-12 px-4 sm:px-6"
+                style={{
+                    backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.85)), url('https://images.unsplash.com/photo-1519003722824-194d4455a60c?q=80&w=2000&auto=format&fit=crop')`
+                }}
+            >
+                {/* Subtle Grid Overlay */}
+                <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:32px_32px] opacity-10 pointer-events-none" />
+
+                <div className="container mx-auto max-w-7xl relative z-10">
                     <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
-                        {/* Hero Text */}
-                        <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-red-400 backdrop-blur">
-                                <Sparkles className="h-3.5 w-3.5 text-red-400" />
-                                <span>Official Online Ticketing Portal</span>
+                        
+                        {/* LEFT COLUMN: HERO TEXT & BADGES */}
+                        <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
+                            {/* Premium Travel Service Badge */}
+                            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-zinc-900/80 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-300 backdrop-blur shadow-lg">
+                                <Star className="h-4 w-4 fill-amber-300 text-amber-300" />
+                                <span>Premium Travel Service</span>
                             </div>
 
-                            <h1 className="text-4xl font-black tracking-tight sm:text-6xl lg:text-5xl xl:text-6xl leading-none">
-                                Travel Comfortably with <br />
-                                <span className="bg-gradient-to-r from-red-500 via-red-400 to-amber-300 bg-clip-text text-transparent">
-                                    Superlines Transportation
-                                </span>
+                            {/* Headline */}
+                            <h1 className="text-4xl font-black tracking-tight sm:text-6xl lg:text-5xl xl:text-6xl leading-[1.1] text-white drop-shadow-md">
+                                Travel with <br />
+                                <span className="text-white">Comfort & Style</span>
                             </h1>
 
-                            <p className="text-base sm:text-lg text-zinc-300 max-w-xl mx-auto lg:mx-0 font-medium">
-                                Book your bus tickets online for Cubao, Bicol, Daet, Naga, and Legazpi. Instant GCash payment, seat selection, and digital QR ticket issuance.
+                            {/* Subtitle */}
+                            <p className="text-base sm:text-lg text-zinc-200 max-w-xl mx-auto lg:mx-0 font-medium leading-relaxed drop-shadow">
+                                Experience the best bus transportation from Bicol to Manila. Reliable schedules, premium fleets, and seamless booking.
                             </p>
 
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2">
-                                <Link href="/book">
-                                    <Button size="lg" className="w-full sm:w-auto h-12 px-8 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/30 text-base">
-                                        <CalendarCheck className="mr-2 h-5 w-5" />
-                                        Book a Trip Now
-                                    </Button>
-                                </Link>
-
-                                <Link href="/my-tickets">
-                                    <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 px-8 border-zinc-700 bg-zinc-900/60 hover:bg-zinc-800 text-zinc-100 font-semibold rounded-xl text-base">
-                                        <QrCode className="mr-2 h-5 w-5 text-red-400" />
-                                        My Digital Tickets
-                                    </Button>
-                                </Link>
-                            </div>
-
-                            {/* Trust badges */}
-                            <div className="pt-6 border-t border-zinc-800/80 grid grid-cols-3 gap-4 text-xs font-semibold text-zinc-400 max-w-lg mx-auto lg:mx-0">
+                            {/* Trust Badge Bar */}
+                            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4 text-xs font-bold text-zinc-300">
                                 <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                                    <span>Instant GCash</span>
+                                    <ShieldCheck className="h-4 w-4 text-red-400" />
+                                    <span>Safe & Secured</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                                    <span>Live Seat Map</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                                    <span>Conductor QR</span>
+                                    <Clock className="h-4 w-4 text-red-400" />
+                                    <span>On-time Departure</span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Search Quick Card */}
-                        <div className="lg:col-span-5">
-                            <Card className="border-0 shadow-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-2xl p-6 text-zinc-900 dark:text-zinc-100">
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between border-b pb-4 dark:border-zinc-800">
-                                        <div className="flex items-center gap-2">
-                                            <Bus className="h-5 w-5 text-red-600" />
-                                            <h3 className="font-bold text-lg">Search Available Trips</h3>
+                        {/* RIGHT COLUMN: REPLICATED BOOKING CARD */}
+                        <div className="lg:col-span-6">
+                            <div className="mx-auto max-w-xl rounded-3xl bg-white p-6 sm:p-8 text-zinc-900 shadow-2xl backdrop-blur-lg">
+                                <form onSubmit={handleSearch} className="space-y-5">
+                                    
+                                    {/* Card Header & Trip Type Toggle */}
+                                    <div className="flex items-center justify-between border-b pb-4">
+                                        <h2 className="text-xl font-black tracking-tight text-zinc-900 uppercase">
+                                            BOOK YOUR <span className="text-red-600">TRIP</span>
+                                        </h2>
+
+                                        {/* One-way vs Round-trip */}
+                                        <div className="flex rounded-full bg-zinc-100 p-1 text-xs font-bold">
+                                            <button
+                                                type="button"
+                                                onClick={() => setTripType("one-way")}
+                                                className={`rounded-full px-3 py-1 transition-all ${
+                                                    tripType === "one-way"
+                                                        ? "bg-white text-red-600 shadow-sm border border-zinc-200 font-extrabold"
+                                                        : "text-zinc-500 hover:text-zinc-900"
+                                                }`}
+                                            >
+                                                One-way
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setTripType("round-trip")}
+                                                className={`rounded-full px-3 py-1 transition-all ${
+                                                    tripType === "round-trip"
+                                                        ? "bg-white text-red-600 shadow-sm border border-zinc-200 font-extrabold"
+                                                        : "text-zinc-500 hover:text-zinc-900"
+                                                }`}
+                                            >
+                                                Round-trip
+                                            </button>
                                         </div>
-                                        <span className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-950/50 px-2.5 py-1 rounded-full">
-                                            Daily Schedule
-                                        </span>
                                     </div>
 
-                                    <div className="space-y-3 text-sm">
-                                        <div>
-                                            <label className="text-xs font-bold uppercase text-zinc-500 mb-1 block">Origin Terminal</label>
-                                            <div className="flex items-center gap-2 p-3 rounded-xl border bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700">
-                                                <MapPin className="h-4 w-4 text-red-600" />
-                                                <span className="font-semibold">Cubao Terminal, EDSA</span>
+                                    {/* SERVICE CLASS TABS */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[11px] font-black uppercase tracking-wider text-zinc-500 block">
+                                            SERVICE CLASS
+                                        </label>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setServiceClass("REGULAR AIRCON")}
+                                                className={`rounded-xl py-3 px-2 text-xs font-black uppercase tracking-wider transition-all shadow-sm ${
+                                                    serviceClass === "REGULAR AIRCON"
+                                                        ? "bg-red-600 text-white shadow-red-600/30 shadow-md"
+                                                        : "bg-white text-zinc-700 border border-zinc-200 hover:border-zinc-300"
+                                                }`}
+                                            >
+                                                REGULAR AIRCON
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setServiceClass("DELUXE")}
+                                                className={`rounded-xl py-3 px-2 text-xs font-black uppercase tracking-wider transition-all ${
+                                                    serviceClass === "DELUXE"
+                                                        ? "bg-red-600 text-white shadow-red-600/30 shadow-md"
+                                                        : "bg-white text-zinc-700 border border-zinc-200 hover:border-zinc-300"
+                                                }`}
+                                            >
+                                                DELUXE
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setServiceClass("FIRST CLASS")}
+                                                className={`rounded-xl py-3 px-2 text-xs font-black uppercase tracking-wider transition-all ${
+                                                    serviceClass === "FIRST CLASS"
+                                                        ? "bg-red-600 text-white shadow-red-600/30 shadow-md"
+                                                        : "bg-white text-zinc-700 border border-zinc-200 hover:border-zinc-300"
+                                                }`}
+                                            >
+                                                FIRST CLASS
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* ORIGIN & DESTINATION FIELDS */}
+                                    <div className="grid sm:grid-cols-2 gap-4">
+                                        {/* Origin */}
+                                        <div className="space-y-1">
+                                            <label className="text-[11px] font-black uppercase tracking-wider text-zinc-500 block">
+                                                ORIGIN
+                                            </label>
+                                            <div className="relative flex items-center">
+                                                <MapPin className="absolute left-3 h-4 w-4 text-red-600" />
+                                                <select
+                                                    value={origin}
+                                                    onChange={(e) => setOrigin(e.target.value)}
+                                                    className="w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 py-3.5 pl-9 pr-3 text-xs font-bold text-zinc-800 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 outline-none"
+                                                >
+                                                    <option value="Cubao">Cubao Terminal</option>
+                                                    <option value="EDSA Pasay">EDSA Pasay</option>
+                                                    <option value="Daet">Daet Terminal</option>
+                                                    <option value="Naga">Naga Terminal</option>
+                                                </select>
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <label className="text-xs font-bold uppercase text-zinc-500 mb-1 block">Destination</label>
-                                            <div className="flex items-center gap-2 p-3 rounded-xl border bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700">
-                                                <MapPin className="h-4 w-4 text-blue-600" />
-                                                <span className="font-semibold">Daet / Naga / Bicol</span>
+                                        {/* Destination */}
+                                        <div className="space-y-1">
+                                            <label className="text-[11px] font-black uppercase tracking-wider text-zinc-500 block">
+                                                DESTINATION
+                                            </label>
+                                            <div className="relative flex items-center">
+                                                <MapPin className="absolute left-3 h-4 w-4 text-red-600" />
+                                                <select
+                                                    value={destination}
+                                                    onChange={(e) => setDestination(e.target.value)}
+                                                    className="w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 py-3.5 pl-9 pr-3 text-xs font-bold text-zinc-800 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 outline-none"
+                                                >
+                                                    <option value="Daet">Daet Terminal</option>
+                                                    <option value="Naga">Naga Terminal</option>
+                                                    <option value="Legazpi">Legazpi City</option>
+                                                    <option value="Cubao">Cubao Terminal</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <Link href="/book" className="block pt-2">
-                                        <Button className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-base shadow-md shadow-red-600/25">
-                                            Search Schedules
-                                            <ArrowRight className="ml-2 h-5 w-5" />
+                                    {/* DEPARTURE, RETURN, PASSENGERS */}
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {/* Departure */}
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500 block">
+                                                DEPARTURE
+                                            </label>
+                                            <div className="relative flex items-center">
+                                                <Calendar className="absolute left-2.5 h-3.5 w-3.5 text-red-600" />
+                                                <input
+                                                    type="date"
+                                                    value={departureDate}
+                                                    onChange={(e) => setDepartureDate(e.target.value)}
+                                                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 py-3 pl-8 pr-1.5 text-[11px] font-bold text-zinc-800 outline-none"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Return */}
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-zinc-400 block">
+                                                RETURN
+                                            </label>
+                                            <div className="relative flex items-center opacity-50">
+                                                <Calendar className="absolute left-2.5 h-3.5 w-3.5 text-zinc-400" />
+                                                <input
+                                                    type="date"
+                                                    disabled
+                                                    placeholder="mm/dd/yyyy"
+                                                    className="w-full rounded-xl border border-zinc-200 bg-zinc-100 py-3 pl-8 pr-1.5 text-[11px] font-bold text-zinc-400 cursor-not-allowed outline-none"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Passengers */}
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500 block">
+                                                PASSENGERS
+                                            </label>
+                                            <div className="relative flex items-center">
+                                                <Users className="absolute left-2.5 h-3.5 w-3.5 text-red-600" />
+                                                <select
+                                                    value={passengers}
+                                                    onChange={(e) => setPassengers(e.target.value)}
+                                                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 py-3 pl-8 pr-2 text-xs font-bold text-zinc-800 outline-none"
+                                                >
+                                                    <option value="1">1</option>
+                                                    <option value="2">2</option>
+                                                    <option value="3">3</option>
+                                                    <option value="4">4</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* CHECK AVAILABILITY BUTTON */}
+                                    <div className="pt-2">
+                                        <Button
+                                            type="submit"
+                                            className="w-full h-14 bg-gradient-to-r from-red-600 via-red-600 to-red-700 hover:brightness-110 text-white font-black uppercase tracking-wider rounded-2xl shadow-xl shadow-red-600/30 text-base flex items-center justify-center gap-2"
+                                        >
+                                            <Search className="h-5 w-5 stroke-[2.5]" />
+                                            <span>CHECK AVAILABILITY</span>
                                         </Button>
-                                    </Link>
-                                </div>
-                            </Card>
+                                    </div>
+
+                                    {/* CARD FOOTER NOTE */}
+                                    <div className="text-center text-[10px] font-black uppercase tracking-widest text-zinc-400 pt-1">
+                                        TRUSTED BY 50,000+ HAPPY TRAVELERS THIS YEAR
+                                    </div>
+
+                                </form>
+                            </div>
                         </div>
+
                     </div>
                 </div>
             </section>
 
-            {/* POPULAR ROUTES SHOWCASE */}
-            <section className="py-16 px-4 sm:px-6 bg-white dark:bg-zinc-900 border-t border-b border-zinc-200 dark:border-zinc-800">
-                <div className="container mx-auto max-w-6xl space-y-10">
-                    <div className="text-center space-y-2 max-w-2xl mx-auto">
-                        <span className="text-xs font-bold uppercase tracking-widest text-red-600">Featured Destinations</span>
-                        <h2 className="text-3xl font-black tracking-tight">Popular Superlines Bus Routes</h2>
-                        <p className="text-zinc-500 dark:text-zinc-400 text-sm">
-                            Daily aircon and deluxe trips connecting Metro Manila to Camarines Norte and Camarines Sur.
-                        </p>
+            {/* QUICK ROUTE SECTION */}
+            <section className="py-16 px-4 bg-zinc-900 border-t border-zinc-800">
+                <div className="container mx-auto max-w-6xl text-center space-y-8">
+                    <div>
+                        <span className="text-xs font-bold uppercase tracking-widest text-red-500">Popular Schedules</span>
+                        <h3 className="text-2xl font-black text-white mt-1">Daily Superlines Bus Routes</h3>
                     </div>
 
-                    <div className="grid gap-6 md:grid-cols-3">
-                        {/* Route 1 */}
-                        <Card className="group overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-red-500/50 hover:shadow-xl transition-all duration-300">
-                            <CardContent className="p-6 space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 px-3 py-1 rounded-full">
-                                        SUPER DELUXE
-                                    </span>
-                                    <span className="text-xl font-black text-red-600">₱850.00</span>
-                                </div>
-                                <div className="space-y-1">
-                                    <h3 className="text-xl font-bold flex items-center gap-2">
-                                        Cubao <ArrowRight className="h-4 w-4 text-zinc-400" /> Daet
-                                    </h3>
-                                    <p className="text-xs text-zinc-500 font-medium">Approx. 7.5 hrs • Daily Morning & Evening Trips</p>
-                                </div>
-                                <div className="pt-2 border-t flex items-center justify-between text-xs text-zinc-500">
-                                    <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> 6:00 AM / 9:00 PM</span>
-                                    <Link href="/book" className="font-bold text-red-600 hover:underline flex items-center gap-1">
-                                        Book <ArrowRight className="h-3.5 w-3.5" />
-                                    </Link>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Route 2 */}
-                        <Card className="group overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-red-500/50 hover:shadow-xl transition-all duration-300">
-                            <CardContent className="p-6 space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 px-3 py-1 rounded-full">
-                                        AIRCON EXPRESS
-                                    </span>
-                                    <span className="text-xl font-black text-red-600">₱750.00</span>
-                                </div>
-                                <div className="space-y-1">
-                                    <h3 className="text-xl font-bold flex items-center gap-2">
-                                        Cubao <ArrowRight className="h-4 w-4 text-zinc-400" /> Naga
-                                    </h3>
-                                    <p className="text-xs text-zinc-500 font-medium">Approx. 8.0 hrs • Daily Afternoon Trips</p>
-                                </div>
-                                <div className="pt-2 border-t flex items-center justify-between text-xs text-zinc-500">
-                                    <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> 1:00 PM / 8:30 PM</span>
-                                    <Link href="/book" className="font-bold text-red-600 hover:underline flex items-center gap-1">
-                                        Book <ArrowRight className="h-3.5 w-3.5" />
-                                    </Link>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Route 3 */}
-                        <Card className="group overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-red-500/50 hover:shadow-xl transition-all duration-300">
-                            <CardContent className="p-6 space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 px-3 py-1 rounded-full">
-                                        STANDARD BUS
-                                    </span>
-                                    <span className="text-xl font-black text-red-600">₱650.00</span>
-                                </div>
-                                <div className="space-y-1">
-                                    <h3 className="text-xl font-bold flex items-center gap-2">
-                                        Daet <ArrowRight className="h-4 w-4 text-zinc-400" /> Cubao
-                                    </h3>
-                                    <p className="text-xs text-zinc-500 font-medium">Return Trips • Daily Schedule</p>
-                                </div>
-                                <div className="pt-2 border-t flex items-center justify-between text-xs text-zinc-500">
-                                    <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> 7:00 AM / 7:30 PM</span>
-                                    <Link href="/book" className="font-bold text-red-600 hover:underline flex items-center gap-1">
-                                        Book <ArrowRight className="h-3.5 w-3.5" />
-                                    </Link>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-            </section>
-
-            {/* KEY FEATURES SECTION */}
-            <section className="py-16 px-4 sm:px-6">
-                <div className="container mx-auto max-w-6xl space-y-12">
-                    <div className="text-center space-y-2 max-w-2xl mx-auto">
-                        <h2 className="text-3xl font-black tracking-tight">Why Book Online with Superlines?</h2>
-                        <p className="text-zinc-500 dark:text-zinc-400 text-sm">
-                            Fast, convenient, and safe online reservation system.
-                        </p>
-                    </div>
-
-                    <div className="grid gap-8 md:grid-cols-3">
-                        <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-white dark:bg-zinc-900 border shadow-sm space-y-4">
-                            <div className="h-14 w-14 rounded-2xl bg-red-100 text-red-600 dark:bg-red-950/50 flex items-center justify-center">
-                                <CreditCard className="h-7 w-7" />
+                    <div className="grid gap-6 sm:grid-cols-3">
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-left space-y-3">
+                            <div className="flex justify-between items-center text-xs text-red-400 font-bold">
+                                <span>REGULAR AIRCON</span>
+                                <span className="text-white text-base font-black">₱850</span>
                             </div>
-                            <h3 className="text-lg font-bold">GCash Online Payment</h3>
-                            <p className="text-sm text-zinc-500">
-                                Pay seamlessly with GCash via PayMongo integration. Receive your digital ticket right away.
-                            </p>
+                            <h4 className="font-bold text-lg text-white">Cubao ➔ Daet</h4>
+                            <p className="text-xs text-zinc-400">Daily Morning & Evening Departure</p>
+                            <Link href="/book?origin=Cubao&destination=Daet" className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
+                                Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                            </Link>
                         </div>
 
-                        <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-white dark:bg-zinc-900 border shadow-sm space-y-4">
-                            <div className="h-14 w-14 rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-950/50 flex items-center justify-center">
-                                <QrCode className="h-7 w-7" />
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-left space-y-3">
+                            <div className="flex justify-between items-center text-xs text-amber-400 font-bold">
+                                <span>DELUXE BUS</span>
+                                <span className="text-white text-base font-black">₱950</span>
                             </div>
-                            <h3 className="text-lg font-bold">Digital QR Ticket</h3>
-                            <p className="text-sm text-zinc-500">
-                                Show your digital QR code on your phone to the bus conductor for instant boarding verification.
-                            </p>
+                            <h4 className="font-bold text-lg text-white">Cubao ➔ Naga</h4>
+                            <p className="text-xs text-zinc-400">With Restroom / CR on board</p>
+                            <Link href="/book?origin=Cubao&destination=Naga" className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
+                                Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                            </Link>
                         </div>
 
-                        <div className="flex flex-col items-center text-center p-6 rounded-2xl bg-white dark:bg-zinc-900 border shadow-sm space-y-4">
-                            <div className="h-14 w-14 rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 flex items-center justify-center">
-                                <ShieldCheck className="h-7 w-7" />
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-left space-y-3">
+                            <div className="flex justify-between items-center text-xs text-blue-400 font-bold">
+                                <span>FIRST CLASS</span>
+                                <span className="text-white text-base font-black">₱1,050</span>
                             </div>
-                            <h3 className="text-lg font-bold">Guaranteed Seats</h3>
-                            <p className="text-sm text-zinc-500">
-                                Pick your preferred seat on our interactive bus seat map. No long lines at terminal ticket booths.
-                            </p>
+                            <h4 className="font-bold text-lg text-white">Pasay ➔ Legazpi</h4>
+                            <p className="text-xs text-zinc-400">Reclining Seats & Free Wi-Fi</p>
+                            <Link href="/book?origin=Pasay&destination=Legazpi" className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
+                                Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                            </Link>
                         </div>
                     </div>
                 </div>
             </section>
-
-            {/* FOOTER */}
-            <footer className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 py-8 px-4 text-center text-xs text-zinc-500">
-                <div className="container mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                        <span className="font-black text-red-600 uppercase">Superlines</span>
-                        <span>© 2026 Superlines Transportation Co. Inc. All rights reserved.</span>
-                    </div>
-                    <div className="flex gap-4">
-                        <Link href="/book" className="hover:underline">Book Trip</Link>
-                        <Link href="/my-tickets" className="hover:underline">My Tickets</Link>
-                        <Link href="/login" className="hover:underline">Sign In</Link>
-                    </div>
-                </div>
-            </footer>
         </div>
     );
 }
