@@ -50,11 +50,19 @@ export default async function ClientDashboard() {
 
     return (
         <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Welcome Back, {userName}!</h1>
-                <p className="text-muted-foreground">
-                    Manage your reservations and tickets from your personal dashboard.
-                </p>
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-700 via-red-600 to-red-800 p-8 text-white shadow-xl">
+                <div className="relative z-10 max-w-2xl">
+                    <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white backdrop-blur">
+                        Official Passenger Portal
+                    </span>
+                    <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+                        Welcome to Superlines Transportation Co. Inc.
+                    </h1>
+                    <p className="mt-2 text-base font-medium text-red-100">
+                        Hello, <span className="font-bold text-white">{userName}</span>! Manage your online bus reservations, book trips, and view your digital tickets easily.
+                    </p>
+                </div>
+                <div className="absolute -bottom-10 -right-10 h-64 w-64 rounded-full bg-white/10 blur-2xl pointer-events-none" />
             </div>
 
             {/* Quick Actions */}

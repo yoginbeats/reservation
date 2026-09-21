@@ -157,18 +157,18 @@ export default function LoginPage() {
         <div className="flex min-h-[calc(100vh-64px)] items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 p-6 dark:from-zinc-950 dark:to-zinc-900">
             <div className="w-full max-w-sm">
                 <div className="mb-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-red-600 to-red-700 shadow-lg shadow-red-600/25">
                         <Ticket className="h-8 w-8 text-white" />
                     </div>
-                    <h1 className="text-2xl font-bold tracking-tight">TicketSys</h1>
-                    <p className="text-sm text-muted-foreground">Reservation & Ticketing System</p>
+                    <h1 className="text-2xl font-black tracking-tight text-red-600 uppercase">Superlines</h1>
+                    <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-0.5">Transportation Co. Inc.</p>
                 </div>
 
                 <Card className="border-0 shadow-xl">
                     <CardHeader className="space-y-1 pb-4">
-                        <CardTitle className="text-xl">Welcome back</CardTitle>
+                        <CardTitle className="text-xl">Welcome to Superlines</CardTitle>
                         <CardDescription>
-                            Enter your credentials to access your account
+                            Sign in to manage your online bus bookings and digital tickets
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

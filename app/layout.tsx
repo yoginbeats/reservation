@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TicketSys - Reservation & Ticketing",
-  description: "A comprehensive ticketing system powered by Next.js and Supabase",
+  title: "Superlines Transportation Co. Inc. - Official Ticketing & Reservation",
+  description: "Official online bus booking and ticketing portal for Superlines Transportation Co. Inc.",
 };
 
 export default function RootLayout({

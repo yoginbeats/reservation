@@ -149,18 +149,18 @@ export default function RegisterPage() {
             <div className="w-full max-w-md">
                 {/* Logo/Branding */}
                 <div className="mb-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/25">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-red-600 to-red-700 shadow-lg shadow-red-600/25">
                         <Ticket className="h-8 w-8 text-white" />
                     </div>
-                    <h1 className="text-2xl font-bold tracking-tight">Join TicketSys</h1>
-                    <p className="text-sm text-muted-foreground">Create your account to get started</p>
+                    <h1 className="text-2xl font-black tracking-tight text-red-600 uppercase">Superlines</h1>
+                    <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-0.5">Transportation Co. Inc.</p>
                 </div>
 
                 <Card className="border-0 shadow-xl">
                     <CardHeader className="space-y-1 pb-4">
-                        <CardTitle className="text-xl">Create an account</CardTitle>
+                        <CardTitle className="text-xl">Create a Passenger Account</CardTitle>
                         <CardDescription>
-                            Enter your details to register for a new account
+                            Sign up with Google or email to book bus tickets online
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
