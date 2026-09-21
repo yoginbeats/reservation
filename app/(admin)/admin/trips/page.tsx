@@ -24,11 +24,6 @@ export default function AdminTripsPage() {
 
     const supabase = createClient();
 
-    useEffect(() => {
-        fetchTrips();
-        fetchDropdowns();
-    }, []);
-
     const fetchDropdowns = async () => {
         const { data: rData } = await supabase.from('routes').select(`id, origin:origin_terminal_id(name), destination:destination_terminal_id(name)`);
         const { data: bData } = await supabase.from('buses').select('id, bus_number');
@@ -60,6 +55,11 @@ export default function AdminTripsPage() {
         if (data) setTrips(data);
         setLoading(false);
     };
+
+    useEffect(() => {
+        fetchTrips();
+        fetchDropdowns();
+    }, []);
 
     const handleCreateTrip = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -17,16 +17,16 @@ export default function AdminTerminalsPage() {
     const [location, setLocation] = useState("");
     const supabase = createClient();
 
-    useEffect(() => {
-        fetchTerminals();
-    }, []);
-
     const fetchTerminals = async () => {
         setLoading(true);
         const { data } = await supabase.from('terminals').select('*').order('name');
         if (data) setTerminals(data);
         setLoading(false);
     };
+
+    useEffect(() => {
+        fetchTerminals();
+    }, []);
 
     const handleCreateTerminal = async (e: React.FormEvent) => {
         e.preventDefault();

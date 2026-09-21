@@ -19,9 +19,32 @@ export default function TellerManifestPage() {
 
     const supabase = createClient();
 
-    useEffect(() => {
-        fetchTrips();
-    }, []);
+    const handleSelectTrip = async (trip: any) => {
+        setSelectedTrip(trip);
+        setLoading(true);
+
+        // Query all bookings (both ONLINE and WALK_IN from any terminal) for this specific trip
+        const { data: bookingsData, error } = await supabase
+            .from('bookings')
+            .select(`
+                id,
+                seat_number,
+                passenger_name,
+                passenger_contact,
+                booking_source,
+                booking_status,
+                created_at,
+                booking_terminal:terminals(name),
+                payment:payments(payment_status, transaction_ref)
+            `)
+            .eq('trip_id', trip.id)
+            .order('seat_number', { ascending: true });
+
+        if (bookingsData) {
+            setBookings(bookingsData);
+        }
+        setLoading(false);
+    };
 
     const fetchTrips = async () => {
         setLoading(true);
@@ -51,32 +74,9 @@ export default function TellerManifestPage() {
         setLoading(false);
     };
 
-    const handleSelectTrip = async (trip: any) => {
-        setSelectedTrip(trip);
-        setLoading(true);
-
-        // Query all bookings (both ONLINE and WALK_IN from any terminal) for this specific trip
-        const { data: bookingsData, error } = await supabase
-            .from('bookings')
-            .select(`
-                id,
-                seat_number,
-                passenger_name,
-                passenger_contact,
-                booking_source,
-                booking_status,
-                created_at,
-                booking_terminal:terminals(name),
-                ticket:tickets(qr_token, ticket_status)
-            `)
-            .eq('trip_id', trip.id)
-            .order('seat_number', { ascending: true });
-
-        if (bookingsData) {
-            setBookings(bookingsData as any);
-        }
-        setLoading(false);
-    };
+    useEffect(() => {
+        fetchTrips();
+    }, []);
 
     return (
         <div className="space-y-6">

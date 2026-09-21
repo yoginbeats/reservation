@@ -19,11 +19,6 @@ export default function AdminRoutesPage() {
     const [distance, setDistance] = useState("340");
     const supabase = createClient();
 
-    useEffect(() => {
-        fetchRoutes();
-        fetchTerminals();
-    }, []);
-
     const fetchTerminals = async () => {
         const { data } = await supabase.from('terminals').select('*').order('name');
         if (data) {
@@ -48,6 +43,11 @@ export default function AdminRoutesPage() {
         if (data) setRoutes(data);
         setLoading(false);
     };
+
+    useEffect(() => {
+        fetchRoutes();
+        fetchTerminals();
+    }, []);
 
     const handleCreateRoute = async (e: React.FormEvent) => {
         e.preventDefault();

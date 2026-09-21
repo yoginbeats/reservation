@@ -18,16 +18,16 @@ export default function AdminBusesPage() {
     const [capacity, setCapacity] = useState(45);
     const supabase = createClient();
 
-    useEffect(() => {
-        fetchBuses();
-    }, []);
-
     const fetchBuses = async () => {
         setLoading(true);
         const { data } = await supabase.from('buses').select('*').order('bus_number');
         if (data) setBuses(data);
         setLoading(false);
     };
+
+    useEffect(() => {
+        fetchBuses();
+    }, []);
 
     const handleCreateBus = async (e: React.FormEvent) => {
         e.preventDefault();

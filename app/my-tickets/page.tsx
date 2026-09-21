@@ -33,10 +33,6 @@ export default function MyTicketsPage() {
     const [loading, setLoading] = useState(true);
     const supabase = createClient();
 
-    useEffect(() => {
-        fetchTickets();
-    }, []);
-
     const fetchTickets = async () => {
         setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
@@ -77,6 +73,10 @@ export default function MyTicketsPage() {
         }
         setLoading(false);
     };
+
+    useEffect(() => {
+        fetchTickets();
+    }, []);
 
     return (
         <div className="container mx-auto max-w-4xl py-8 space-y-6">
