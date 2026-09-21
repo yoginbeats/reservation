@@ -35,11 +35,15 @@ export async function GET(request: Request) {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
         if (!error && data?.user) {
             const user = data.user
-            const fullName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User'
+            const meta = user.user_metadata || {}
+            const fullName = meta.full_name || meta.name || `${meta.given_name || ''} ${meta.family_name || ''}`.trim() || user.email?.split('@')[0] || 'Passenger'
 
             try {
                 // Ensure profile exists for Google OAuth user
-                await supabase.from('profiles').upsert({ id: user.id, full_name: fullName }, { onConflict: 'id' })
+                await supabase.from('profiles').upsert(
+                    { id: user.id, full_name: fullName },
+                    { onConflict: 'id' }
+                )
 
                 // Ensure user role exists (default PASSENGER)
                 const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single()
