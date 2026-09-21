@@ -32,8 +32,24 @@ export async function GET(request: Request) {
                 },
             }
         )
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (!error) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+        if (!error && data?.user) {
+            const user = data.user
+            const fullName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User'
+
+            try {
+                // Ensure profile exists for Google OAuth user
+                await supabase.from('profiles').upsert({ id: user.id, full_name: fullName }, { onConflict: 'id' })
+
+                // Ensure user role exists (default PASSENGER)
+                const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single()
+                if (!roleData) {
+                    await supabase.from('user_roles').insert({ user_id: user.id, role: 'PASSENGER' })
+                }
+            } catch (err) {
+                console.warn('OAuth profile sync warning:', err)
+            }
+
             return NextResponse.redirect(`${origin}${next}`)
         }
     }
