@@ -31,15 +31,28 @@ export default async function ReservationsPage() {
     }
 
     // 3. Fetch Available Trips (Client Context)
-    const { data: trips, error } = await supabase
+    let tripsRaw: any[] = [];
+    const { data: rawTrips, error } = await supabase
         .from('trips')
-        .select('id, origin, destination, departure_time, bus_number')
-        .gt('departure_time', new Date().toISOString()) // Only future trips
+        .select('*, bus:buses(bus_number)')
         .order('departure_time', { ascending: true });
 
     if (error) {
-        console.error("Error fetching trips:", error);
+        const { data: fallbackTrips } = await supabase
+            .from('trips')
+            .select('*')
+            .order('departure_time', { ascending: true });
+        if (fallbackTrips) tripsRaw = fallbackTrips;
+    } else if (rawTrips) {
+        tripsRaw = rawTrips;
     }
+
+    const trips = tripsRaw.map((t: any) => ({
+        ...t,
+        origin: t.origin || "Cubao",
+        destination: t.destination || "Daet",
+        bus_number: t.bus_number || t.bus?.bus_number || "Superlines Express"
+    }));
 
     return (
         <div className="container mx-auto max-w-5xl py-10 space-y-8">

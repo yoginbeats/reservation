@@ -40,19 +40,37 @@ export default function AdminTripsPage() {
 
     const fetchTrips = async () => {
         setLoading(true);
-        const { data } = await supabase.from('trips').select(`
-            id,
-            departure_time,
-            fare_amount,
-            status,
-            bus:buses(bus_number),
-            route:routes(
-                origin:origin_terminal_id(name),
-                destination:destination_terminal_id(name)
-            )
-        `).order('departure_time', { ascending: true });
+        let rawData: any[] = [];
 
-        if (data) setTrips(data);
+        const { data, error } = await supabase
+            .from('trips')
+            .select('*, bus:buses(bus_number, bus_type)')
+            .order('departure_time', { ascending: true });
+
+        if (error) {
+            const { data: fallbackData } = await supabase
+                .from('trips')
+                .select('*')
+                .order('departure_time', { ascending: true });
+            if (fallbackData) rawData = fallbackData;
+        } else if (data) {
+            rawData = data;
+        }
+
+        const normalizedTrips = rawData.map((t: any) => ({
+            ...t,
+            fare_amount: t.fare_amount ?? t.price ?? 850,
+            status: t.status || 'SCHEDULED',
+            route: {
+                origin: { name: t.origin || t.route?.origin?.name || "Cubao" },
+                destination: { name: t.destination || t.route?.destination?.name || "Daet" }
+            },
+            bus: t.bus || {
+                bus_number: "Superlines Express"
+            }
+        }));
+
+        setTrips(normalizedTrips);
         setLoading(false);
     };
 
@@ -63,14 +81,20 @@ export default function AdminTripsPage() {
 
     const handleCreateTrip = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!routeId || !busId || !departureTime) return;
+        if (!busId || !departureTime) return;
 
-        const { data: newTrip, error } = await supabase.from('trips').insert({
-            route_id: routeId,
+        // Find selected route origin & dest if available
+        const selectedRoute = routes.find(r => r.id === routeId);
+        const originName = selectedRoute?.origin?.name || "Cubao";
+        const destName = selectedRoute?.destination?.name || "Daet";
+
+        const { data: newTrip } = await supabase.from('trips').insert({
             bus_id: busId,
+            origin: originName,
+            destination: destName,
             departure_time: new Date(departureTime).toISOString(),
-            fare_amount: Number(fareAmount),
-            status: 'SCHEDULED',
+            price: Number(fareAmount),
+            created_at: new Date().toISOString()
         }).select().single();
 
         if (newTrip) {

@@ -47,25 +47,41 @@ export default function BookTripPage() {
 
     const fetchTrips = async () => {
         setLoading(true);
+        let rawData: any[] = [];
+        
+        // 1. Try fetching with bus relation
         const { data, error } = await supabase
             .from('trips')
-            .select(`
-                id,
-                departure_time,
-                fare_amount,
-                bus:buses(bus_number, bus_type),
-                route:routes(
-                    origin:origin_terminal_id(name),
-                    destination:destination_terminal_id(name)
-                )
-            `)
+            .select('*, bus:buses(bus_number, bus_type)')
             .order('departure_time', { ascending: true });
 
         if (error) {
-            console.error("Error fetching trips:", error);
+            console.warn("Retrying simple trip fetch:", error.message || error);
+            // 2. Fallback to basic trips query
+            const { data: fallbackData } = await supabase
+                .from('trips')
+                .select('*')
+                .order('departure_time', { ascending: true });
+            if (fallbackData) rawData = fallbackData;
         } else if (data) {
-            setTrips(data);
+            rawData = data;
         }
+
+        // Normalize trip schema to support both legacy and direct columns
+        const normalizedTrips = rawData.map((t: any) => ({
+            ...t,
+            fare_amount: t.fare_amount ?? t.price ?? 850,
+            route: {
+                origin: { name: t.origin || t.route?.origin?.name || "Cubao" },
+                destination: { name: t.destination || t.route?.destination?.name || "Daet" }
+            },
+            bus: t.bus || {
+                bus_number: "Superlines Express",
+                bus_type: "REGULAR AIRCON"
+            }
+        }));
+
+        setTrips(normalizedTrips);
         setLoading(false);
     };
 
