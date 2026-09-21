@@ -41,7 +41,11 @@ export default function LoginPage() {
             });
 
             if (error) {
-                setError(error.message);
+                if (error.message?.toLowerCase().includes('email not confirmed')) {
+                    setError("Your email has not been confirmed yet. Please check your inbox for the confirmation link, or confirm the user in your Supabase Dashboard > Authentication > Users.");
+                } else {
+                    setError(error.message);
+                }
                 return;
             }
 
