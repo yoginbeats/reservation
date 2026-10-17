@@ -233,7 +233,7 @@ CREATE OR REPLACE FUNCTION public.book_seat_atomic(
     p_passenger_id UUID,
     p_passenger_name VARCHAR(255),
     p_passenger_contact VARCHAR(100),
-    p_total_price NUMERIC(10,2),
+    p_total_price NUMERIC,
     p_booking_source VARCHAR(20),
     p_booking_terminal_id UUID,
     p_created_by UUID,
@@ -338,6 +338,10 @@ BEGIN
     );
 END;
 $$;
+
+-- Grant execution permissions for all API roles and reload PostgREST schema cache
+GRANT EXECUTE ON FUNCTION public.book_seat_atomic TO anon, authenticated, service_role;
+NOTIFY pgrst, 'reload schema';
 
 -- Function to initialize 45 seats for a new trip automatically
 CREATE OR REPLACE FUNCTION public.initialize_trip_seats()
