@@ -30,10 +30,30 @@ ON CONFLICT (name) DO NOTHING;
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email VARCHAR(255),
     full_name VARCHAR(255),
+    first_name VARCHAR(100),
+    middle_name VARCHAR(100),
+    last_name VARCHAR(100),
     phone_number VARCHAR(50),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    birthdate DATE,
+    age INT,
+    address TEXT,
+    profile_completed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Migration helpers if profiles table already exists
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS first_name VARCHAR(100);
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS middle_name VARCHAR(100);
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS last_name VARCHAR(100);
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS birthdate DATE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS age INT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS profile_completed BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());
 
 CREATE TABLE IF NOT EXISTS public.user_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

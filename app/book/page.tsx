@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { SeatPicker } from "@/components/seat-picker";
 import { Bus, MapPin, Calendar, Clock, Wallet, ArrowRight, Check, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-export default function BookTripPage() {
+function BookTripContent() {
     const [step, setStep] = useState<1 | 2 | 3>(1); // 1: Select Schedule, 2: Select Seat, 3: Passenger Details & Checkout
     const [trips, setTrips] = useState<any[]>([]);
     const [selectedTrip, setSelectedTrip] = useState<any>(null);
@@ -27,11 +27,13 @@ export default function BookTripPage() {
 
     const supabase = createClient();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const tripIdParam = searchParams.get("tripId");
 
     useEffect(() => {
         fetchTrips();
         fetchCurrentUser();
-    }, []);
+    }, [tripIdParam]);
 
     const fetchCurrentUser = async () => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -83,6 +85,13 @@ export default function BookTripPage() {
 
         setTrips(normalizedTrips);
         setLoading(false);
+
+        if (tripIdParam) {
+            const matched = normalizedTrips.find((t: any) => t.id === tripIdParam);
+            if (matched) {
+                handleSelectTrip(matched);
+            }
+        }
     };
 
     const handleSelectTrip = async (trip: any) => {
@@ -151,14 +160,14 @@ export default function BookTripPage() {
             <div className="flex items-center justify-between border-b pb-4">
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight">Book Your Bus Ticket</h1>
-                    <p className="text-sm text-muted-foreground">Select a schedule, choose your seat, and pay securely online.</p>
+                    <p className="text-sm text-muted-foreground">Select a schedule, choose your seat, and pay securely online via PayMongo.</p>
                 </div>
                 <div className="flex items-center gap-2 text-xs font-semibold">
-                    <span className={`px-3 py-1 rounded-full ${step === 1 ? 'bg-blue-600 text-white' : 'bg-muted'}`}>1. Schedule</span>
+                    <span className={`px-3 py-1 rounded-full ${step === 1 ? 'bg-red-600 text-white' : 'bg-muted'}`}>1. Schedule</span>
                     <span>→</span>
-                    <span className={`px-3 py-1 rounded-full ${step === 2 ? 'bg-blue-600 text-white' : 'bg-muted'}`}>2. Seat Map</span>
+                    <span className={`px-3 py-1 rounded-full ${step === 2 ? 'bg-red-600 text-white' : 'bg-muted'}`}>2. Seat Map</span>
                     <span>→</span>
-                    <span className={`px-3 py-1 rounded-full ${step === 3 ? 'bg-blue-600 text-white' : 'bg-muted'}`}>3. Checkout</span>
+                    <span className={`px-3 py-1 rounded-full ${step === 3 ? 'bg-red-600 text-white' : 'bg-muted'}`}>3. PayMongo Checkout</span>
                 </div>
             </div>
 
@@ -184,9 +193,9 @@ export default function BookTripPage() {
                                 const depTime = new Date(t.departure_time);
 
                                 return (
-                                    <Card key={t.id} className="transition-all hover:border-blue-500 hover:shadow-md">
+                                    <Card key={t.id} className="transition-all hover:border-red-500 hover:shadow-md">
                                         <CardHeader className="pb-3">
-                                            <div className="flex items-center justify-between text-xs font-semibold uppercase text-blue-600">
+                                            <div className="flex items-center justify-between text-xs font-semibold uppercase text-red-600">
                                                 <span>{busNum}</span>
                                                 <span className="font-mono text-base font-extrabold text-foreground">
                                                     ₱{t.fare_amount || 850}
@@ -209,7 +218,7 @@ export default function BookTripPage() {
                                             </div>
                                         </CardContent>
                                         <CardFooter>
-                                            <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => handleSelectTrip(t)}>
+                                            <Button className="w-full bg-red-600 hover:bg-red-700 text-white" onClick={() => handleSelectTrip(t)}>
                                                 Select Schedule & Choose Seat
                                             </Button>
                                         </CardFooter>
@@ -250,11 +259,11 @@ export default function BookTripPage() {
                     <div className="flex justify-end">
                         <Button
                             size="lg"
-                            className="bg-blue-600 hover:bg-blue-700"
+                            className="bg-red-600 hover:bg-red-700 text-white font-semibold"
                             disabled={!selectedSeat}
                             onClick={() => setStep(3)}
                         >
-                            Continue to Passenger Details
+                            Continue to Passenger Details & Payment
                         </Button>
                     </div>
                 </div>
@@ -264,22 +273,22 @@ export default function BookTripPage() {
             {step === 3 && selectedTrip && selectedSeat && (
                 <div className="space-y-6 max-w-xl mx-auto">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold">Passenger Details & Payment</h2>
+                        <h2 className="text-xl font-bold">Passenger Details & PayMongo Payment</h2>
                         <Button variant="outline" size="sm" onClick={() => setStep(2)}>
                             Back to Seat Map
                         </Button>
                     </div>
 
                     {/* Trip Summary Card */}
-                    <Card className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200">
+                    <Card className="bg-red-50/50 dark:bg-red-950/20 border-red-200">
                         <CardContent className="p-4 space-y-2 text-sm">
                             <div className="flex justify-between font-bold">
                                 <span>{selectedTrip.route?.origin?.name} ➔ {selectedTrip.route?.destination?.name}</span>
-                                <span>₱{selectedTrip.fare_amount || 850}</span>
+                                <span className="text-red-600 font-extrabold">₱{selectedTrip.fare_amount || 850}</span>
                             </div>
                             <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>Schedule: {new Date(selectedTrip.departure_time).toLocaleString()}</span>
-                                <span className="font-mono font-bold text-blue-600">Seat #{selectedSeat < 10 ? `0${selectedSeat}` : selectedSeat}</span>
+                                <span className="font-mono font-bold text-red-600">Seat #{selectedSeat < 10 ? `0${selectedSeat}` : selectedSeat}</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -317,16 +326,22 @@ export default function BookTripPage() {
                             />
                         </div>
 
+                        <div className="rounded-lg bg-zinc-100 dark:bg-zinc-800 p-3 text-xs text-muted-foreground space-y-1">
+                            <p className="font-semibold text-foreground">Accepted Payment Options:</p>
+                            <p>• GCash, Maya, Debit/Credit Card (Visa/Mastercard), GrabPay</p>
+                            <p>• Powered securely by PayMongo payment gateway</p>
+                        </div>
+
                         <Button
                             type="submit"
                             size="lg"
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold"
                             disabled={submitting}
                         >
-                            {submitting ? "Redirecting to GCash Payment..." : (
+                            {submitting ? "Redirecting to PayMongo Checkout..." : (
                                 <span className="flex items-center gap-2">
                                     <Wallet className="h-5 w-5" />
-                                    Pay via GCash (₱{selectedTrip.fare_amount || 850})
+                                    Pay via PayMongo (₱{selectedTrip.fare_amount || 850})
                                 </span>
                             )}
                         </Button>
@@ -334,5 +349,13 @@ export default function BookTripPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function BookTripPage() {
+    return (
+        <Suspense fallback={<div className="container mx-auto py-12 text-center text-muted-foreground">Loading booking page...</div>}>
+            <BookTripContent />
+        </Suspense>
     );
 }

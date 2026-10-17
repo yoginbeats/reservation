@@ -7,9 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { UserPlus, Mail, Lock, User, Eye, EyeOff, Ticket, Check } from "lucide-react";
+import { UserPlus, Mail, Lock, User, Eye, EyeOff, Ticket, Check, Calendar, Phone, MapPin, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
@@ -18,8 +19,13 @@ export default function RegisterPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [formData, setFormData] = useState({
         firstName: "",
+        middleName: "",
         lastName: "",
         email: "",
+        birthdate: "",
+        age: "",
+        phoneNumber: "",
+        address: "",
         password: "",
         confirmPassword: "",
     });
@@ -29,8 +35,25 @@ export default function RegisterPage() {
     const router = useRouter();
     const supabase = createClient();
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.id]: e.target.value });
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { id, value } = e.target;
+        setFormData(prev => {
+            const updated = { ...prev, [id]: value };
+            // Auto calculate age if birthdate changes
+            if (id === "birthdate" && value) {
+                const birth = new Date(value);
+                const today = new Date();
+                let calcAge = today.getFullYear() - birth.getFullYear();
+                const m = today.getMonth() - birth.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                    calcAge--;
+                }
+                if (calcAge >= 0) {
+                    updated.age = String(calcAge);
+                }
+            }
+            return updated;
+        });
     };
 
     const passwordStrength = () => {
@@ -50,6 +73,22 @@ export default function RegisterPage() {
             setError("Passwords do not match!");
             return;
         }
+        if (formData.password.length < 6) {
+            setError("Password must be at least 6 characters.");
+            return;
+        }
+        if (!formData.birthdate) {
+            setError("Please provide your date of birth.");
+            return;
+        }
+        if (!formData.phoneNumber) {
+            setError("Please provide your mobile phone number.");
+            return;
+        }
+        if (!formData.address) {
+            setError("Please provide your complete address.");
+            return;
+        }
         if (!acceptTerms) {
             setError("Please accept the terms and conditions.");
             return;
@@ -58,17 +97,24 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
-            const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+            const fullName = `${formData.firstName.trim()} ${formData.middleName.trim() ? formData.middleName.trim() + " " : ""}${formData.lastName.trim()}`;
+            const parsedAge = formData.age ? parseInt(formData.age, 10) : null;
 
             const { error: signUpError, data } = await supabase.auth.signUp({
-                email: formData.email,
+                email: formData.email.trim(),
                 password: formData.password,
                 options: {
                     emailRedirectTo: `${window.location.origin}/auth/callback?next=/reservations`,
                     data: {
-                        first_name: formData.firstName,
-                        last_name: formData.lastName,
+                        first_name: formData.firstName.trim(),
+                        middle_name: formData.middleName.trim(),
+                        last_name: formData.lastName.trim(),
                         full_name: fullName,
+                        birthdate: formData.birthdate,
+                        age: parsedAge,
+                        phone_number: formData.phoneNumber.trim(),
+                        address: formData.address.trim(),
+                        profile_completed: true,
                         role: 'PASSENGER'
                     }
                 }
@@ -86,29 +132,58 @@ export default function RegisterPage() {
             }
 
             // Safely attempt DB profile & role insert if session is active
-            if (data.user && data.session) {
+            if (data.user) {
                 try {
-                    await supabase.from('profiles').upsert({ id: data.user.id, full_name: fullName });
+                    await supabase.from('profiles').upsert({
+                        id: data.user.id,
+                        email: formData.email.trim(),
+                        first_name: formData.firstName.trim(),
+                        middle_name: formData.middleName.trim(),
+                        last_name: formData.lastName.trim(),
+                        full_name: fullName,
+                        birthdate: formData.birthdate,
+                        age: parsedAge,
+                        phone_number: formData.phoneNumber.trim(),
+                        address: formData.address.trim(),
+                        profile_completed: true,
+                        updated_at: new Date().toISOString()
+                    });
                     await supabase.from('user_roles').upsert({ user_id: data.user.id, role: 'PASSENGER' });
                 } catch (dbErr) {
                     console.warn("Profile database sync warning:", dbErr);
+                }
+
+                // Send welcome email notification
+                try {
+                    await fetch("/api/auth/send-welcome-email", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            email: formData.email.trim(),
+                            firstName: formData.firstName.trim(),
+                            lastName: formData.lastName.trim(),
+                            phoneNumber: formData.phoneNumber.trim(),
+                        }),
+                    });
+                } catch (mailErr) {
+                    console.warn("Welcome email trigger warning:", mailErr);
                 }
             }
 
             // If session exists immediately (email confirmation disabled)
             if (data.session) {
                 router.refresh();
-                router.push("/reservations");
+                router.push("/dashboard");
             } else {
                 // Email confirmation required by Supabase Auth
-                setSuccessMessage("Account created successfully! A confirmation link has been sent to your Gmail address. Please check your inbox (and Spam folder) to verify your account before logging in.");
+                setSuccessMessage("Account created successfully! A confirmation email has been sent. You can now log in using your Email & Password or Google.");
             }
 
         } catch (err: any) {
             console.error("Registration error:", err);
             const errMsg = err?.message || String(err);
             if (errMsg.includes('Failed to fetch') || errMsg.includes('fetch')) {
-                setError("Unable to connect to Supabase backend server. Please verify that your Supabase project is active and unpaused in your Supabase Dashboard, or update NEXT_PUBLIC_SUPABASE_URL in .env.local with your active project URL.");
+                setError("Unable to connect to Supabase backend server. Please verify your internet connection or Supabase settings.");
             } else {
                 setError(errMsg || "An unexpected error occurred during registration.");
             }
@@ -146,67 +221,123 @@ export default function RegisterPage() {
 
     return (
         <div className="flex min-h-[calc(100vh-64px)] items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 p-6 dark:from-zinc-950 dark:to-zinc-900">
-            <div className="w-full max-w-md">
+            <div className="w-full max-w-xl">
                 {/* Logo/Branding */}
-                <div className="mb-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-red-600 to-red-700 shadow-lg shadow-red-600/25">
-                        <Ticket className="h-8 w-8 text-white" />
-                    </div>
-                    <h1 className="text-2xl font-black tracking-tight text-red-600 uppercase">Superlines</h1>
-                    <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-0.5">Transportation Co. Inc.</p>
+                <div className="mb-6 text-center">
+                    <Link href="/" className="inline-flex items-center gap-2">
+                        <div className="flex h-12 w-14 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-400 via-red-600 to-blue-700 p-0.5 shadow-md">
+                            <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-zinc-900 font-black italic text-amber-400 text-2xl">
+                                S
+                            </div>
+                        </div>
+                        <span className="text-2xl font-black uppercase tracking-tight text-red-600">
+                            Superlines
+                        </span>
+                    </Link>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        Official Passenger Account Registration
+                    </p>
                 </div>
 
-                <Card className="border-0 shadow-xl">
+                <Card className="border-2 shadow-xl">
                     <CardHeader className="space-y-1 pb-4">
-                        <CardTitle className="text-xl">Create a Passenger Account</CardTitle>
+                        <div className="flex items-center gap-2">
+                            <UserPlus className="h-5 w-5 text-red-600" />
+                            <CardTitle className="text-xl font-bold">Create Passenger Account</CardTitle>
+                        </div>
                         <CardDescription>
-                            Sign up with Google or email to book bus tickets online
+                            Sign up with Google or fill out your passenger information to book tickets online
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
+
+                    <CardContent className="space-y-6">
+                        {/* Google One-Click Registration Button */}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full h-11 border-2 font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                            onClick={handleGoogleLogin}
+                            disabled={isLoading}
+                        >
+                            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                                <path
+                                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                    fill="#4285F4"
+                                />
+                                <path
+                                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                    fill="#34A853"
+                                />
+                                <path
+                                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                                    fill="#FBBC05"
+                                />
+                                <path
+                                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                                    fill="#EA4335"
+                                />
+                            </svg>
+                            Continue with Google
+                        </Button>
+
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <Separator />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-card px-2 text-muted-foreground font-semibold">
+                                    Or register with passenger details
+                                </span>
+                            </div>
+                        </div>
+
+                        {error && (
+                            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400 border border-red-200">
+                                {error}
+                            </div>
+                        )}
+
+                        {successMessage && (
+                            <div className="rounded-lg bg-emerald-50 p-4 text-sm text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 space-y-2">
+                                <p className="font-bold flex items-center gap-2">
+                                    <Check className="h-4 w-4" /> Account Created Successfully!
+                                </p>
+                                <p>{successMessage}</p>
+                                <div className="pt-2">
+                                    <Button variant="outline" size="sm" asChild className="w-full">
+                                        <Link href="/login">Go to Login</Link>
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            {error && (
-                                <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm dark:bg-red-900/20 dark:text-red-400">
-                                    {error}
+                            {/* Personal Names */}
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="firstName">First Name *</Label>
+                                    <Input
+                                        id="firstName"
+                                        placeholder="Juan"
+                                        value={formData.firstName}
+                                        onChange={handleChange}
+                                        required
+                                    />
                                 </div>
-                            )}
-
-                            {successMessage && (
-                                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-lg text-sm dark:bg-emerald-950/40 dark:text-emerald-300 space-y-2">
-                                    <div className="font-bold flex items-center gap-2">
-                                        <Check className="h-5 w-5 text-emerald-600" />
-                                        <span>Check Your Email</span>
-                                    </div>
-                                    <p>{successMessage}</p>
-                                    <div className="pt-2">
-                                        <Button variant="outline" size="sm" asChild className="w-full">
-                                            <Link href="/login">Go to Login</Link>
-                                        </Button>
-                                    </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="middleName">Middle Name</Label>
+                                    <Input
+                                        id="middleName"
+                                        placeholder="Santos"
+                                        value={formData.middleName}
+                                        onChange={handleChange}
+                                    />
                                 </div>
-                            )}
-
-                            {/* Name Fields */}
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="firstName">First Name</Label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                        <Input
-                                            id="firstName"
-                                            placeholder="Pedro"
-                                            value={formData.firstName}
-                                            onChange={handleChange}
-                                            className="pl-10"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="lastName">Last Name</Label>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="lastName">Last Name *</Label>
                                     <Input
                                         id="lastName"
-                                        placeholder="Gil"
+                                        placeholder="Dela Cruz"
                                         value={formData.lastName}
                                         onChange={handleChange}
                                         required
@@ -214,160 +345,184 @@ export default function RegisterPage() {
                                 </div>
                             </div>
 
-                            {/* Email Field */}
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email Address</Label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="name@gmail.com"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        className="pl-10"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Password Field */}
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                    <Input
-                                        id="password"
-                                        type={showPassword ? "text" : "password"}
-                                        placeholder="Create a strong password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        className="pl-10 pr-10"
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                    >
-                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                    </button>
-                                </div>
-                                {/* Password Strength Indicator */}
-                                {formData.password && (
-                                    <div className="space-y-1">
-                                        <div className="flex gap-1">
-                                            {[1, 2, 3].map((level) => (
-                                                <div
-                                                    key={level}
-                                                    className={`h-1 flex-1 rounded-full ${strength >= level ? color : "bg-zinc-200 dark:bg-zinc-700"
-                                                        }`}
-                                                />
-                                            ))}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">Password strength: {label}</p>
+                            {/* Birthdate & Age */}
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="birthdate">Date of Birth *</Label>
+                                    <div className="relative">
+                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            id="birthdate"
+                                            type="date"
+                                            className="pl-9"
+                                            value={formData.birthdate}
+                                            onChange={handleChange}
+                                            required
+                                        />
                                     </div>
-                                )}
-                            </div>
-
-                            {/* Confirm Password Field */}
-                            <div className="space-y-2">
-                                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="age">Age</Label>
                                     <Input
-                                        id="confirmPassword"
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        placeholder="Confirm your password"
-                                        value={formData.confirmPassword}
+                                        id="age"
+                                        type="number"
+                                        placeholder="Calculated automatically"
+                                        value={formData.age}
                                         onChange={handleChange}
-                                        className="pl-10"
-                                        required
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                    >
-                                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                    </button>
-                                    {formData.confirmPassword && formData.password === formData.confirmPassword && (
-                                        <Check className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-500" />
-                                    )}
                                 </div>
                             </div>
 
-                            {/* Terms Checkbox */}
-                            <div className="flex items-start space-x-2">
+                            {/* Contact & Email */}
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="phoneNumber">Phone Number *</Label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            id="phoneNumber"
+                                            type="tel"
+                                            placeholder="0917 123 4567"
+                                            className="pl-9"
+                                            value={formData.phoneNumber}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="email">Email Address *</Label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            placeholder="juan@gmail.com"
+                                            className="pl-9"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Complete Address */}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="address">Complete Address (Street, Barangay, City, Province) *</Label>
+                                <div className="relative">
+                                    <Textarea
+                                        id="address"
+                                        rows={2}
+                                        placeholder="e.g. 123 Rizal St., Brgy. Central, Daet, Camarines Norte"
+                                        value={formData.address}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Password Fields */}
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="password">Password *</Label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                        <Input
+                                            id="password"
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="At least 6 chars"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            className="pl-9 pr-10"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                        <Input
+                                            id="confirmPassword"
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            placeholder="Re-type password"
+                                            value={formData.confirmPassword}
+                                            onChange={handleChange}
+                                            className="pl-9 pr-10"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Password Strength Indicator */}
+                            {formData.password && (
+                                <div className="space-y-1">
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3].map((level) => (
+                                            <div
+                                                key={level}
+                                                className={`h-1 flex-1 rounded-full ${
+                                                    strength >= level ? color : "bg-muted"
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Strength: <span className="font-medium">{label}</span>
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Terms and Conditions */}
+                            <div className="flex items-start space-x-2 pt-2">
                                 <Checkbox
                                     id="terms"
                                     checked={acceptTerms}
                                     onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
                                 />
-                                <label htmlFor="terms" className="text-sm leading-tight">
+                                <Label htmlFor="terms" className="text-xs font-normal leading-relaxed">
                                     I agree to the{" "}
-                                    <Link href="/terms" className="font-medium text-blue-600 hover:underline">
+                                    <Link href="/terms" className="text-red-600 hover:underline">
                                         Terms of Service
                                     </Link>{" "}
                                     and{" "}
-                                    <Link href="/privacy" className="font-medium text-blue-600 hover:underline">
+                                    <Link href="/privacy" className="text-red-600 hover:underline">
                                         Privacy Policy
                                     </Link>
-                                </label>
+                                    , and consent to passenger data processing for ticket issuance.
+                                </Label>
                             </div>
 
-                            {/* Submit Button */}
                             <Button
                                 type="submit"
-                                className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600"
-                                disabled={isLoading || !acceptTerms}
+                                className="w-full h-11 bg-red-600 hover:bg-red-700 text-white font-bold"
+                                disabled={isLoading}
                             >
-                                {isLoading ? (
-                                    <span className="flex items-center gap-2">
-                                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                        Creating account...
-                                    </span>
-                                ) : (
-                                    <span className="flex items-center gap-2">
-                                        <UserPlus className="h-4 w-4" />
-                                        Create Account
-                                    </span>
-                                )}
+                                {isLoading ? "Creating Your Account..." : "Create Passenger Account"}
                             </Button>
-
-                            <Separator className="my-4" />
-
-                            {/* Social Login Placeholder */}
-                            <div className="grid gap-2">
-                                <Button variant="outline" type="button" onClick={handleGoogleLogin} disabled={isLoading} className="w-full">
-                                    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                                        <path
-                                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                                            fill="#4285F4"
-                                        />
-                                        <path
-                                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                            fill="#34A853"
-                                        />
-                                        <path
-                                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                                            fill="#FBBC05"
-                                        />
-                                        <path
-                                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                                            fill="#EA4335"
-                                        />
-                                    </svg>
-                                    Continue with Google
-                                </Button>
-                            </div>
                         </form>
 
-                        {/* Login Link */}
-                        <div className="mt-6 text-center text-sm">
+                        <div className="text-center text-sm">
                             <span className="text-muted-foreground">Already have an account? </span>
-                            <Link href="/login" className="font-semibold text-blue-600 hover:text-blue-500 hover:underline">
-                                Sign in
+                            <Link href="/login" className="font-semibold text-red-600 hover:underline">
+                                Sign in here
                             </Link>
                         </div>
                     </CardContent>

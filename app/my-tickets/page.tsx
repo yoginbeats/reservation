@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Ticket, Calendar, Clock, Bus, MapPin, Printer, ShieldCheck } from "lucide-react";
+import { Ticket, Calendar, Clock, Bus, MapPin, Printer, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface UserTicket {
@@ -28,9 +29,13 @@ interface UserTicket {
     } | null;
 }
 
-export default function MyTicketsPage() {
+function TicketsContent() {
     const [tickets, setTickets] = useState<UserTicket[]>([]);
     const [loading, setLoading] = useState(true);
+    const [paymentVerified, setPaymentVerified] = useState(false);
+    const searchParams = useSearchParams();
+    const paymentStatus = searchParams.get("payment");
+    const bookingId = searchParams.get("booking_id");
     const supabase = createClient();
 
     const fetchTickets = async () => {
@@ -75,8 +80,21 @@ export default function MyTicketsPage() {
     };
 
     useEffect(() => {
-        fetchTickets();
-    }, []);
+        // If returning from PayMongo checkout with payment=success
+        if (paymentStatus === "success" && bookingId) {
+            setPaymentVerified(true);
+            // Verify payment and update ticket status
+            fetch(`/api/payments/paymongo/verify?booking_id=${bookingId}`)
+                .then((res) => res.json())
+                .then(() => fetchTickets())
+                .catch((err) => {
+                    console.error("Verification error:", err);
+                    fetchTickets();
+                });
+        } else {
+            fetchTickets();
+        }
+    }, [paymentStatus, bookingId]);
 
     return (
         <div className="container mx-auto max-w-4xl py-8 space-y-6">
@@ -84,6 +102,16 @@ export default function MyTicketsPage() {
                 <h1 className="text-3xl font-extrabold tracking-tight">My Digital Tickets</h1>
                 <p className="text-muted-foreground">Present your digital QR ticket to the conductor when boarding.</p>
             </div>
+
+            {paymentVerified && (
+                <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-400">
+                    <CheckCircle2 className="h-6 w-6 flex-shrink-0 text-emerald-600" />
+                    <div>
+                        <p className="font-bold">Payment Successful via PayMongo!</p>
+                        <p className="text-sm">Your booking #{bookingId?.slice(0, 8)} has been confirmed and your digital ticket is now active.</p>
+                    </div>
+                </div>
+            )}
 
             {loading ? (
                 <div className="py-12 text-center text-muted-foreground">Loading your tickets...</div>
@@ -191,5 +219,13 @@ export default function MyTicketsPage() {
                 </Card>
             )}
         </div>
+    );
+}
+
+export default function MyTicketsPage() {
+    return (
+        <Suspense fallback={<div className="container mx-auto max-w-4xl py-12 text-center text-muted-foreground">Loading tickets...</div>}>
+            <TicketsContent />
+        </Suspense>
     );
 }

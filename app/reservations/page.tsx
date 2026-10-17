@@ -49,17 +49,23 @@ export default async function ReservationsPage() {
 
     const trips = tripsRaw.map((t: any) => ({
         ...t,
-        origin: t.origin || "Cubao",
-        destination: t.destination || "Daet",
-        bus_number: t.bus_number || t.bus?.bus_number || "Superlines Express"
+        origin: t.origin || t.route?.origin_terminal?.name || "Cubao",
+        destination: t.destination || t.route?.destination_terminal?.name || "Daet",
+        bus_number: t.bus_number || t.bus?.bus_number || "Superlines Express",
+        fare_amount: t.fare_amount ?? t.price ?? 850
     }));
 
     return (
         <div className="container mx-auto max-w-5xl py-10 space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Available Trips</h1>
-                    <p className="text-muted-foreground">Browse and book your next journey.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Available Trips & Reservations</h1>
+                    <p className="text-muted-foreground">Select a trip and pay securely online via PayMongo (GCash, Maya, Cards).</p>
+                </div>
+                <div className="flex items-center gap-2 text-xs bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 px-3 py-1.5 rounded-full border border-red-200">
+                    <span className="font-semibold">Secured by PayMongo</span>
+                    <span>•</span>
+                    <span>GCash / Maya / Card</span>
                 </div>
             </div>
 
@@ -71,7 +77,7 @@ export default async function ReservationsPage() {
                         const timeStr = tripDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                         return (
-                            <Card key={trip.id} className="flex flex-col">
+                            <Card key={trip.id} className="flex flex-col border transition-all hover:shadow-md">
                                 <CardHeader>
                                     <CardTitle className="flex items-center justify-between text-lg">
                                         <span>{trip.origin}</span>
@@ -93,11 +99,16 @@ export default async function ReservationsPage() {
                                             {trip.bus_number || "Bus TBD"}
                                         </div>
                                     </div>
-                                    {/* Price removed due to schema error */}
+                                    <div className="flex items-center justify-between pt-3 border-t">
+                                        <span className="text-xs text-muted-foreground">Ticket Fare</span>
+                                        <span className="text-lg font-black text-red-600">₱{trip.fare_amount}</span>
+                                    </div>
                                 </CardContent>
                                 <CardFooter>
-                                    <Button className="w-full">
-                                        Buy Ticket
+                                    <Button asChild className="w-full bg-red-600 hover:bg-red-700 text-white font-bold">
+                                        <Link href={`/book?tripId=${trip.id}`}>
+                                            Book & Pay with PayMongo
+                                        </Link>
                                     </Button>
                                 </CardFooter>
                             </Card>

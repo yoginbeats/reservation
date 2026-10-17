@@ -80,29 +80,40 @@ export function GlobalHeader() {
                             pathname?.startsWith("/my-tickets") ? "text-red-600 font-bold" : "text-zinc-700 hover:text-red-600"
                         }`}
                     >
-                        Trip Schedule
+                        My Tickets
                     </Link>
 
-                    <Link
-                        href="/dashboard"
-                        className={`transition-colors ${
-                            pathname?.startsWith("/dashboard") ? "text-red-600 font-bold" : "text-zinc-700 hover:text-red-600"
-                        }`}
-                    >
-                        About Us
-                    </Link>
+                    {user && (
+                        <Link
+                            href="/dashboard"
+                            className={`transition-colors ${
+                                pathname?.startsWith("/dashboard") ? "text-red-600 font-bold" : "text-zinc-700 hover:text-red-600"
+                            }`}
+                        >
+                            My Account
+                        </Link>
+                    )}
                 </nav>
 
                 {/* Action Button */}
                 <div className="flex items-center gap-3">
                     {user ? (
-                        <button
-                            onClick={handleLogout}
-                            className="rounded-full bg-red-600 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg flex items-center gap-2"
-                        >
-                            <LogOut className="h-4 w-4" />
-                            <span>Logout</span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <Link
+                                href="/dashboard"
+                                className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-zinc-700 hover:text-red-600 border border-zinc-200 px-3 py-2 rounded-full"
+                            >
+                                <User className="h-3.5 w-3.5" />
+                                <span>{user.email?.split('@')[0]}</span>
+                            </Link>
+                            <button
+                                onClick={handleLogout}
+                                className="rounded-full bg-red-600 px-4 sm:px-6 py-2 sm:py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-red-700 hover:shadow-lg flex items-center gap-2"
+                            >
+                                <LogOut className="h-4 w-4" />
+                                <span>Logout</span>
+                            </button>
+                        </div>
                     ) : (
                         <Link
                             href="/login"

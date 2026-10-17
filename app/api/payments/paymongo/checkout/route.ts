@@ -24,6 +24,21 @@ export async function POST(req: NextRequest) {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
+        // Ensure seats exist for this trip in trip_seats table before booking
+        const { count } = await supabase
+            .from("trip_seats")
+            .select("id", { count: "exact", head: true })
+            .eq("trip_id", tripId);
+
+        if (!count || count === 0) {
+            const seatsToInsert = Array.from({ length: 45 }, (_, i) => ({
+                trip_id: tripId,
+                seat_number: i + 1,
+                is_available: true,
+            }));
+            await supabase.from("trip_seats").insert(seatsToInsert);
+        }
+
         // Call atomic seat booking procedure in Supabase
         const { data: bookingResult, error: rpcError } = await supabase.rpc(
             "book_seat_atomic",
@@ -64,6 +79,12 @@ export async function POST(req: NextRequest) {
             cancelUrl: `${originUrl}/book?booking_id=${bookingId}&payment=cancelled`,
         });
 
+        // Always update payments with the checkout session ID
+        await supabase
+            .from("payments")
+            .update({ transaction_ref: checkoutSession.id })
+            .eq("booking_id", bookingId);
+
         // If simulated or success, update payment/booking status for instant verification
         if (checkoutSession.is_simulated) {
             await supabase.from("bookings").update({ booking_status: "CONFIRMED" }).eq("id", bookingId);
@@ -77,6 +98,7 @@ export async function POST(req: NextRequest) {
             ticket_id: bookingResult?.ticket_id,
             qr_token: bookingResult?.qr_token,
             checkout_url: checkoutSession.checkout_url,
+            is_simulated: checkoutSession.is_simulated,
         });
     } catch (err: any) {
         console.error("Checkout API error:", err);

@@ -39,22 +39,45 @@ export async function GET(request: Request) {
             const fullName = meta.full_name || meta.name || `${meta.given_name || ''} ${meta.family_name || ''}`.trim() || user.email?.split('@')[0] || 'Passenger'
 
             try {
-                // Ensure profile exists for Google OAuth user
-                await supabase.from('profiles').upsert(
-                    { id: user.id, full_name: fullName },
-                    { onConflict: 'id' }
-                )
+                // Check if user's profile already has complete details
+                const { data: existingProfile } = await supabase
+                    .from('profiles')
+                    .select('profile_completed, phone_number, address')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                const isComplete = existingProfile?.profile_completed || (existingProfile?.phone_number && existingProfile?.address);
+
+                // Ensure basic record exists if not yet present
+                if (!existingProfile) {
+                    await supabase.from('profiles').upsert(
+                        {
+                            id: user.id,
+                            email: user.email,
+                            full_name: fullName,
+                            first_name: meta.given_name || meta.first_name || '',
+                            last_name: meta.family_name || meta.last_name || '',
+                            profile_completed: false
+                        },
+                        { onConflict: 'id' }
+                    );
+                }
 
                 // Ensure user role exists (default PASSENGER)
-                const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single()
+                const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).maybeSingle();
                 if (!roleData) {
-                    await supabase.from('user_roles').insert({ user_id: user.id, role: 'PASSENGER' })
+                    await supabase.from('user_roles').insert({ user_id: user.id, role: 'PASSENGER' });
+                }
+
+                // If profile details are incomplete, redirect them to the completion form!
+                if (!isComplete) {
+                    return NextResponse.redirect(`${origin}/complete-profile?next=${encodeURIComponent(next)}`);
                 }
             } catch (err) {
-                console.warn('OAuth profile sync warning:', err)
+                console.warn('OAuth profile sync warning:', err);
             }
 
-            return NextResponse.redirect(`${origin}${next}`)
+            return NextResponse.redirect(`${origin}${next}`);
         }
     }
 

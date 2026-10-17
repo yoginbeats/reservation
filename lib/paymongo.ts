@@ -26,11 +26,13 @@ export async function createPayMongoCheckoutSession(params: CheckoutSessionParam
     }
 
     try {
+        const authHeader = `Basic ${Buffer.from(`${paymongoSecretKey.trim()}:`).toString('base64')}`;
+        
         const response = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Basic ${Buffer.from(paymongoSecretKey).toString('base64')}`,
+                'Authorization': authHeader,
             },
             body: JSON.stringify({
                 data: {
@@ -44,7 +46,7 @@ export async function createPayMongoCheckoutSession(params: CheckoutSessionParam
                                 quantity: 1,
                             },
                         ],
-                        payment_method_types: ['gcash'],
+                        payment_method_types: ['gcash', 'paymaya', 'card', 'grab_pay'],
                         success_url: params.successUrl,
                         cancel_url: params.cancelUrl,
                         description: params.description,
@@ -83,5 +85,51 @@ export async function createPayMongoCheckoutSession(params: CheckoutSessionParam
             checkout_url: `${params.successUrl}?session_id=sim_${params.bookingId}&simulated=true`,
             is_simulated: true,
         };
+    }
+}
+
+/**
+ * Retrieve Checkout Session from PayMongo API to verify payment status
+ */
+export async function retrievePayMongoCheckoutSession(checkoutSessionId: string) {
+    const paymongoSecretKey = process.env.PAYMONGO_SECRET_KEY;
+
+    // If simulated or test key missing, treat simulated sessions as paid
+    if (!paymongoSecretKey || paymongoSecretKey.trim() === '' || paymongoSecretKey.includes('your_') || checkoutSessionId.startsWith('cs_sim_') || checkoutSessionId.startsWith('sim_')) {
+        return {
+            id: checkoutSessionId,
+            paid: true,
+            is_simulated: true,
+        };
+    }
+
+    try {
+        const authHeader = `Basic ${Buffer.from(`${paymongoSecretKey.trim()}:`).toString('base64')}`;
+        const response = await fetch(`https://api.paymongo.com/v1/checkout_sessions/${checkoutSessionId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': authHeader,
+            },
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            console.error('PayMongo Retrieve Error:', data);
+            return { id: checkoutSessionId, paid: false, error: data.errors?.[0]?.detail };
+        }
+
+        const payments = data.data?.attributes?.payments || [];
+        const isPaid = payments.some((p: any) => p.attributes?.status === 'paid') || data.data?.attributes?.status === 'paid';
+
+        return {
+            id: data.data.id,
+            paid: isPaid,
+            payments,
+            attributes: data.data.attributes,
+            is_simulated: false,
+        };
+    } catch (err: any) {
+        console.error('Error retrieving PayMongo checkout session:', err);
+        return { id: checkoutSessionId, paid: false, error: err.message };
     }
 }
