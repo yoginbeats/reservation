@@ -28,6 +28,7 @@ export interface CachedBooking {
     original_price?: number;
     booking_status: "CONFIRMED" | "PENDING_VERIFICATION" | "CANCELLED";
     payment_status: "PAID" | "PENDING_VERIFICATION" | "REJECTED";
+    ticket_status?: "VALID" | "USED" | "CANCELLED";
     payment_method: string;
     transaction_ref: string;
     qr_token: string;
@@ -104,6 +105,32 @@ export function updateLocalBookingStatus(
     if (target) {
         target.booking_status = bookingStatus;
         target.payment_status = paymentStatus;
+        saveToFile(list);
+    }
+    return target;
+}
+
+export function getLocalBookingByQrToken(qrToken: string): CachedBooking | undefined {
+    if (!qrToken) return undefined;
+    const cleanToken = qrToken.trim().toUpperCase();
+    const list = getLocalBookings();
+    return list.find(b => b.qr_token && b.qr_token.trim().toUpperCase() === cleanToken);
+}
+
+export function updateLocalTicketStatus(
+    qrToken: string,
+    ticketStatus: "VALID" | "USED" | "CANCELLED"
+): CachedBooking | undefined {
+    if (!qrToken) return undefined;
+    const cleanToken = qrToken.trim().toUpperCase();
+    const list = getLocalBookings();
+    const target = list.find(b => b.qr_token && b.qr_token.trim().toUpperCase() === cleanToken);
+    if (target) {
+        target.ticket_status = ticketStatus;
+        if (ticketStatus === "USED") {
+            target.booking_status = "CONFIRMED";
+            target.payment_status = "PAID";
+        }
         saveToFile(list);
     }
     return target;

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { QrCode, Bus, ArrowRight, Calendar, Clock, CheckCircle } from "lucide-react";
+import { QrCode, Bus, ArrowRight, Calendar, Clock, CheckCircle, FileText } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ConductorDashboardPage() {
@@ -81,7 +81,12 @@ export default async function ConductorDashboardPage() {
                                             <span>Date: {depTime.toLocaleDateString()}</span>
                                             <span>Time: {depTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
-                                        <div className="flex gap-2 pt-2 border-t border-zinc-800">
+                                        <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-zinc-800">
+                                            <Button size="sm" variant="outline" className="w-full border-zinc-700 text-zinc-200 hover:text-white" asChild>
+                                                <Link href={`/conductor/manifest?trip_id=${t.id}`}>
+                                                    <FileText className="mr-2 h-4 w-4" /> Manifest & Seats
+                                                </Link>
+                                            </Button>
                                             <Button size="sm" className="w-full bg-red-600 hover:bg-red-700 text-white font-bold" asChild>
                                                 <Link href={`/conductor/scan?trip_id=${t.id}`}>
                                                     <QrCode className="mr-2 h-4 w-4" /> Scan Tickets
