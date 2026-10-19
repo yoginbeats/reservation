@@ -453,7 +453,7 @@ function ConductorManifestContent() {
                         <div className="rounded-lg bg-zinc-900/60 border border-zinc-800/80 p-2.5 text-[11px] text-zinc-400 flex items-start gap-2">
                             <Info className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
                             <p>
-                                <strong className="text-zinc-200">Conductor & Dispatcher Operational Notice:</strong> Passenger seat reservations, QR codes, and GCash payments are permanently tied to this <strong>Scheduled Departure ({selectedTrip.route?.origin?.name} ➔ {selectedTrip.route?.destination?.name})</strong>. If a bus breakdown or replacement unit is dispatched at the terminal bay, click <strong className="text-red-400">"Reassign Bus Unit"</strong> to update the manifest and QR scanner immediately without disrupting passenger bookings.
+                                <strong className="text-zinc-200">Conductor & Dispatcher Operational Notice:</strong> Passenger seat reservations, QR codes, and GCash payments are permanently tied to this <strong>Scheduled Departure ({selectedTrip.route?.origin?.name} ➔ {selectedTrip.route?.destination?.name})</strong>. If a bus breakdown or replacement unit is dispatched at the terminal bay, click <strong className="text-red-400">&ldquo;Reassign Bus Unit&rdquo;</strong> to update the manifest and QR scanner immediately without disrupting passenger bookings.
                             </p>
                         </div>
                     </div>

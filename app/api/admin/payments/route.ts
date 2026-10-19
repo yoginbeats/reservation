@@ -157,9 +157,15 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+    let body: any;
     try {
-        const body = await req.json();
-        const { bookingId, action, mode } = body;
+        body = await req.json();
+    } catch {
+        return NextResponse.json({ success: false, error: "Invalid JSON in request body." }, { status: 400 });
+    }
+
+    try {
+        const { bookingId, action, mode } = body || {};
 
         // Mode switch request
         if (mode && (mode === "AUTO" || mode === "MANUAL")) {

@@ -104,8 +104,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+    let body: any;
     try {
-        const body = await req.json();
+        body = await req.json();
+    } catch {
+        return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
+    }
+
+    try {
         const {
             teller_name,
             terminal_name,

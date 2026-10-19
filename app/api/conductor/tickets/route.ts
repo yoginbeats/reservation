@@ -264,9 +264,15 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+    let body: any;
     try {
-        const body = await req.json();
-        const { token, action, trip_id, bus_number, bus_type, trip_status } = body;
+        body = await req.json();
+    } catch {
+        return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
+    }
+
+    try {
+        const { token, action, trip_id, bus_number, bus_type, trip_status } = body || {};
         const supabase = await createClient();
 
         // 1. DYNAMIC BUS UNIT REASSIGNMENT (On-the-fly bus change by Conductor/Dispatcher)

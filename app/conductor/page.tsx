@@ -227,7 +227,7 @@ export default function ConductorDashboardPage() {
                     <span>How Conductors Locate Their Trip Manifest & Assigned Vehicle</span>
                 </div>
                 <p className="text-xs leading-relaxed text-zinc-400">
-                    In Superlines operations, passenger seat reservations, GCash tickets, and QR tokens are permanently bound to the <strong className="text-zinc-200">Trip Schedule (Route & Departure Time)</strong>. Because physical bus chassis change depending on maintenance and terminal bay availability, conductors should select their trip by <strong className="text-red-400">Departure Time & Route</strong>. You can view the live manifest immediately, or click <strong className="text-zinc-200">"Assign / Swap Bus Unit"</strong> on any schedule to designate which physical vehicle is running that trip.
+                    In Superlines operations, passenger seat reservations, GCash tickets, and QR tokens are permanently bound to the <strong className="text-zinc-200">Trip Schedule (Route & Departure Time)</strong>. Because physical bus chassis change depending on maintenance and terminal bay availability, conductors should select their trip by <strong className="text-red-400">Departure Time & Route</strong>. You can view the live manifest immediately, or click <strong className="text-zinc-200">&ldquo;Assign / Swap Bus Unit&rdquo;</strong> on any schedule to designate which physical vehicle is running that trip.
                 </p>
             </div>
 
