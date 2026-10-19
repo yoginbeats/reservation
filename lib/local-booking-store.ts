@@ -4,16 +4,26 @@
 import fs from "fs";
 import path from "path";
 
+export interface DiscountedPassengerInfo {
+    name: string;
+    classification: "SENIOR" | "STUDENT" | "PWD";
+    id_number: string;
+}
+
 export interface CachedBooking {
     id: string;
     created_at: string;
     passenger_name: string;
     passenger_contact: string;
     passenger_email: string;
-    passenger_type?: "REGULAR" | "SENIOR" | "STUDENT" | "PWD";
+    passenger_type?: "REGULAR" | "SENIOR" | "STUDENT" | "PWD" | "MIXED";
     discount_amount?: number;
     discount_id?: string;
+    discount_count?: number;
+    discounted_passengers?: DiscountedPassengerInfo[];
     seat_number: number;
+    seat_numbers?: number[];
+    seat_count?: number;
     total_price: number;
     original_price?: number;
     booking_status: "CONFIRMED" | "PENDING_VERIFICATION" | "CANCELLED";

@@ -305,7 +305,18 @@ export default function AdminReservationsPage() {
                                                     <div className="text-[11px] text-muted-foreground font-mono">
                                                         {b.passenger_contact || b.passenger_email}
                                                     </div>
-                                                    {b.passenger_type && b.passenger_type !== "REGULAR" && (
+                                                    {b.discounted_passengers && b.discounted_passengers.length > 0 ? (
+                                                        <div className="mt-1 space-y-0.5">
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                                                {b.discounted_passengers.length}x 20% Discount
+                                                            </span>
+                                                            {b.discounted_passengers.map((dp: any, idx: number) => (
+                                                                <div key={idx} className="text-[10px] text-muted-foreground font-mono">
+                                                                    • {dp.name} ({dp.classification}: {dp.id_number})
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : b.passenger_type && b.passenger_type !== "REGULAR" ? (
                                                         <div className="flex flex-wrap items-center gap-1 mt-1">
                                                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
                                                                 20% {b.passenger_type}
@@ -316,7 +327,7 @@ export default function AdminReservationsPage() {
                                                                 </span>
                                                             )}
                                                         </div>
-                                                    )}
+                                                    ) : null}
                                                 </td>
 
                                                 {/* Trip & Seat */}
@@ -327,7 +338,11 @@ export default function AdminReservationsPage() {
                                                         <span>{b.trip?.destination}</span>
                                                     </div>
                                                     <div className="text-[11px] text-muted-foreground">
-                                                        Seat <span className="font-mono font-bold text-foreground">#{b.seat_number < 10 ? `0${b.seat_number}` : b.seat_number}</span> • {b.trip?.bus_number}
+                                                        Seat <span className="font-mono font-bold text-foreground">
+                                                            {b.seat_numbers && b.seat_numbers.length > 1
+                                                                ? b.seat_numbers.map((s: number) => `#${s < 10 ? `0${s}` : s}`).join(", ")
+                                                                : `#${b.seat_number < 10 ? `0${b.seat_number}` : b.seat_number}`}
+                                                        </span> • {b.trip?.bus_number}
                                                     </div>
                                                 </td>
 
@@ -465,14 +480,27 @@ export default function AdminReservationsPage() {
                                     <span className="text-muted-foreground">GCash Reference:</span>
                                     <span className="font-mono font-bold text-blue-600">{selectedTicket.transaction_ref}</span>
                                 </div>
-                                {selectedTicket.passenger_type && selectedTicket.passenger_type !== "REGULAR" && (
+                                {selectedTicket.discounted_passengers && selectedTicket.discounted_passengers.length > 0 ? (
+                                    <div className="space-y-1.5 p-2 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-xs">
+                                        <div className="flex justify-between font-bold text-purple-700 dark:text-purple-300">
+                                            <span>20% Discount Beneficiaries:</span>
+                                            <span>{selectedTicket.discounted_passengers.length} Passenger(s)</span>
+                                        </div>
+                                        {selectedTicket.discounted_passengers.map((dp: any, idx: number) => (
+                                            <div key={idx} className="flex justify-between items-center text-[11px] border-t border-purple-100 dark:border-purple-900/60 pt-1">
+                                                <span className="font-semibold text-foreground">• {dp.name} ({dp.classification})</span>
+                                                <span className="font-mono text-purple-700 dark:text-purple-300">ID: {dp.id_number}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : selectedTicket.passenger_type && selectedTicket.passenger_type !== "REGULAR" ? (
                                     <div className="flex justify-between items-center bg-purple-50 dark:bg-purple-950/40 px-2 py-1 rounded text-purple-700 dark:text-purple-300 font-semibold">
                                         <span>Discount Category:</span>
                                         <span className="font-bold">
                                             20% {selectedTicket.passenger_type} {selectedTicket.discount_id ? `(#${selectedTicket.discount_id})` : ""}
                                         </span>
                                     </div>
-                                )}
+                                ) : null}
                                 {selectedTicket.original_price && selectedTicket.original_price > selectedTicket.total_price && (
                                     <div className="flex justify-between text-muted-foreground">
                                         <span>Regular Fare:</span>

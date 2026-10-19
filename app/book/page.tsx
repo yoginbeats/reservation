@@ -34,12 +34,20 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+export interface DiscountPerson {
+    id: string;
+    name: string;
+    classification: "SENIOR" | "STUDENT" | "PWD";
+    idNumber: string;
+}
+
 function BookTripContent() {
     const [step, setStep] = useState<1 | 2 | 3>(1); // 1: Select Schedule, 2: Select Seat, 3: Passenger Details & Checkout
     const [trips, setTrips] = useState<any[]>([]);
     const [selectedTrip, setSelectedTrip] = useState<any>(null);
     const [bookedSeats, setBookedSeats] = useState<number[]>([]);
     const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+    const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -48,8 +56,8 @@ function BookTripContent() {
     const [passengerName, setPassengerName] = useState("");
     const [passengerContact, setPassengerContact] = useState("");
     const [passengerEmail, setPassengerEmail] = useState("");
-    const [passengerType, setPassengerType] = useState<"REGULAR" | "SENIOR" | "STUDENT" | "PWD">("REGULAR");
-    const [discountId, setDiscountId] = useState("");
+    const [discountCount, setDiscountCount] = useState<number>(0);
+    const [discountPersons, setDiscountPersons] = useState<DiscountPerson[]>([]);
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [showTermsModal, setShowTermsModal] = useState(false);
     const [gcashRef, setGcashRef] = useState("");
@@ -129,6 +137,9 @@ function BookTripContent() {
     const handleSelectTrip = async (trip: any) => {
         setSelectedTrip(trip);
         setSelectedSeat(null);
+        setSelectedSeats([]);
+        setDiscountCount(0);
+        setDiscountPersons([]);
         setLoading(true);
 
         // Fetch booked seats for this trip from trip_seats table
@@ -160,24 +171,75 @@ function BookTripContent() {
         }
     };
 
-    const baseFare = Number(selectedTrip?.fare_amount || 650);
-    const isDiscounted = passengerType !== "REGULAR";
-    const discountRate = isDiscounted ? 0.20 : 0.0;
-    const discountAmount = isDiscounted ? Math.round(baseFare * discountRate) : 0;
-    const finalFare = baseFare - discountAmount;
+    // Multi-seat and Automatic Discount Calculations
+    const seatCount = selectedSeats.length > 0 ? selectedSeats.length : (selectedSeat ? 1 : 1);
+    const unitFare = Number(selectedTrip?.fare_amount || 650);
+    const totalBaseFare = unitFare * seatCount;
+    const discountRate = 0.20;
+    const discountPerPassenger = Math.round(unitFare * discountRate);
+
+    // Number of discounted passengers cannot exceed seats booked
+    const effectiveDiscountCount = Math.min(discountCount, seatCount);
+    const totalDiscountAmount = effectiveDiscountCount * discountPerPassenger;
+    const finalFare = totalBaseFare - totalDiscountAmount;
+    const isDiscounted = effectiveDiscountCount > 0;
+
+    const handleSetDiscountCount = (count: number) => {
+        const validCount = Math.max(0, count);
+        setDiscountCount(validCount);
+        setDiscountPersons((prev) => {
+            const next = [...prev];
+            if (validCount > prev.length) {
+                for (let i = prev.length; i < validCount; i++) {
+                    next.push({
+                        id: `disc_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 6)}`,
+                        name: i === 0 && passengerName ? passengerName : "",
+                        classification: "SENIOR",
+                        idNumber: "",
+                    });
+                }
+            } else if (validCount < prev.length) {
+                return next.slice(0, validCount);
+            }
+            return next;
+        });
+    };
+
+    const handleUpdateDiscountPerson = (index: number, field: keyof DiscountPerson, value: string) => {
+        setDiscountPersons((prev) => {
+            const next = [...prev];
+            if (next[index]) {
+                next[index] = { ...next[index], [field]: value };
+            }
+            return next;
+        });
+    };
 
     const handleConfirmDirectGcash = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedTrip || !selectedSeat) return;
-
-        if (!passengerName.trim()) {
-            setError("Please enter the passenger full name.");
+        const effectiveSeat = selectedSeat || (selectedSeats.length > 0 ? selectedSeats[0] : null);
+        if (!selectedTrip || !effectiveSeat) {
+            setError("Please select a trip and at least one seat.");
             return;
         }
 
-        if (isDiscounted && !discountId.trim()) {
-            setError(`Please enter your valid ${passengerType === "SENIOR" ? "Senior Citizen OSCA" : passengerType === "STUDENT" ? "Student" : "PWD"} ID Number.`);
+        if (!passengerName.trim()) {
+            setError("Please enter the primary passenger full name.");
             return;
+        }
+
+        if (effectiveDiscountCount > 0) {
+            for (let i = 0; i < effectiveDiscountCount; i++) {
+                const p = discountPersons[i];
+                if (!p || !p.name.trim()) {
+                    setError(`Please enter the full name for Discounted Passenger #${i + 1}.`);
+                    return;
+                }
+                if (!p.idNumber.trim()) {
+                    setError(`Please enter the ID Number for Discounted Passenger #${i + 1} (${p.classification}).`);
+                    return;
+                }
+            }
         }
 
         if (!termsAccepted) {
@@ -193,21 +255,41 @@ function BookTripContent() {
         setError(null);
         setSubmitting(true);
 
+        const activeDiscountedList = discountPersons.slice(0, effectiveDiscountCount).map((p) => ({
+            name: p.name.trim(),
+            classification: p.classification,
+            id_number: p.idNumber.trim(),
+        }));
+
+        const primaryPassengerType =
+            effectiveDiscountCount === 0
+                ? "REGULAR"
+                : effectiveDiscountCount === 1
+                ? activeDiscountedList[0].classification
+                : "MIXED";
+
+        const discountIdSummary = activeDiscountedList
+            .map((p) => `${p.name} (${p.classification}: ${p.id_number})`)
+            .join("; ");
+
         try {
             const response = await fetch('/api/payments/gcash-direct', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     tripId: selectedTrip.id,
-                    seatNumber: selectedSeat,
+                    seatNumber: effectiveSeat,
+                    seatNumbers: selectedSeats.length > 0 ? selectedSeats : [effectiveSeat],
                     passengerName,
                     passengerContact,
                     passengerEmail,
-                    originalPrice: baseFare,
+                    originalPrice: totalBaseFare,
                     totalPrice: finalFare,
-                    passengerType,
-                    discountAmount,
-                    discountIdNumber: discountId.trim(),
+                    passengerType: primaryPassengerType,
+                    discountAmount: totalDiscountAmount,
+                    discountCount: effectiveDiscountCount,
+                    discountedPassengers: activeDiscountedList,
+                    discountIdNumber: discountIdSummary,
                     gcashRefNumber: gcashRef.trim(),
                 }),
             });
@@ -226,12 +308,16 @@ function BookTripContent() {
                     passenger_name: passengerName,
                     passenger_contact: passengerContact,
                     passenger_email: passengerEmail,
-                    passenger_type: passengerType,
-                    discount_amount: discountAmount,
-                    discount_id: discountId.trim(),
-                    seat_number: selectedSeat,
+                    passenger_type: primaryPassengerType,
+                    discount_amount: totalDiscountAmount,
+                    discount_count: effectiveDiscountCount,
+                    discounted_passengers: activeDiscountedList,
+                    discount_id: discountIdSummary,
+                    seat_number: effectiveSeat,
+                    seat_numbers: selectedSeats.length > 0 ? selectedSeats : [effectiveSeat],
+                    seat_count: seatCount,
                     total_price: finalFare,
-                    original_price: baseFare,
+                    original_price: totalBaseFare,
                     trip: selectedTrip,
                     gcash_ref: gcashRef.trim(),
                     created_at: new Date().toISOString()
@@ -252,11 +338,21 @@ function BookTripContent() {
 
     const handleProceedToCheckout = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedTrip || !selectedSeat) return;
+        const effectiveSeat = selectedSeat || (selectedSeats.length > 0 ? selectedSeats[0] : null);
+        if (!selectedTrip || !effectiveSeat) return;
 
-        if (isDiscounted && !discountId.trim()) {
-            setError(`Please enter your valid ${passengerType === "SENIOR" ? "Senior Citizen OSCA" : passengerType === "STUDENT" ? "Student" : "PWD"} ID Number.`);
-            return;
+        if (effectiveDiscountCount > 0) {
+            for (let i = 0; i < effectiveDiscountCount; i++) {
+                const p = discountPersons[i];
+                if (!p || !p.name.trim()) {
+                    setError(`Please enter the full name for Discounted Passenger #${i + 1}.`);
+                    return;
+                }
+                if (!p.idNumber.trim()) {
+                    setError(`Please enter the ID Number for Discounted Passenger #${i + 1} (${p.classification}).`);
+                    return;
+                }
+            }
         }
 
         if (!termsAccepted) {
@@ -273,7 +369,7 @@ function BookTripContent() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     tripId: selectedTrip.id,
-                    seatNumber: selectedSeat,
+                    seatNumber: effectiveSeat,
                     passengerName,
                     passengerContact,
                     passengerEmail,
@@ -415,27 +511,42 @@ function BookTripContent() {
                         totalSeats={45}
                         bookedSeats={bookedSeats}
                         selectedSeat={selectedSeat}
-                        onSelectSeat={(seatNum) => setSelectedSeat(seatNum)}
+                        selectedSeats={selectedSeats}
+                        onSelectSeat={(seatNum) => {
+                            setSelectedSeat(seatNum);
+                            if (selectedSeats.length === 0) setSelectedSeats([seatNum]);
+                        }}
+                        onSelectSeats={(seats) => {
+                            setSelectedSeats(seats);
+                            if (seats.length > 0) setSelectedSeat(seats[0]);
+                            else setSelectedSeat(null);
+                        }}
                     />
 
                     <div className="flex justify-end">
                         <Button
                             size="lg"
                             className="bg-red-600 hover:bg-red-700 text-white font-semibold"
-                            disabled={!selectedSeat}
-                            onClick={() => setStep(3)}
+                            disabled={!selectedSeat && selectedSeats.length === 0}
+                            onClick={() => {
+                                const count = selectedSeats.length > 0 ? selectedSeats.length : (selectedSeat ? 1 : 1);
+                                if (discountCount > count) {
+                                    handleSetDiscountCount(count);
+                                }
+                                setStep(3);
+                            }}
                         >
-                            Continue to Passenger Details & Payment
+                            Continue to Passenger Details ({selectedSeats.length > 0 ? selectedSeats.length : 1} Seat{selectedSeats.length > 1 ? "s" : ""})
                         </Button>
                     </div>
                 </div>
             )}
 
-            {/* STEP 3: PASSENGER DETAILS & PAYMONGO CHECKOUT */}
-            {step === 3 && selectedTrip && selectedSeat && (
+            {/* STEP 3: PASSENGER DETAILS & PAYMENT */}
+            {step === 3 && selectedTrip && (selectedSeat || selectedSeats.length > 0) && (
                 <div className="space-y-6 max-w-xl mx-auto">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold">Passenger Details & PayMongo Payment</h2>
+                        <h2 className="text-xl font-bold">Passenger Details & Payment</h2>
                         <Button variant="outline" size="sm" onClick={() => setStep(2)}>
                             Back to Seat Map
                         </Button>
@@ -449,17 +560,21 @@ function BookTripContent() {
                                 <div className="text-right">
                                     {isDiscounted ? (
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs line-through text-muted-foreground font-mono">₱{baseFare}</span>
-                                            <span className="text-emerald-600 font-extrabold text-base">₱{finalFare}</span>
+                                            <span className="text-xs line-through text-muted-foreground font-mono">₱{totalBaseFare}.00</span>
+                                            <span className="text-emerald-600 font-extrabold text-base">₱{finalFare}.00</span>
                                         </div>
                                     ) : (
-                                        <span className="text-red-600 font-extrabold">₱{baseFare}</span>
+                                        <span className="text-red-600 font-extrabold">₱{totalBaseFare}.00</span>
                                     )}
                                 </div>
                             </div>
                             <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>Schedule: {new Date(selectedTrip.departure_time).toLocaleString()}</span>
-                                <span className="font-mono font-bold text-red-600">Seat #{selectedSeat < 10 ? `0${selectedSeat}` : selectedSeat}</span>
+                                <span className="font-mono font-bold text-red-600">
+                                    {selectedSeats.length > 0
+                                        ? `Seats (${selectedSeats.length}): ${selectedSeats.map((s) => `#${s < 10 ? `0${s}` : s}`).join(", ")}`
+                                        : `Seat #${selectedSeat}`}
+                                </span>
                             </div>
                         </CardContent>
                     </Card>
@@ -538,102 +653,184 @@ function BookTripContent() {
                                     <div>
                                         <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
                                             <Percent className="h-4 w-4 text-emerald-600" />
-                                            2. Passenger Classification & Discount
+                                            2. Passenger Classification & Automatic Discount
                                         </h3>
                                         <p className="text-xs text-muted-foreground">
-                                            Select your category to automatically apply your 20% statutory discount.
+                                            Statutory 20% discount for Senior Citizens (RA 9994), Students (RA 11314), and PWDs (RA 10754).
                                         </p>
                                     </div>
-                                    {isDiscounted && (
+                                    {isDiscounted ? (
                                         <span className="text-xs font-extrabold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                                            20% OFF APPLIED
+                                            {effectiveDiscountCount}x 20% DISCOUNT APPLIED
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                            Regular Fares
                                         </span>
                                     )}
                                 </div>
 
-                                {/* Classification Selector Grid */}
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                                    {[
-                                        { id: "REGULAR", label: "Regular", sub: "Standard Fare", icon: UserCheck },
-                                        { id: "SENIOR", label: "Senior Citizen", sub: "20% Off (RA 9994)", icon: HeartHandshake },
-                                        { id: "STUDENT", label: "Student", sub: "20% Off (RA 11314)", icon: GraduationCap },
-                                        { id: "PWD", label: "PWD", sub: "20% Off (RA 10754)", icon: Accessibility },
-                                    ].map((item) => {
-                                        const isSelected = passengerType === item.id;
-                                        const IconComponent = item.icon;
-                                        return (
+                                {/* Option: Ilan ang i-didiscount (Number of Discounted Passengers) */}
+                                <div className="space-y-2 pt-1 border-t">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs font-bold text-foreground">
+                                            How many passengers to discount? (Ilan ang i-didiscount):
+                                        </Label>
+                                        <span className="text-xs font-extrabold text-purple-600 dark:text-purple-400">
+                                            {effectiveDiscountCount} of {seatCount} Seat{seatCount > 1 ? "s" : ""} Discounted
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {Array.from({ length: seatCount + 1 }).map((_, count) => (
                                             <button
-                                                key={item.id}
+                                                key={count}
                                                 type="button"
-                                                onClick={() => {
-                                                    setPassengerType(item.id as any);
-                                                    if (item.id === "REGULAR") setDiscountId("");
-                                                }}
-                                                className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all text-center ${
-                                                    isSelected
-                                                        ? "border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-100 shadow-sm font-bold"
-                                                        : "border-border hover:border-zinc-300 dark:hover:border-zinc-700 bg-background text-muted-foreground"
+                                                onClick={() => handleSetDiscountCount(count)}
+                                                className={`px-3 py-2 rounded-xl text-xs font-extrabold transition-all border ${
+                                                    discountCount === count
+                                                        ? "bg-purple-600 text-white border-purple-600 shadow-md ring-2 ring-purple-500/20"
+                                                        : "bg-background text-muted-foreground border-border hover:bg-muted/50"
                                                 }`}
                                             >
-                                                <IconComponent className={`h-5 w-5 mb-1.5 ${isSelected ? "text-emerald-600" : "text-muted-foreground"}`} />
-                                                <span className="text-xs font-extrabold">{item.label}</span>
-                                                <span className="text-[10px] text-muted-foreground mt-0.5">{item.sub}</span>
+                                                {count === 0 ? "0 (All Regular)" : `${count} Discounted (-20%)`}
                                             </button>
-                                        );
-                                    })}
+                                        ))}
+                                    </div>
                                 </div>
 
-                                {/* Required ID Input for Discount */}
-                                {isDiscounted && (
-                                    <div className="space-y-2 pt-2 border-t">
-                                        <Label htmlFor="discId" className="font-bold text-xs flex items-center justify-between">
-                                            <span>
-                                                {passengerType === "SENIOR"
-                                                    ? "Senior Citizen OSCA ID Number *"
-                                                    : passengerType === "STUDENT"
-                                                    ? "Student School ID Number / School Name *"
-                                                    : "PWD ID Card Number *"}
-                                            </span>
-                                            <span className="text-[11px] font-normal text-muted-foreground">Required for 20% discount validation</span>
-                                        </Label>
-                                        <Input
-                                            id="discId"
-                                            required
-                                            placeholder={
-                                                passengerType === "SENIOR"
-                                                    ? "e.g. OSCA-2024-998811"
-                                                    : passengerType === "STUDENT"
-                                                    ? "e.g. 2024-10892 (Bicol University)"
-                                                    : "e.g. PWD-05-16-0023"
-                                            }
-                                            value={discountId}
-                                            onChange={(e) => setDiscountId(e.target.value)}
-                                            className="font-mono text-sm uppercase bg-white dark:bg-zinc-800"
-                                        />
-                                        <div className="flex items-start gap-2 text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 p-2.5 rounded-lg border border-amber-200">
-                                            <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                                            <span>
-                                                <strong>Superlines Policy:</strong> Valid physical identification ({passengerType === "SENIOR" ? "Government-issued Senior ID" : passengerType === "STUDENT" ? "Validated School ID for current school year or Certificate of Enrollment" : "Government-issued PWD ID"}) must be presented upon boarding.
-                                            </span>
-                                        </div>
+                                {/* Form per Discounted Person */}
+                                {effectiveDiscountCount === 0 ? (
+                                    <div className="p-3 rounded-xl bg-muted/30 border border-dashed text-xs text-muted-foreground text-center">
+                                        No discount selected. Standard regular fare (₱{unitFare}.00 per seat) applies.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3 pt-1">
+                                        {discountPersons.slice(0, effectiveDiscountCount).map((p, idx) => (
+                                            <div
+                                                key={p.id || idx}
+                                                className="rounded-xl border-2 border-purple-200 dark:border-purple-900/60 bg-purple-50/30 dark:bg-purple-950/20 p-4 space-y-3"
+                                            >
+                                                <div className="flex items-center justify-between border-b border-purple-100 dark:border-purple-900 pb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="h-5 w-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-black">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <h4 className="font-extrabold text-xs text-foreground uppercase tracking-wider">
+                                                            Discounted Passenger #{idx + 1}
+                                                        </h4>
+                                                    </div>
+                                                    <span className="text-[11px] font-extrabold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950 px-2 py-0.5 rounded-full">
+                                                        -20% Fare Deduction
+                                                    </span>
+                                                </div>
+
+                                                {/* Classification Discount */}
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs font-bold text-foreground">
+                                                        Discount Classification *
+                                                    </Label>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {[
+                                                            { id: "SENIOR", label: "Senior Citizen", sub: "RA 9994", icon: HeartHandshake },
+                                                            { id: "STUDENT", label: "Student", sub: "RA 11314", icon: GraduationCap },
+                                                            { id: "PWD", label: "PWD", sub: "RA 10754", icon: Accessibility },
+                                                        ].map((item) => {
+                                                            const isSelected = p.classification === item.id;
+                                                            const IconComp = item.icon;
+                                                            return (
+                                                                <button
+                                                                    key={item.id}
+                                                                    type="button"
+                                                                    onClick={() => handleUpdateDiscountPerson(idx, "classification", item.id as any)}
+                                                                    className={`p-2 rounded-lg border text-left transition-all flex flex-col items-center text-center ${
+                                                                        isSelected
+                                                                            ? "border-purple-600 bg-purple-600 text-white font-bold shadow-sm"
+                                                                            : "border-border bg-card text-muted-foreground hover:bg-muted/50"
+                                                                    }`}
+                                                                >
+                                                                    <IconComp className="h-4 w-4 mb-1" />
+                                                                    <span className="text-xs font-extrabold leading-tight">{item.label}</span>
+                                                                    <span className={`text-[10px] ${isSelected ? "text-purple-100" : "text-muted-foreground"}`}>{item.sub}</span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* Name ng Discount Person */}
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs font-bold text-foreground">
+                                                        Name ng Discount Person (Full Legal Name) *
+                                                    </Label>
+                                                    <Input
+                                                        required
+                                                        placeholder={
+                                                            p.classification === "SENIOR"
+                                                                ? "e.g. Juan Dela Cruz Sr."
+                                                                : p.classification === "STUDENT"
+                                                                ? "e.g. Maria Clara Santos"
+                                                                : "e.g. Pedro Reyes"
+                                                        }
+                                                        value={p.name}
+                                                        onChange={(e) => handleUpdateDiscountPerson(idx, "name", e.target.value)}
+                                                        className="bg-white dark:bg-zinc-800 text-xs"
+                                                    />
+                                                </div>
+
+                                                {/* ID No. */}
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs font-bold text-foreground">
+                                                        {p.classification === "SENIOR"
+                                                            ? "OSCA Senior Citizen ID Number *"
+                                                            : p.classification === "STUDENT"
+                                                            ? "Student School ID Number / Registration Ref *"
+                                                            : "PWD ID Card Number *"}
+                                                    </Label>
+                                                    <Input
+                                                        required
+                                                        placeholder={
+                                                            p.classification === "SENIOR"
+                                                                ? "e.g. OSCA-2024-5544"
+                                                                : p.classification === "STUDENT"
+                                                                ? "e.g. 2024-ST-99881"
+                                                                : "e.g. PWD-05-16-0023"
+                                                        }
+                                                        value={p.idNumber}
+                                                        onChange={(e) => handleUpdateDiscountPerson(idx, "idNumber", e.target.value)}
+                                                        className="bg-white dark:bg-zinc-800 font-mono text-xs uppercase"
+                                                    />
+                                                    <p className="text-[10px] text-muted-foreground">
+                                                        * Valid physical {p.classification} ID must be presented upon boarding per Superlines terms.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
 
                                 {/* Realtime Fare Calculation Breakdown */}
-                                <div className="rounded-lg bg-zinc-50 dark:bg-zinc-900/60 p-3 border text-xs space-y-1.5">
+                                <div className="rounded-xl bg-zinc-50 dark:bg-zinc-900/60 p-3.5 border text-xs space-y-2">
                                     <div className="flex justify-between text-muted-foreground">
-                                        <span>Base Regular Fare:</span>
-                                        <span className="font-mono">₱{baseFare}.00</span>
+                                        <span>Base Regular Fare ({seatCount} seat{seatCount > 1 ? "s" : ""} × ₱{unitFare}.00):</span>
+                                        <span className="font-mono">₱{totalBaseFare}.00</span>
                                     </div>
-                                    {isDiscounted && (
-                                        <div className="flex justify-between font-bold text-emerald-600 dark:text-emerald-400">
-                                            <span>Statutory Discount (20% - {passengerType}):</span>
-                                            <span className="font-mono">-₱{discountAmount}.00</span>
+                                    {effectiveDiscountCount > 0 && (
+                                        <div className="space-y-1 pt-1.5 border-t border-dashed">
+                                            <div className="flex justify-between font-bold text-emerald-600 dark:text-emerald-400">
+                                                <span>Total 20% Discount ({effectiveDiscountCount} passenger{effectiveDiscountCount > 1 ? "s" : ""}):</span>
+                                                <span className="font-mono">-₱{totalDiscountAmount}.00</span>
+                                            </div>
+                                            {discountPersons.slice(0, effectiveDiscountCount).map((p, idx) => (
+                                                <div key={p.id || idx} className="flex justify-between text-[11px] text-muted-foreground pl-2">
+                                                    <span>• {p.name || `Passenger ${idx + 1}`} ({p.classification} - 20% Off):</span>
+                                                    <span className="font-mono">-₱{discountPerPassenger}.00</span>
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
-                                    <div className="flex justify-between font-black text-sm pt-1.5 border-t text-foreground">
+                                    <div className="flex justify-between font-black text-sm pt-2 border-t text-foreground">
                                         <span>Total Amount Due:</span>
-                                        <span className="font-mono text-red-600 text-base">₱{finalFare}.00</span>
+                                        <span className="font-mono text-emerald-600 text-base">₱{finalFare}.00</span>
                                     </div>
                                 </div>
                             </div>

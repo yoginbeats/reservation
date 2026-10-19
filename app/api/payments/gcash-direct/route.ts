@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
         const {
             tripId,
             seatNumber,
+            seatNumbers = [],
             passengerName,
             passengerContact,
             passengerEmail,
@@ -17,10 +18,14 @@ export async function POST(req: NextRequest) {
             passengerType = "REGULAR",
             discountAmount = 0,
             discountIdNumber = "",
+            discountCount = 0,
+            discountedPassengers = [],
             gcashRefNumber,
         } = body;
 
-        if (!tripId || !seatNumber || !passengerName) {
+        const effectiveSeatNumber = seatNumber || (seatNumbers && seatNumbers.length > 0 ? seatNumbers[0] : null);
+
+        if (!tripId || !effectiveSeatNumber || !passengerName) {
             return NextResponse.json(
                 { success: false, error: "Missing required booking details." },
                 { status: 400 }
@@ -208,8 +213,12 @@ export async function POST(req: NextRequest) {
             passenger_email: passengerEmail || "",
             passenger_type: passengerType as any,
             discount_amount: Number(discountAmount || 0),
-            discount_id: discountIdNumber || "",
-            seat_number: Number(seatNumber),
+            discount_id: discountIdNumber || (discountedPassengers[0]?.id_number || ""),
+            discount_count: Number(discountCount || discountedPassengers.length || 0),
+            discounted_passengers: discountedPassengers,
+            seat_number: Number(effectiveSeatNumber),
+            seat_numbers: seatNumbers.length > 0 ? seatNumbers : [Number(effectiveSeatNumber)],
+            seat_count: seatNumbers.length > 0 ? seatNumbers.length : 1,
             total_price: Number(totalPrice),
             original_price: Number(originalPrice || totalPrice),
             booking_status: bookingStatus as any,
@@ -232,6 +241,8 @@ export async function POST(req: NextRequest) {
             payment_status: paymentStatus,
             passenger_type: passengerType,
             discount_amount: discountAmount,
+            discount_count: discountCount,
+            discounted_passengers: discountedPassengers,
             total_price: totalPrice,
             verification_mode: mode,
             redirect_url: isAuto

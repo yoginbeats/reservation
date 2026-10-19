@@ -10,6 +10,13 @@ import { SeatPicker } from "@/components/seat-picker";
 import { Ticket, Bus, ArrowRight, Printer, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+interface DiscountPerson {
+    id: string;
+    name: string;
+    classification: "SENIOR" | "STUDENT" | "PWD";
+    idNumber: string;
+}
+
 export default function TellerWalkInBookingPage() {
     const searchParams = useSearchParams();
     const initialTripId = searchParams?.get("trip_id");
@@ -18,6 +25,7 @@ export default function TellerWalkInBookingPage() {
     const [selectedTrip, setSelectedTrip] = useState<any>(null);
     const [bookedSeats, setBookedSeats] = useState<number[]>([]);
     const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+    const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -25,8 +33,8 @@ export default function TellerWalkInBookingPage() {
     // Form inputs
     const [passengerName, setPassengerName] = useState("");
     const [passengerContact, setPassengerContact] = useState("");
-    const [passengerType, setPassengerType] = useState<"REGULAR" | "SENIOR" | "STUDENT" | "PWD">("REGULAR");
-    const [discountIdNumber, setDiscountIdNumber] = useState("");
+    const [discountCount, setDiscountCount] = useState<number>(0);
+    const [discountPersons, setDiscountPersons] = useState<DiscountPerson[]>([]);
     const [amountTendered, setAmountTendered] = useState<string>("");
 
     // Success Ticket Modal State
@@ -82,6 +90,9 @@ export default function TellerWalkInBookingPage() {
     const handleSelectTrip = async (trip: any) => {
         setSelectedTrip(trip);
         setSelectedSeat(null);
+        setSelectedSeats([]);
+        setDiscountCount(0);
+        setDiscountPersons([]);
         setError(null);
         setLoading(true);
 
@@ -98,20 +109,78 @@ export default function TellerWalkInBookingPage() {
         setLoading(false);
     };
 
+    // Multi-seat and Automatic Statutory 20% Discount Calculations
+    const seatCount = selectedSeats.length > 0 ? selectedSeats.length : (selectedSeat ? 1 : 0);
+    const unitFare = Number(selectedTrip?.fare_amount || 850);
+    const totalBaseFare = unitFare * (seatCount || 1);
+    const discountRate = 0.20;
+    const discountPerPassenger = Math.round(unitFare * discountRate);
+
+    // Number of discounted passengers cannot exceed seats booked
+    const maxDiscountAllowed = Math.max(1, seatCount || 1);
+    const effectiveDiscountCount = Math.min(discountCount, maxDiscountAllowed);
+    const totalDiscountAmount = effectiveDiscountCount * discountPerPassenger;
+    const fare = Math.max(0, totalBaseFare - totalDiscountAmount);
+    const change = Number(amountTendered) >= fare ? Number(amountTendered) - fare : 0;
+
+    const handleSetDiscountCount = (count: number) => {
+        const validCount = Math.max(0, count);
+        setDiscountCount(validCount);
+        setDiscountPersons((prev) => {
+            const next = [...prev];
+            if (validCount > prev.length) {
+                for (let i = prev.length; i < validCount; i++) {
+                    next.push({
+                        id: `walkin_disc_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 6)}`,
+                        name: i === 0 && passengerName ? passengerName : "",
+                        classification: "SENIOR",
+                        idNumber: "",
+                    });
+                }
+            } else if (validCount < prev.length) {
+                return next.slice(0, validCount);
+            }
+            return next;
+        });
+    };
+
+    const handleUpdateDiscountPerson = (index: number, field: keyof DiscountPerson, value: string) => {
+        setDiscountPersons((prev) => {
+            const next = [...prev];
+            if (next[index]) {
+                next[index] = { ...next[index], [field]: value };
+            }
+            return next;
+        });
+    };
+
     const handleProcessWalkInPayment = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedTrip || !selectedSeat || !passengerName) return;
+        const effectiveSeat = selectedSeat || (selectedSeats.length > 0 ? selectedSeats[0] : null);
+        if (!selectedTrip || !effectiveSeat || !passengerName.trim()) {
+            setError("Please select at least one seat and provide the passenger name.");
+            return;
+        }
+
+        if (effectiveDiscountCount > 0) {
+            for (let i = 0; i < effectiveDiscountCount; i++) {
+                const p = discountPersons[i];
+                if (!p || !p.name.trim()) {
+                    setError(`Please enter the full name for Discounted Beneficiary #${i + 1}.`);
+                    return;
+                }
+                if (!p.idNumber.trim()) {
+                    setError(`Please enter the ID Number for Discounted Beneficiary #${i + 1} (${p.classification}).`);
+                    return;
+                }
+            }
+        }
 
         setError(null);
         setSubmitting(true);
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
-
-            const baseFare = selectedTrip.fare_amount || 850;
-            const isDiscounted = passengerType !== "REGULAR";
-            const discountDeduction = isDiscounted ? Math.round(baseFare * 0.20) : 0;
-            const finalAmount = baseFare - discountDeduction;
 
             // Get teller's assigned terminal
             const { data: roleData } = await supabase
@@ -131,11 +200,11 @@ export default function TellerWalkInBookingPage() {
                     "book_seat_atomic",
                     {
                         p_trip_id: selectedTrip.id,
-                        p_seat_number: selectedSeat,
+                        p_seat_number: effectiveSeat,
                         p_passenger_id: null, // Walk-in non-registered
                         p_passenger_name: passengerName,
                         p_passenger_contact: passengerContact || "",
-                        p_total_price: finalAmount,
+                        p_total_price: fare,
                         p_booking_source: "WALK_IN",
                         p_booking_terminal_id: roleData?.terminal_id || null,
                         p_created_by: user?.id || null,
@@ -165,8 +234,8 @@ export default function TellerWalkInBookingPage() {
                         passenger_id: null,
                         passenger_name: passengerName,
                         passenger_contact: passengerContact || "",
-                        seat_number: selectedSeat,
-                        total_price: selectedTrip.fare_amount || 850,
+                        seat_number: effectiveSeat,
+                        total_price: fare,
                         booking_source: 'WALK_IN',
                         booking_terminal_id: roleData?.terminal_id || null,
                         created_by: user?.id || null,
@@ -185,8 +254,8 @@ export default function TellerWalkInBookingPage() {
                             trip_id: selectedTrip.id,
                             customer_id: null,
                             passenger_name: passengerName,
-                            seat_number: selectedSeat,
-                            total_price: selectedTrip.fare_amount || 850,
+                            seat_number: effectiveSeat,
+                            total_price: fare,
                             status: 'CONFIRMED'
                         })
                         .select('id')
@@ -208,7 +277,7 @@ export default function TellerWalkInBookingPage() {
                         .from('trip_seats')
                         .update({ is_available: false, booked_by_booking_id: bookingId })
                         .eq('trip_id', selectedTrip.id)
-                        .eq('seat_number', selectedSeat);
+                        .eq('seat_number', effectiveSeat);
                 } catch {
                     // Ignore if trip_seats does not exist
                 }
@@ -219,7 +288,7 @@ export default function TellerWalkInBookingPage() {
                         .from('payments')
                         .insert({
                             booking_id: bookingId,
-                            amount: selectedTrip.fare_amount || 850,
+                            amount: fare,
                             payment_method: 'CASH_WALKIN',
                             payment_status: 'PAID',
                             transaction_ref: `CASH-${Date.now()}`
@@ -229,7 +298,7 @@ export default function TellerWalkInBookingPage() {
                             .from('payments')
                             .insert({
                                 reservation_id: bookingId,
-                                amount: selectedTrip.fare_amount || 850,
+                                amount: fare,
                                 payment_method: 'CASH_WALKIN',
                                 status: 'PAID',
                                 transaction_id: `CASH-${Date.now()}`
@@ -240,7 +309,7 @@ export default function TellerWalkInBookingPage() {
                         .from('payments')
                         .insert({
                             reservation_id: bookingId,
-                            amount: selectedTrip.fare_amount || 850,
+                            amount: fare,
                             payment_method: 'CASH_WALKIN',
                             status: 'PAID',
                             transaction_id: `CASH-${Date.now()}`
@@ -250,7 +319,7 @@ export default function TellerWalkInBookingPage() {
                             .from('payments')
                             .insert({
                                 booking_id: bookingId,
-                                amount: selectedTrip.fare_amount || 850,
+                                amount: fare,
                                 payment_method: 'CASH_WALKIN',
                                 payment_status: 'PAID',
                                 transaction_ref: `CASH-${Date.now()}`
@@ -294,20 +363,29 @@ export default function TellerWalkInBookingPage() {
                 }
             }
 
+            const activeSeats = selectedSeats.length > 0 ? selectedSeats : (effectiveSeat ? [effectiveSeat] : []);
+
             setCompletedBooking({
                 qr_token: bookingQrToken,
-                seat_number: selectedSeat,
+                seat_number: effectiveSeat,
+                seat_numbers: activeSeats,
                 passenger_name: passengerName,
-                total_price: finalAmount,
-                base_fare: baseFare,
-                discount_amount: discountDeduction,
-                passenger_type: passengerType,
-                discount_id: discountIdNumber,
+                total_price: fare,
+                base_fare: totalBaseFare,
+                discount_amount: totalDiscountAmount,
+                discount_count: effectiveDiscountCount,
+                discounted_passengers: discountPersons.slice(0, effectiveDiscountCount).map(p => ({
+                    name: p.name,
+                    classification: p.classification,
+                    id_number: p.idNumber
+                })),
+                amount_tendered: Number(amountTendered) || fare,
+                change_amount: change,
                 trip: selectedTrip,
             });
 
             // Refresh seats list
-            setBookedSeats((prev) => [...prev, selectedSeat]);
+            setBookedSeats((prev) => [...prev, ...activeSeats]);
         } catch (err: any) {
             console.error("Walk-in booking error:", err);
             setError(err.message || "Failed to issue walk-in ticket.");
@@ -319,18 +397,14 @@ export default function TellerWalkInBookingPage() {
     const handleResetForm = () => {
         setCompletedBooking(null);
         setSelectedSeat(null);
+        setSelectedSeats([]);
         setPassengerName("");
         setPassengerContact("");
-        setPassengerType("REGULAR");
-        setDiscountIdNumber("");
+        setDiscountCount(0);
+        setDiscountPersons([]);
         setAmountTendered("");
+        setError(null);
     };
-
-    const regularFare = selectedTrip?.fare_amount || 850;
-    const isDiscounted = passengerType !== "REGULAR";
-    const discountDeduction = isDiscounted ? Math.round(regularFare * 0.20) : 0;
-    const fare = regularFare - discountDeduction;
-    const change = Number(amountTendered) >= fare ? Number(amountTendered) - fare : 0;
 
     return (
         <div className="container mx-auto max-w-5xl space-y-6">
@@ -364,17 +438,23 @@ export default function TellerWalkInBookingPage() {
                     <CardContent className="p-6 space-y-4">
                         <div className="flex justify-between items-center border-b pb-3 text-sm">
                             <div>
-                                <p className="text-xs text-muted-foreground">Passenger Name</p>
+                                <p className="text-xs text-muted-foreground">Passenger / Contact</p>
                                 <p className="font-bold text-base">{completedBooking.passenger_name}</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-xs text-muted-foreground">Seat</p>
-                                <p className="font-mono text-2xl font-black text-blue-600">#{completedBooking.seat_number}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {completedBooking.seat_numbers?.length > 1 ? "Seats" : "Seat"}
+                                </p>
+                                <p className="font-mono text-xl font-black text-blue-600">
+                                    {completedBooking.seat_numbers?.length > 1
+                                        ? completedBooking.seat_numbers.map((s: number) => `#${s}`).join(', ')
+                                        : `#${completedBooking.seat_number}`}
+                                </p>
                             </div>
                         </div>
 
                         <div className="text-xs space-y-1">
-                            <p className="text-muted-foreground">Route</p>
+                            <p className="text-muted-foreground">Route & Trip</p>
                             <p className="font-bold text-sm">
                                 {completedBooking.trip.route?.origin?.name} ➔ {completedBooking.trip.route?.destination?.name}
                             </p>
@@ -383,23 +463,48 @@ export default function TellerWalkInBookingPage() {
                             </p>
                         </div>
 
-                        {completedBooking.passenger_type && completedBooking.passenger_type !== "REGULAR" && (
-                            <div className="bg-purple-50 dark:bg-purple-950/40 p-2.5 rounded-lg border border-purple-200 dark:border-purple-800 text-xs space-y-1">
-                                <div className="flex justify-between items-center text-purple-700 dark:text-purple-300 font-bold">
-                                    <span>20% Statutory Discount:</span>
-                                    <span>{completedBooking.passenger_type}</span>
+                        {/* Discounted Beneficiaries List */}
+                        {completedBooking.discounted_passengers && completedBooking.discounted_passengers.length > 0 && (
+                            <div className="bg-purple-50 dark:bg-purple-950/40 p-3 rounded-lg border border-purple-200 dark:border-purple-800 text-xs space-y-2">
+                                <div className="flex justify-between items-center text-purple-700 dark:text-purple-300 font-bold border-b border-purple-200/50 pb-1">
+                                    <span>20% Statutory Discount ({completedBooking.discounted_passengers.length} Beneficiary)</span>
+                                    <span className="text-[10px] bg-purple-600 text-white px-1.5 py-0.5 rounded font-black">-₱{completedBooking.discount_amount}.00</span>
                                 </div>
-                                {completedBooking.discount_id && (
-                                    <p className="text-[11px] text-muted-foreground font-mono">
-                                        ID Verified: {completedBooking.discount_id}
-                                    </p>
-                                )}
+                                <div className="space-y-1.5">
+                                    {completedBooking.discounted_passengers.map((p: any, idx: number) => (
+                                        <div key={idx} className="flex justify-between items-center text-[11px] bg-white dark:bg-zinc-900/60 p-1.5 rounded border border-purple-100 dark:border-purple-900/50">
+                                            <div>
+                                                <span className="font-bold text-foreground">#{idx + 1} {p.name}</span>
+                                                <span className="ml-1 text-[10px] text-purple-600 font-semibold">({p.classification})</span>
+                                            </div>
+                                            <span className="font-mono text-muted-foreground">ID: {p.id_number}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
-                        <div className="flex justify-between items-center bg-muted/50 p-2.5 rounded-lg text-xs">
-                            <span className="text-muted-foreground">Cash Fare Paid:</span>
-                            <span className="font-mono font-extrabold text-emerald-600 text-sm">₱{completedBooking.total_price}.00</span>
+                        <div className="bg-muted/50 p-2.5 rounded-lg text-xs space-y-1">
+                            <div className="flex justify-between text-muted-foreground">
+                                <span>Base Fare ({completedBooking.seat_numbers?.length || 1} seat/s):</span>
+                                <span>₱{completedBooking.base_fare}.00</span>
+                            </div>
+                            {completedBooking.discount_amount > 0 && (
+                                <div className="flex justify-between text-emerald-600 font-semibold">
+                                    <span>Total Statutory Discount:</span>
+                                    <span>-₱{completedBooking.discount_amount}.00</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between border-t pt-1 font-bold text-sm">
+                                <span>Cash Fare Paid:</span>
+                                <span className="font-mono text-emerald-600">₱{completedBooking.total_price}.00</span>
+                            </div>
+                            {completedBooking.amount_tendered > completedBooking.total_price && (
+                                <div className="flex justify-between text-[11px] text-muted-foreground pt-0.5">
+                                    <span>Tendered: ₱{completedBooking.amount_tendered}.00</span>
+                                    <span className="font-semibold text-emerald-600">Change: ₱{completedBooking.change_amount.toFixed(2)}</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Generated SVG QR Code */}
@@ -471,12 +576,37 @@ export default function TellerWalkInBookingPage() {
                 /* STEP 2: SEAT PICKER & PASSENGER CASH PAYMENT */
                 <div className="grid gap-8 md:grid-cols-2">
                     <div>
-                        <h2 className="text-lg font-bold mb-4">2. Select Seat</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold">2. Select Seat(s)</h2>
+                            {selectedSeats.length > 0 && (
+                                <span className="text-xs bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-bold">
+                                    {selectedSeats.length} Seat{selectedSeats.length > 1 ? "s" : ""} Selected
+                                </span>
+                            )}
+                        </div>
                         <SeatPicker
                             totalSeats={45}
                             bookedSeats={bookedSeats}
                             selectedSeat={selectedSeat}
-                            onSelectSeat={(seatNum) => setSelectedSeat(seatNum)}
+                            selectedSeats={selectedSeats}
+                            onSelectSeat={(seatNum) => {
+                                setSelectedSeat(seatNum);
+                                setSelectedSeats((prev) => {
+                                    const next = prev.includes(seatNum) ? prev.filter((s) => s !== seatNum) : [...prev, seatNum];
+                                    if (discountCount > next.length) {
+                                        handleSetDiscountCount(next.length);
+                                    }
+                                    return next;
+                                });
+                            }}
+                            onSelectSeats={(seats) => {
+                                setSelectedSeats(seats);
+                                if (seats.length > 0) setSelectedSeat(seats[0]);
+                                else setSelectedSeat(null);
+                                if (discountCount > seats.length) {
+                                    handleSetDiscountCount(seats.length);
+                                }
+                            }}
                         />
                     </div>
 
@@ -488,13 +618,19 @@ export default function TellerWalkInBookingPage() {
                                     <p className="font-bold text-sm">
                                         {selectedTrip.route?.origin?.name} ➔ {selectedTrip.route?.destination?.name}
                                     </p>
-                                    <p className="text-muted-foreground">Fare Amount: <span className="font-bold text-foreground">₱{fare}</span></p>
-                                    <p className="text-muted-foreground">Selected Seat: <span className="font-bold text-blue-600">{selectedSeat ? `#${selectedSeat}` : "None Selected"}</span></p>
+                                    <div className="flex justify-between text-muted-foreground">
+                                        <span>Unit Fare: <strong className="text-foreground">₱{unitFare}</strong></span>
+                                        <span>Seats: <strong className="text-blue-600">
+                                            {selectedSeats.length > 0
+                                                ? selectedSeats.map((s) => `#${s}`).join(', ')
+                                                : (selectedSeat ? `#${selectedSeat}` : "None Selected")}
+                                        </strong></span>
+                                    </div>
                                 </div>
 
                                 <form onSubmit={handleProcessWalkInPayment} className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="wName">Passenger Name *</Label>
+                                        <Label htmlFor="wName">Primary Passenger / Contact Name *</Label>
                                         <Input
                                             id="wName"
                                             required
@@ -514,122 +650,146 @@ export default function TellerWalkInBookingPage() {
                                         />
                                     </div>
 
-                                    {/* Passenger Classification & Discount (20% Off) */}
-                                    <div className="space-y-2 pt-1 border-t">
+                                    {/* Discount Quantity Selector: "Ilan ang i-didiscount" */}
+                                    <div className="space-y-3 pt-2 border-t">
                                         <div className="flex items-center justify-between">
-                                            <Label className="text-xs font-bold text-foreground">
-                                                Fare Classification
-                                            </Label>
-                                            <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
-                                                20% Statutory Discount
+                                            <div>
+                                                <Label className="text-xs font-bold text-foreground">
+                                                    Ilan ang i-didiscount? (Statutory 20% Discount)
+                                                </Label>
+                                                <p className="text-[11px] text-muted-foreground">
+                                                    Select how many passengers qualify for Senior Citizen, Student, or PWD discount.
+                                                </p>
+                                            </div>
+                                            <span className="text-[11px] font-bold text-purple-600 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800">
+                                                -20% per passenger
                                             </span>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setPassengerType("REGULAR");
-                                                    setDiscountIdNumber("");
-                                                }}
-                                                className={`p-2.5 rounded-lg border text-xs font-bold text-left transition-all ${
-                                                    passengerType === "REGULAR"
-                                                        ? "border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/20"
-                                                        : "border-border hover:bg-muted/40 text-muted-foreground"
-                                                }`}
-                                            >
-                                                <div>Regular Fare</div>
-                                                <div className="text-[10px] font-normal text-muted-foreground mt-0.5">Standard Ticket</div>
-                                            </button>
 
-                                            <button
-                                                type="button"
-                                                onClick={() => setPassengerType("SENIOR")}
-                                                className={`p-2.5 rounded-lg border text-xs font-bold text-left transition-all ${
-                                                    passengerType === "SENIOR"
-                                                        ? "border-purple-600 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 ring-2 ring-purple-500/20"
-                                                        : "border-border hover:bg-muted/40 text-muted-foreground"
-                                                }`}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <span>Senior Citizen</span>
-                                                    <span className="text-[10px] bg-purple-600 text-white px-1.5 py-0.2 rounded font-extrabold">-20%</span>
-                                                </div>
-                                                <div className="text-[10px] font-normal text-muted-foreground mt-0.5">OSCA / 60+ Years Old</div>
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => setPassengerType("STUDENT")}
-                                                className={`p-2.5 rounded-lg border text-xs font-bold text-left transition-all ${
-                                                    passengerType === "STUDENT"
-                                                        ? "border-purple-600 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 ring-2 ring-purple-500/20"
-                                                        : "border-border hover:bg-muted/40 text-muted-foreground"
-                                                }`}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <span>Student</span>
-                                                    <span className="text-[10px] bg-purple-600 text-white px-1.5 py-0.2 rounded font-extrabold">-20%</span>
-                                                </div>
-                                                <div className="text-[10px] font-normal text-muted-foreground mt-0.5">Current School ID / Form</div>
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => setPassengerType("PWD")}
-                                                className={`p-2.5 rounded-lg border text-xs font-bold text-left transition-all ${
-                                                    passengerType === "PWD"
-                                                        ? "border-purple-600 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 ring-2 ring-purple-500/20"
-                                                        : "border-border hover:bg-muted/40 text-muted-foreground"
-                                                }`}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <span>PWD</span>
-                                                    <span className="text-[10px] bg-purple-600 text-white px-1.5 py-0.2 rounded font-extrabold">-20%</span>
-                                                </div>
-                                                <div className="text-[10px] font-normal text-muted-foreground mt-0.5">Govt PWD ID Card</div>
-                                            </button>
+                                        <div className="flex flex-wrap gap-2">
+                                            {Array.from({ length: Math.max(1, seatCount || 1) + 1 }).map((_, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => handleSetDiscountCount(idx)}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                                                        effectiveDiscountCount === idx
+                                                            ? "bg-purple-600 text-white border-purple-600 shadow-sm"
+                                                            : "bg-muted/40 hover:bg-muted text-muted-foreground border-border"
+                                                    }`}
+                                                >
+                                                    {idx === 0 ? "0 (All Regular)" : `${idx} Passenger${idx > 1 ? "s" : ""}`}
+                                                </button>
+                                            ))}
                                         </div>
 
-                                        {isDiscounted && (
-                                            <div className="space-y-1.5 p-3 rounded-lg bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900 mt-2">
-                                                <Label htmlFor="wDiscId" className="text-xs font-semibold text-purple-900 dark:text-purple-200">
-                                                    {passengerType === "SENIOR" && "OSCA Senior Citizen ID Number *"}
-                                                    {passengerType === "STUDENT" && "Student School ID / Registration No. *"}
-                                                    {passengerType === "PWD" && "PWD Identification Card Number *"}
-                                                </Label>
-                                                <Input
-                                                    id="wDiscId"
-                                                    required={isDiscounted}
-                                                    placeholder={
-                                                        passengerType === "SENIOR" ? "e.g. OSCA-12345" :
-                                                        passengerType === "STUDENT" ? "e.g. 2024-ST-9988" : "e.g. PWD-45678"
-                                                    }
-                                                    value={discountIdNumber}
-                                                    onChange={(e) => setDiscountIdNumber(e.target.value)}
-                                                    className="bg-white dark:bg-zinc-900 text-xs"
-                                                />
-                                                <p className="text-[10px] text-muted-foreground">
-                                                    Teller instruction: Inspect the passenger&apos;s physical valid ID card before issuing discounted ticket.
-                                                </p>
+                                        {/* Per-Passenger Beneficiary Form (Classification, Name, ID Number) */}
+                                        {effectiveDiscountCount > 0 && (
+                                            <div className="space-y-3 pt-1">
+                                                {Array.from({ length: effectiveDiscountCount }).map((_, idx) => {
+                                                    const person = discountPersons[idx] || {
+                                                        id: `person_${idx}`,
+                                                        name: "",
+                                                        classification: "SENIOR" as const,
+                                                        idNumber: "",
+                                                    };
+
+                                                    return (
+                                                        <div
+                                                            key={person.id || idx}
+                                                            className="p-3.5 rounded-xl border border-purple-200 dark:border-purple-900 bg-purple-50/40 dark:bg-purple-950/20 space-y-3"
+                                                        >
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-xs font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                                                                    <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] flex items-center justify-center font-black">
+                                                                        {idx + 1}
+                                                                    </span>
+                                                                    Discount Beneficiary #{idx + 1}
+                                                                </span>
+                                                                <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/40 px-2 py-0.5 rounded">
+                                                                    Deduction: -₱{discountPerPassenger}.00
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Classification Pills */}
+                                                            <div className="space-y-1">
+                                                                <Label className="text-[11px] font-semibold text-muted-foreground">
+                                                                    Discount Classification *
+                                                                </Label>
+                                                                <div className="grid grid-cols-3 gap-1.5">
+                                                                    {(["SENIOR", "STUDENT", "PWD"] as const).map((cls) => (
+                                                                        <button
+                                                                            key={cls}
+                                                                            type="button"
+                                                                            onClick={() => handleUpdateDiscountPerson(idx, "classification", cls)}
+                                                                            className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all ${
+                                                                                person.classification === cls
+                                                                                    ? "bg-purple-600 text-white border-purple-600 shadow-sm"
+                                                                                    : "bg-white dark:bg-zinc-900 border-border text-muted-foreground hover:bg-muted"
+                                                                            }`}
+                                                                        >
+                                                                            {cls === "SENIOR" && "Senior (OSCA)"}
+                                                                            {cls === "STUDENT" && "Student"}
+                                                                            {cls === "PWD" && "PWD"}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Discount Person Name */}
+                                                            <div className="space-y-1">
+                                                                <Label className="text-[11px] font-semibold text-muted-foreground">
+                                                                    Beneficiary Full Legal Name *
+                                                                </Label>
+                                                                <Input
+                                                                    required
+                                                                    placeholder={`Full name matching ${person.classification} ID`}
+                                                                    value={person.name}
+                                                                    onChange={(e) => handleUpdateDiscountPerson(idx, "name", e.target.value)}
+                                                                    className="bg-white dark:bg-zinc-900 text-xs h-8"
+                                                                />
+                                                            </div>
+
+                                                            {/* ID Number */}
+                                                            <div className="space-y-1">
+                                                                <Label className="text-[11px] font-semibold text-muted-foreground">
+                                                                    {person.classification === "SENIOR" && "OSCA Senior Citizen ID Number *"}
+                                                                    {person.classification === "STUDENT" && "Student School ID / Registration No. *"}
+                                                                    {person.classification === "PWD" && "PWD Identification Card Number *"}
+                                                                </Label>
+                                                                <Input
+                                                                    required
+                                                                    placeholder={
+                                                                        person.classification === "SENIOR" ? "e.g. OSCA-2024-12345" :
+                                                                        person.classification === "STUDENT" ? "e.g. 2024-ST-99881" : "e.g. PWD-NCR-45678"
+                                                                    }
+                                                                    value={person.idNumber}
+                                                                    onChange={(e) => handleUpdateDiscountPerson(idx, "idNumber", e.target.value)}
+                                                                    className="bg-white dark:bg-zinc-900 text-xs font-mono h-8"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Real-time Fare Breakdown */}
-                                    <div className="p-3 rounded-lg bg-muted/60 border text-xs space-y-1">
+                                    <div className="p-3 rounded-lg bg-muted/60 border text-xs space-y-1.5">
                                         <div className="flex justify-between text-muted-foreground">
-                                            <span>Regular Fare:</span>
-                                            <span>₱{regularFare}.00</span>
+                                            <span>Base Fare ({seatCount || 1} seat{seatCount > 1 ? "s" : ""} × ₱{unitFare}):</span>
+                                            <span>₱{totalBaseFare}.00</span>
                                         </div>
-                                        {isDiscounted && (
+                                        {effectiveDiscountCount > 0 && (
                                             <div className="flex justify-between text-emerald-600 font-semibold">
-                                                <span>20% Discount ({passengerType}):</span>
-                                                <span>-₱{discountDeduction}.00</span>
+                                                <span>20% Statutory Discount ({effectiveDiscountCount} pax × ₱{discountPerPassenger}):</span>
+                                                <span>-₱{totalDiscountAmount}.00</span>
                                             </div>
                                         )}
                                         <div className="flex justify-between pt-1 border-t font-bold text-sm text-foreground">
-                                            <span>Total Amount Due:</span>
-                                            <span className="font-mono text-emerald-600">₱{fare}.00</span>
+                                            <span>Total Cash Due:</span>
+                                            <span className="font-mono text-emerald-600 text-base">₱{fare}.00</span>
                                         </div>
                                     </div>
 
@@ -653,9 +813,17 @@ export default function TellerWalkInBookingPage() {
                                         type="submit"
                                         size="lg"
                                         className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                                        disabled={submitting || !selectedSeat || !passengerName || (isDiscounted && !discountIdNumber.trim())}
+                                        disabled={
+                                            submitting ||
+                                            (!selectedSeat && selectedSeats.length === 0) ||
+                                            !passengerName.trim() ||
+                                            (effectiveDiscountCount > 0 &&
+                                                discountPersons.some(
+                                                    (p, i) => i < effectiveDiscountCount && (!p.name.trim() || !p.idNumber.trim())
+                                                ))
+                                        }
                                     >
-                                        {submitting ? "Processing Walk-in..." : `Confirm & Issue Cash Ticket (₱${fare})`}
+                                        {submitting ? "Processing Walk-in..." : `Confirm & Issue Cash Ticket (₱${fare}.00)`}
                                     </Button>
                                 </form>
                             </CardContent>

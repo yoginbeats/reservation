@@ -6,19 +6,49 @@ import { CheckCircle2, UserCheck, Armchair } from "lucide-react";
 interface SeatPickerProps {
     totalSeats?: number;
     bookedSeats: number[]; // Array of seat numbers already booked
-    selectedSeat: number | null;
-    onSelectSeat: (seatNumber: number) => void;
+    selectedSeat?: number | null;
+    selectedSeats?: number[];
+    onSelectSeat?: (seatNumber: number) => void;
+    onSelectSeats?: (seatNumbers: number[]) => void;
     busType?: string; // "SUPER_DELUXE" | "DELUXE" | "AIRCON" | "STANDARD"
+    maxSeats?: number;
 }
 
 export function SeatPicker({
     totalSeats = 45,
     bookedSeats = [],
-    selectedSeat,
+    selectedSeat = null,
+    selectedSeats,
     onSelectSeat,
+    onSelectSeats,
     busType = "AIRCON",
+    maxSeats = 10,
 }: SeatPickerProps) {
     const [viewBusType, setViewBusType] = useState<string>(busType);
+
+    const isSeatSelected = (seatNum: number) => {
+        if (selectedSeats && selectedSeats.length > 0) {
+            return selectedSeats.includes(seatNum);
+        }
+        return selectedSeat === seatNum;
+    };
+
+    const handleSeatClick = (seatNum: number) => {
+        if (onSelectSeats && selectedSeats !== undefined) {
+            if (selectedSeats.includes(seatNum)) {
+                const next = selectedSeats.filter((s) => s !== seatNum);
+                onSelectSeats(next);
+                if (onSelectSeat) onSelectSeat(next.length > 0 ? next[next.length - 1] : 0);
+            } else {
+                if (selectedSeats.length >= maxSeats) return;
+                const next = [...selectedSeats, seatNum].sort((a, b) => a - b);
+                onSelectSeats(next);
+                if (onSelectSeat) onSelectSeat(seatNum);
+            }
+        } else if (onSelectSeat) {
+            onSelectSeat(seatNum);
+        }
+    };
 
     // Standard bus configuration: 4 seats per row (2 left, aisle, 2 right)
     // Row 5 right side has CR for DELUXE / SUPER DELUXE
@@ -108,14 +138,14 @@ export function SeatPicker({
                                 <div className="flex gap-2">
                                     {[seat1, seat2].map((seatNum) => {
                                         const isBooked = bookedSeats.includes(seatNum);
-                                        const isSelected = selectedSeat === seatNum;
+                                        const isSelected = isSeatSelected(seatNum);
 
                                         return (
                                             <button
                                                 key={seatNum}
                                                 type="button"
                                                 disabled={isBooked}
-                                                onClick={() => onSelectSeat(seatNum)}
+                                                onClick={() => handleSeatClick(seatNum)}
                                                 className={`relative flex h-11 w-11 flex-col items-center justify-center rounded-xl border font-mono text-xs font-black transition-all ${
                                                     isBooked
                                                         ? "cursor-not-allowed bg-red-100 border-red-200 text-red-500 dark:bg-red-950/50 dark:border-red-900 dark:text-red-400 opacity-80"
@@ -150,14 +180,14 @@ export function SeatPicker({
                                     ) : (
                                         [seat3, seat4].map((seatNum) => {
                                             const isBooked = bookedSeats.includes(seatNum);
-                                            const isSelected = selectedSeat === seatNum;
+                                            const isSelected = isSeatSelected(seatNum);
 
                                             return (
                                                 <button
                                                     key={seatNum}
                                                     type="button"
                                                     disabled={isBooked}
-                                                    onClick={() => onSelectSeat(seatNum)}
+                                                    onClick={() => handleSeatClick(seatNum)}
                                                     className={`relative flex h-11 w-11 flex-col items-center justify-center rounded-xl border font-mono text-xs font-black transition-all ${
                                                         isBooked
                                                             ? "cursor-not-allowed bg-red-100 border-red-200 text-red-500 dark:bg-red-950/50 dark:border-red-900 dark:text-red-400 opacity-80"
@@ -186,14 +216,14 @@ export function SeatPicker({
                         <div className="flex justify-between gap-1.5">
                             {[41, 42, 43, 44, 45].map((seatNum) => {
                                 const isBooked = bookedSeats.includes(seatNum);
-                                const isSelected = selectedSeat === seatNum;
+                                const isSelected = isSeatSelected(seatNum);
 
                                 return (
                                     <button
                                         key={seatNum}
                                         type="button"
                                         disabled={isBooked}
-                                        onClick={() => onSelectSeat(seatNum)}
+                                        onClick={() => handleSeatClick(seatNum)}
                                         className={`relative flex h-11 flex-1 flex-col items-center justify-center rounded-xl border font-mono text-xs font-black transition-all ${
                                             isBooked
                                                 ? "cursor-not-allowed bg-red-100 border-red-200 text-red-500 dark:bg-red-950/50 dark:border-red-900 dark:text-red-400 opacity-80"
@@ -217,7 +247,19 @@ export function SeatPicker({
             </div>
 
             {/* Selected Seat Footer Notification */}
-            {selectedSeat ? (
+            {selectedSeats && selectedSeats.length > 0 ? (
+                <div className="flex items-center justify-between rounded-xl bg-blue-50 border border-blue-200 p-4 dark:bg-blue-950/50 dark:border-blue-900">
+                    <div className="flex items-center gap-2">
+                        <UserCheck className="h-5 w-5 text-blue-600" />
+                        <span className="text-xs font-bold text-blue-900 dark:text-blue-200">
+                            Selected Bus Seats ({selectedSeats.length}):
+                        </span>
+                    </div>
+                    <span className="font-mono text-base font-black text-blue-600 dark:text-blue-400">
+                        {selectedSeats.map((s) => `#${s < 10 ? `0${s}` : s}`).join(", ")}
+                    </span>
+                </div>
+            ) : selectedSeat ? (
                 <div className="flex items-center justify-between rounded-xl bg-blue-50 border border-blue-200 p-4 dark:bg-blue-950/50 dark:border-blue-900">
                     <div className="flex items-center gap-2">
                         <UserCheck className="h-5 w-5 text-blue-600" />

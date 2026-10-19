@@ -15,11 +15,15 @@ interface UserTicket {
     booking: {
         id: string;
         passenger_name: string;
-        passenger_type?: "REGULAR" | "SENIOR" | "STUDENT" | "PWD";
+        passenger_type?: string;
         discount_amount?: number;
+        discount_count?: number;
+        discounted_passengers?: Array<{ name: string; classification: string; id_number: string }>;
         discount_id?: string;
         original_price?: number;
         seat_number: number;
+        seat_numbers?: number[];
+        seat_count?: number;
         total_price: number;
         booking_source: string;
         trip: {
@@ -150,9 +154,13 @@ function TicketsContent() {
                             passenger_name: item.passenger_name,
                             passenger_type: item.passenger_type || "REGULAR",
                             discount_amount: item.discount_amount || 0,
+                            discount_count: item.discount_count || 0,
+                            discounted_passengers: item.discounted_passengers || [],
                             discount_id: item.discount_id || "",
                             original_price: item.original_price || item.total_price,
                             seat_number: item.seat_number,
+                            seat_numbers: item.seat_numbers || [item.seat_number],
+                            seat_count: item.seat_count || (item.seat_numbers?.length || 1),
                             total_price: item.total_price,
                             booking_source: "ONLINE",
                             passenger_id: item.passenger_id || null,
@@ -289,9 +297,28 @@ function TicketsContent() {
                                 <CardContent className="p-6 space-y-4">
                                     <div className="flex items-center justify-between border-b pb-3">
                                         <div>
-                                            <p className="text-xs text-muted-foreground">Passenger</p>
+                                            <p className="text-xs text-muted-foreground">Lead Passenger</p>
                                             <p className="font-bold text-base">{booking?.passenger_name || "Passenger"}</p>
-                                            {booking?.passenger_type && booking.passenger_type !== "REGULAR" && (
+                                            
+                                            {/* Multi-Passenger Discount Beneficiaries */}
+                                            {booking?.discounted_passengers && booking.discounted_passengers.length > 0 ? (
+                                                <div className="mt-2 space-y-1.5">
+                                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                                        20% Discounted Beneficiaries ({booking.discounted_passengers.length}):
+                                                    </p>
+                                                    {booking.discounted_passengers.map((dp, dpIdx) => (
+                                                        <div key={dpIdx} className="flex flex-wrap items-center gap-1.5 text-xs bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 p-1.5 rounded-lg">
+                                                            <span className="font-bold text-foreground text-xs">{dp.name}</span>
+                                                            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-black bg-purple-600 text-white">
+                                                                20% {dp.classification}
+                                                            </span>
+                                                            <span className="font-mono text-[10px] text-muted-foreground">
+                                                                ID: {dp.id_number}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : booking?.passenger_type && booking.passenger_type !== "REGULAR" ? (
                                                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
                                                         20% DISCOUNT ({booking.passenger_type})
@@ -302,12 +329,16 @@ function TicketsContent() {
                                                         </span>
                                                     )}
                                                 </div>
-                                            )}
+                                            ) : null}
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-xs text-muted-foreground">Seat Number</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {booking?.seat_numbers && booking.seat_numbers.length > 1 ? "Seats" : "Seat Number"}
+                                            </p>
                                             <p className="font-mono text-xl font-black text-blue-600">
-                                                #{booking?.seat_number ? (booking.seat_number < 10 ? `0${booking.seat_number}` : booking.seat_number) : "--"}
+                                                {booking?.seat_numbers && booking.seat_numbers.length > 1
+                                                    ? booking.seat_numbers.map((s) => `#${s < 10 ? `0${s}` : s}`).join(", ")
+                                                    : `#${booking?.seat_number ? (booking.seat_number < 10 ? `0${booking.seat_number}` : booking.seat_number) : "--"}`}
                                             </p>
                                         </div>
                                     </div>
