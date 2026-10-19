@@ -7,7 +7,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SeatPicker } from "@/components/seat-picker";
-import { Bus, MapPin, Calendar, Clock, Wallet, ArrowRight, Check, AlertCircle, QrCode, Copy, CheckCircle2, Upload, ShieldCheck, Image as ImageIcon } from "lucide-react";
+import {
+    Bus,
+    MapPin,
+    Calendar,
+    Clock,
+    Wallet,
+    ArrowRight,
+    Check,
+    AlertCircle,
+    QrCode,
+    Copy,
+    CheckCircle2,
+    Upload,
+    ShieldCheck,
+    Image as ImageIcon,
+    GraduationCap,
+    Accessibility,
+    HeartHandshake,
+    UserCheck,
+    FileText,
+    ChevronDown,
+    ChevronUp,
+    Percent,
+    Info
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 function BookTripContent() {
@@ -24,6 +48,10 @@ function BookTripContent() {
     const [passengerName, setPassengerName] = useState("");
     const [passengerContact, setPassengerContact] = useState("");
     const [passengerEmail, setPassengerEmail] = useState("");
+    const [passengerType, setPassengerType] = useState<"REGULAR" | "SENIOR" | "STUDENT" | "PWD">("REGULAR");
+    const [discountId, setDiscountId] = useState("");
+    const [termsAccepted, setTermsAccepted] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
     const [gcashRef, setGcashRef] = useState("");
     const [customQrUrl, setCustomQrUrl] = useState<string | null>(null);
     const [copied, setCopied] = useState<string | null>(null);
@@ -132,12 +160,28 @@ function BookTripContent() {
         }
     };
 
+    const baseFare = Number(selectedTrip?.fare_amount || 650);
+    const isDiscounted = passengerType !== "REGULAR";
+    const discountRate = isDiscounted ? 0.20 : 0.0;
+    const discountAmount = isDiscounted ? Math.round(baseFare * discountRate) : 0;
+    const finalFare = baseFare - discountAmount;
+
     const handleConfirmDirectGcash = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedTrip || !selectedSeat) return;
 
         if (!passengerName.trim()) {
             setError("Please enter the passenger full name.");
+            return;
+        }
+
+        if (isDiscounted && !discountId.trim()) {
+            setError(`Please enter your valid ${passengerType === "SENIOR" ? "Senior Citizen OSCA" : passengerType === "STUDENT" ? "Student" : "PWD"} ID Number.`);
+            return;
+        }
+
+        if (!termsAccepted) {
+            setError("Please agree to the Superlines Passenger Terms & Conditions before confirming your booking.");
             return;
         }
 
@@ -159,7 +203,11 @@ function BookTripContent() {
                     passengerName,
                     passengerContact,
                     passengerEmail,
-                    totalPrice: selectedTrip.fare_amount || 850,
+                    originalPrice: baseFare,
+                    totalPrice: finalFare,
+                    passengerType,
+                    discountAmount,
+                    discountIdNumber: discountId.trim(),
                     gcashRefNumber: gcashRef.trim(),
                 }),
             });
@@ -178,8 +226,12 @@ function BookTripContent() {
                     passenger_name: passengerName,
                     passenger_contact: passengerContact,
                     passenger_email: passengerEmail,
+                    passenger_type: passengerType,
+                    discount_amount: discountAmount,
+                    discount_id: discountId.trim(),
                     seat_number: selectedSeat,
-                    total_price: selectedTrip.fare_amount || 850,
+                    total_price: finalFare,
+                    original_price: baseFare,
                     trip: selectedTrip,
                     gcash_ref: gcashRef.trim(),
                     created_at: new Date().toISOString()
@@ -202,6 +254,16 @@ function BookTripContent() {
         e.preventDefault();
         if (!selectedTrip || !selectedSeat) return;
 
+        if (isDiscounted && !discountId.trim()) {
+            setError(`Please enter your valid ${passengerType === "SENIOR" ? "Senior Citizen OSCA" : passengerType === "STUDENT" ? "Student" : "PWD"} ID Number.`);
+            return;
+        }
+
+        if (!termsAccepted) {
+            setError("Please agree to the Superlines Passenger Terms & Conditions before confirming your booking.");
+            return;
+        }
+
         setError(null);
         setSubmitting(true);
 
@@ -215,7 +277,7 @@ function BookTripContent() {
                     passengerName,
                     passengerContact,
                     passengerEmail,
-                    totalPrice: selectedTrip.fare_amount || 850,
+                    totalPrice: finalFare,
                 }),
             });
 
@@ -384,7 +446,16 @@ function BookTripContent() {
                         <CardContent className="p-4 space-y-2 text-sm">
                             <div className="flex justify-between font-bold">
                                 <span>{selectedTrip.route?.origin?.name} ➔ {selectedTrip.route?.destination?.name}</span>
-                                <span className="text-red-600 font-extrabold">₱{selectedTrip.fare_amount || 850}</span>
+                                <div className="text-right">
+                                    {isDiscounted ? (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs line-through text-muted-foreground font-mono">₱{baseFare}</span>
+                                            <span className="text-emerald-600 font-extrabold text-base">₱{finalFare}</span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-red-600 font-extrabold">₱{baseFare}</span>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>Schedule: {new Date(selectedTrip.departure_time).toLocaleString()}</span>
@@ -461,7 +532,113 @@ function BookTripContent() {
                                 </div>
                             </div>
 
-                            {/* Direct GCash QR Card */}
+                            {/* 2. Passenger Classification & Automatic Discount */}
+                            <div className="space-y-4 rounded-xl border p-4 bg-card">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                                            <Percent className="h-4 w-4 text-emerald-600" />
+                                            2. Passenger Classification & Discount
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground">
+                                            Select your category to automatically apply your 20% statutory discount.
+                                        </p>
+                                    </div>
+                                    {isDiscounted && (
+                                        <span className="text-xs font-extrabold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                            20% OFF APPLIED
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Classification Selector Grid */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                    {[
+                                        { id: "REGULAR", label: "Regular", sub: "Standard Fare", icon: UserCheck },
+                                        { id: "SENIOR", label: "Senior Citizen", sub: "20% Off (RA 9994)", icon: HeartHandshake },
+                                        { id: "STUDENT", label: "Student", sub: "20% Off (RA 11314)", icon: GraduationCap },
+                                        { id: "PWD", label: "PWD", sub: "20% Off (RA 10754)", icon: Accessibility },
+                                    ].map((item) => {
+                                        const isSelected = passengerType === item.id;
+                                        const IconComponent = item.icon;
+                                        return (
+                                            <button
+                                                key={item.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setPassengerType(item.id as any);
+                                                    if (item.id === "REGULAR") setDiscountId("");
+                                                }}
+                                                className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all text-center ${
+                                                    isSelected
+                                                        ? "border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-100 shadow-sm font-bold"
+                                                        : "border-border hover:border-zinc-300 dark:hover:border-zinc-700 bg-background text-muted-foreground"
+                                                }`}
+                                            >
+                                                <IconComponent className={`h-5 w-5 mb-1.5 ${isSelected ? "text-emerald-600" : "text-muted-foreground"}`} />
+                                                <span className="text-xs font-extrabold">{item.label}</span>
+                                                <span className="text-[10px] text-muted-foreground mt-0.5">{item.sub}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Required ID Input for Discount */}
+                                {isDiscounted && (
+                                    <div className="space-y-2 pt-2 border-t">
+                                        <Label htmlFor="discId" className="font-bold text-xs flex items-center justify-between">
+                                            <span>
+                                                {passengerType === "SENIOR"
+                                                    ? "Senior Citizen OSCA ID Number *"
+                                                    : passengerType === "STUDENT"
+                                                    ? "Student School ID Number / School Name *"
+                                                    : "PWD ID Card Number *"}
+                                            </span>
+                                            <span className="text-[11px] font-normal text-muted-foreground">Required for 20% discount validation</span>
+                                        </Label>
+                                        <Input
+                                            id="discId"
+                                            required
+                                            placeholder={
+                                                passengerType === "SENIOR"
+                                                    ? "e.g. OSCA-2024-998811"
+                                                    : passengerType === "STUDENT"
+                                                    ? "e.g. 2024-10892 (Bicol University)"
+                                                    : "e.g. PWD-05-16-0023"
+                                            }
+                                            value={discountId}
+                                            onChange={(e) => setDiscountId(e.target.value)}
+                                            className="font-mono text-sm uppercase bg-white dark:bg-zinc-800"
+                                        />
+                                        <div className="flex items-start gap-2 text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 p-2.5 rounded-lg border border-amber-200">
+                                            <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                                            <span>
+                                                <strong>Superlines Policy:</strong> Valid physical identification ({passengerType === "SENIOR" ? "Government-issued Senior ID" : passengerType === "STUDENT" ? "Validated School ID for current school year or Certificate of Enrollment" : "Government-issued PWD ID"}) must be presented upon boarding.
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Realtime Fare Calculation Breakdown */}
+                                <div className="rounded-lg bg-zinc-50 dark:bg-zinc-900/60 p-3 border text-xs space-y-1.5">
+                                    <div className="flex justify-between text-muted-foreground">
+                                        <span>Base Regular Fare:</span>
+                                        <span className="font-mono">₱{baseFare}.00</span>
+                                    </div>
+                                    {isDiscounted && (
+                                        <div className="flex justify-between font-bold text-emerald-600 dark:text-emerald-400">
+                                            <span>Statutory Discount (20% - {passengerType}):</span>
+                                            <span className="font-mono">-₱{discountAmount}.00</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between font-black text-sm pt-1.5 border-t text-foreground">
+                                        <span>Total Amount Due:</span>
+                                        <span className="font-mono text-red-600 text-base">₱{finalFare}.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Direct GCash QR Card */}
                             <div className="rounded-2xl border-2 border-blue-500/40 bg-gradient-to-b from-blue-50/60 to-white dark:from-blue-950/30 dark:to-zinc-900 p-5 space-y-5 shadow-sm">
                                 <div className="flex items-center justify-between border-b border-blue-100 dark:border-blue-900/50 pb-3">
                                     <div className="flex items-center gap-2">
@@ -469,7 +646,7 @@ function BookTripContent() {
                                             G
                                         </div>
                                         <div>
-                                            <h3 className="font-extrabold text-blue-950 dark:text-blue-100 text-base leading-tight">GCash Scan to Pay</h3>
+                                            <h3 className="font-extrabold text-blue-950 dark:text-blue-100 text-base leading-tight">3. GCash Scan to Pay</h3>
                                             <p className="text-xs text-blue-700 dark:text-blue-300">Official Merchant / Ticket Payment</p>
                                         </div>
                                     </div>
@@ -543,15 +720,15 @@ function BookTripContent() {
                                     <div className="flex items-center justify-between py-1">
                                         <span className="text-muted-foreground">Amount to Send:</span>
                                         <div className="flex items-center gap-1.5">
-                                            <span className="font-black text-base text-red-600">
-                                                ₱{selectedTrip.fare_amount || 850}.00
+                                            <span className="font-black text-base text-red-600 font-mono">
+                                                ₱{finalFare}.00
                                             </span>
                                             <Button
                                                 type="button"
                                                 variant="ghost"
                                                 size="sm"
                                                 className="h-6 w-6 p-0"
-                                                onClick={() => handleCopy(String(selectedTrip.fare_amount || 850), "amount")}
+                                                onClick={() => handleCopy(String(finalFare), "amount")}
                                                 title="Copy Amount"
                                             >
                                                 {copied === "amount" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
@@ -564,7 +741,7 @@ function BookTripContent() {
                                 <div className="space-y-1.5 text-xs text-blue-900 dark:text-blue-200 bg-blue-50/70 dark:bg-blue-950/40 p-3.5 rounded-lg border border-blue-200">
                                     <p className="font-bold text-sm">How to Pay via GCash:</p>
                                     <p>1. Open your GCash app and select <strong>QR (Scan)</strong> to scan the code above, or tap <strong>Send Money</strong> to the mobile number listed.</p>
-                                    <p>2. Send the exact fare amount of <strong>₱{selectedTrip.fare_amount || 850}.00</strong>.</p>
+                                    <p>2. Send the exact fare amount of <strong>₱{finalFare}.00</strong>.</p>
                                     <p>3. Copy the <strong>13-digit Reference Number</strong> from your GCash confirmation receipt or SMS and enter it below.</p>
                                 </div>
 
@@ -585,6 +762,80 @@ function BookTripContent() {
                                 </div>
                             </div>
 
+                            {/* 4. Superlines Official Passenger Terms & Conditions */}
+                            <div className="rounded-xl border p-4 bg-card space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="h-4 w-4 text-blue-600" />
+                                        <h4 className="font-bold text-xs uppercase tracking-wide">
+                                            Passenger Terms & Conditions
+                                        </h4>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowTermsModal(!showTermsModal)}
+                                        className="text-xs text-blue-600 hover:text-blue-700 underline font-semibold flex items-center gap-1"
+                                    >
+                                        {showTermsModal ? "Hide Details" : "View Full Terms"}
+                                        {showTermsModal ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                                    </button>
+                                </div>
+
+                                {showTermsModal && (
+                                    <div className="space-y-3 text-xs bg-muted/40 p-4 rounded-xl border max-h-72 overflow-y-auto leading-relaxed text-muted-foreground">
+                                        <div className="text-center font-bold text-foreground border-b pb-2">
+                                            SUPERLINES TRANSPORTATION CO., INC. and DAET AUTO EXPRESS TRANSIT, INC.
+                                            <p className="text-[11px] font-normal text-muted-foreground">PASSENGER TERMS & CONDITIONS</p>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <p className="font-bold text-foreground">1. Ticketing, Rebooking, and Cancellations</p>
+                                            <p>• <strong>Reservation Policy:</strong> Tickets are valid only for the specific date and trip indicated.</p>
+                                            <p>• <strong>Arrival Time:</strong> Passengers must be at the terminal at least one (1) hour before the scheduled departure.</p>
+                                            <p>• <strong>Penalty Fees:</strong> Effective November 03, 2023, a 20% penalty fee of the total ticket price will be charged for Re-scheduling/Rebooking and advance reservation.</p>
+                                            <p>• <strong>Cancellations/Refunds:</strong> To process a rebooking or cancellation, the passenger must present the physical ticket at the terminal office.</p>
+                                        </div>
+
+                                        <div className="space-y-1 pt-1 border-t">
+                                            <p className="font-bold text-foreground">2. Pet Policy (Pet-Friendly Bus)</p>
+                                            <p>Small pets are allowed on designated trips (9:30 AM, 8:00 PM, and 9:30 PM) subject to:</p>
+                                            <p>• <strong>Containment:</strong> Pets must be kept inside a cage or pet bag.</p>
+                                            <p>• <strong>Hygiene:</strong> Pets must wear a diaper at all times.</p>
+                                            <p>• <strong>Fare:</strong> A full regular fare must be paid for the pet as it occupies one (1) seat.</p>
+                                            <p>• <strong>Size Restriction:</strong> Large dogs/animals are strictly prohibited.</p>
+                                        </div>
+
+                                        <div className="space-y-1 pt-1 border-t">
+                                            <p className="font-bold text-foreground">3. Discounts and Baggage</p>
+                                            <p>• <strong>Eligibility:</strong> To avail of discounted fares, valid identification must be presented.</p>
+                                            <p>• <strong>Senior Citizen / PWD:</strong> Government-issued ID required.</p>
+                                            <p>• <strong>Student:</strong> Validated School ID for the current school year or Certificate of Enrollment/Registration.</p>
+                                            <p>• <strong>Baggage:</strong> Hand-carry items are free and remain the responsibility of the passenger. Excess baggage will be subject to additional charges.</p>
+                                        </div>
+
+                                        <div className="space-y-1 pt-1 border-t">
+                                            <p className="font-bold text-foreground">4. Safety and Code of Conduct</p>
+                                            <p>• <strong>Bawal ang Bastos:</strong> In compliance with LTFRB Memorandum Circular No. 016 (Safe Spaces Act), any form of sexual harassment or disrespectful behavior toward passengers or staff is strictly prohibited.</p>
+                                            <p>• <strong>Reporting:</strong> Violations can be reported to the LTFRB via Hotline (1342) or email (complaints@ltfrb.gov.ph).</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Terms Acceptance Checkbox */}
+                                <div className="flex items-start gap-2.5 pt-1">
+                                    <input
+                                        id="termsCheckbox"
+                                        type="checkbox"
+                                        checked={termsAccepted}
+                                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                                        className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                    />
+                                    <label htmlFor="termsCheckbox" className="text-xs text-foreground cursor-pointer select-none leading-normal">
+                                        I have read and agree to the <strong>Superlines Passenger Terms & Conditions</strong> regarding Travel, Safety, and Conduct.
+                                    </label>
+                                </div>
+                            </div>
+
                             <Button
                                 type="submit"
                                 size="lg"
@@ -594,7 +845,7 @@ function BookTripContent() {
                                 {submitting ? "Verifying GCash Payment..." : (
                                     <span className="flex items-center justify-center gap-2">
                                         <CheckCircle2 className="h-5 w-5" />
-                                        Confirm GCash Payment & Issue Ticket (₱{selectedTrip.fare_amount || 850})
+                                        Confirm GCash Payment & Issue Ticket (₱{finalFare}.00)
                                     </span>
                                 )}
                             </Button>
@@ -647,7 +898,7 @@ function BookTripContent() {
                                 {submitting ? "Redirecting to PayMongo..." : (
                                     <span className="flex items-center gap-2">
                                         <Wallet className="h-5 w-5" />
-                                        Pay via PayMongo Hosted Link (₱{selectedTrip.fare_amount || 850})
+                                        Pay via PayMongo Hosted Link (₱{finalFare}.00)
                                     </span>
                                 )}
                             </Button>

@@ -15,6 +15,10 @@ interface UserTicket {
     booking: {
         id: string;
         passenger_name: string;
+        passenger_type?: "REGULAR" | "SENIOR" | "STUDENT" | "PWD";
+        discount_amount?: number;
+        discount_id?: string;
+        original_price?: number;
         seat_number: number;
         total_price: number;
         booking_source: string;
@@ -144,6 +148,10 @@ function TicketsContent() {
                         booking: {
                             id: item.booking_id,
                             passenger_name: item.passenger_name,
+                            passenger_type: item.passenger_type || "REGULAR",
+                            discount_amount: item.discount_amount || 0,
+                            discount_id: item.discount_id || "",
+                            original_price: item.original_price || item.total_price,
                             seat_number: item.seat_number,
                             total_price: item.total_price,
                             booking_source: "ONLINE",
@@ -283,6 +291,18 @@ function TicketsContent() {
                                         <div>
                                             <p className="text-xs text-muted-foreground">Passenger</p>
                                             <p className="font-bold text-base">{booking?.passenger_name || "Passenger"}</p>
+                                            {booking?.passenger_type && booking.passenger_type !== "REGULAR" && (
+                                                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                                        20% DISCOUNT ({booking.passenger_type})
+                                                    </span>
+                                                    {booking.discount_id && (
+                                                        <span className="text-[10px] font-mono font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.5 rounded">
+                                                            ID: {booking.discount_id}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="text-right">
                                             <p className="text-xs text-muted-foreground">Seat Number</p>
@@ -299,7 +319,14 @@ function TicketsContent() {
                                             <span>➔</span>
                                             <span>{dest}</span>
                                         </p>
-                                        <p className="text-xs text-muted-foreground">{busNum} • ₱{booking?.total_price || 850}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {busNum} • <span className="font-mono font-bold text-foreground">₱{booking?.total_price || 850}.00</span>
+                                            {booking?.discount_amount && booking.discount_amount > 0 ? (
+                                                <span className="text-emerald-600 font-semibold ml-1.5">
+                                                    (20% Off • Saved ₱{booking.discount_amount}.00)
+                                                </span>
+                                            ) : null}
+                                        </p>
                                     </div>
 
                                     <div className="flex items-center justify-between text-xs border-t pt-3">

@@ -13,6 +13,10 @@ export async function POST(req: NextRequest) {
             passengerContact,
             passengerEmail,
             totalPrice = 850,
+            originalPrice,
+            passengerType = "REGULAR",
+            discountAmount = 0,
+            discountIdNumber = "",
             gcashRefNumber,
         } = body;
 
@@ -202,8 +206,12 @@ export async function POST(req: NextRequest) {
             passenger_name: passengerName,
             passenger_contact: passengerContact || "",
             passenger_email: passengerEmail || "",
+            passenger_type: passengerType as any,
+            discount_amount: Number(discountAmount || 0),
+            discount_id: discountIdNumber || "",
             seat_number: Number(seatNumber),
             total_price: Number(totalPrice),
+            original_price: Number(originalPrice || totalPrice),
             booking_status: bookingStatus as any,
             payment_status: paymentStatus as any,
             payment_method: "GCASH_DIRECT",
@@ -222,6 +230,9 @@ export async function POST(req: NextRequest) {
             booking_id: bookingId,
             qr_token: qrToken,
             payment_status: paymentStatus,
+            passenger_type: passengerType,
+            discount_amount: discountAmount,
+            total_price: totalPrice,
             verification_mode: mode,
             redirect_url: isAuto
                 ? `/my-tickets?booking_id=${bookingId}&payment=success`

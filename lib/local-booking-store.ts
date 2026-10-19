@@ -10,8 +10,12 @@ export interface CachedBooking {
     passenger_name: string;
     passenger_contact: string;
     passenger_email: string;
+    passenger_type?: "REGULAR" | "SENIOR" | "STUDENT" | "PWD";
+    discount_amount?: number;
+    discount_id?: string;
     seat_number: number;
     total_price: number;
+    original_price?: number;
     booking_status: "CONFIRMED" | "PENDING_VERIFICATION" | "CANCELLED";
     payment_status: "PAID" | "PENDING_VERIFICATION" | "REJECTED";
     payment_method: string;

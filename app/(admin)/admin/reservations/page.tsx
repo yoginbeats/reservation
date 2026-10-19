@@ -104,6 +104,8 @@ export default function AdminReservationsPage() {
             b.passenger_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             b.transaction_ref?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             b.qr_token?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            b.discount_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            b.passenger_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             String(b.seat_number).includes(searchTerm);
 
         if (!matchesSearch) return false;
@@ -303,6 +305,18 @@ export default function AdminReservationsPage() {
                                                     <div className="text-[11px] text-muted-foreground font-mono">
                                                         {b.passenger_contact || b.passenger_email}
                                                     </div>
+                                                    {b.passenger_type && b.passenger_type !== "REGULAR" && (
+                                                        <div className="flex flex-wrap items-center gap-1 mt-1">
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                                                20% {b.passenger_type}
+                                                            </span>
+                                                            {b.discount_id && (
+                                                                <span className="text-[10px] font-mono text-muted-foreground" title="Discount ID">
+                                                                    ID: {b.discount_id}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </td>
 
                                                 {/* Trip & Seat */}
@@ -336,9 +350,14 @@ export default function AdminReservationsPage() {
 
                                                 {/* Amount */}
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
-                                                    <span className="font-mono font-extrabold text-foreground text-sm">
+                                                    <div className="font-mono font-extrabold text-foreground text-sm">
                                                         ₱{b.total_price}.00
-                                                    </span>
+                                                    </div>
+                                                    {b.discount_amount && b.discount_amount > 0 ? (
+                                                        <div className="text-[10px] text-emerald-600 font-semibold">
+                                                            Saved ₱{b.discount_amount} (20% Off)
+                                                        </div>
+                                                    ) : null}
                                                 </td>
 
                                                 {/* Status Badge */}
@@ -433,7 +452,7 @@ export default function AdminReservationsPage() {
                                 </div>
                             </div>
 
-                            <div className="text-xs space-y-1 bg-card border p-3 rounded-lg">
+                            <div className="text-xs space-y-1.5 bg-card border p-3 rounded-lg">
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Route:</span>
                                     <span className="font-bold">{selectedTicket.trip?.origin} ➔ {selectedTicket.trip?.destination}</span>
@@ -446,11 +465,40 @@ export default function AdminReservationsPage() {
                                     <span className="text-muted-foreground">GCash Reference:</span>
                                     <span className="font-mono font-bold text-blue-600">{selectedTicket.transaction_ref}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Amount Paid:</span>
-                                    <span className="font-mono font-extrabold text-emerald-600">₱{selectedTicket.total_price}.00</span>
+                                {selectedTicket.passenger_type && selectedTicket.passenger_type !== "REGULAR" && (
+                                    <div className="flex justify-between items-center bg-purple-50 dark:bg-purple-950/40 px-2 py-1 rounded text-purple-700 dark:text-purple-300 font-semibold">
+                                        <span>Discount Category:</span>
+                                        <span className="font-bold">
+                                            20% {selectedTicket.passenger_type} {selectedTicket.discount_id ? `(#${selectedTicket.discount_id})` : ""}
+                                        </span>
+                                    </div>
+                                )}
+                                {selectedTicket.original_price && selectedTicket.original_price > selectedTicket.total_price && (
+                                    <div className="flex justify-between text-muted-foreground">
+                                        <span>Regular Fare:</span>
+                                        <span className="line-through">₱{selectedTicket.original_price}.00</span>
+                                    </div>
+                                )}
+                                {selectedTicket.discount_amount && selectedTicket.discount_amount > 0 && (
+                                    <div className="flex justify-between text-emerald-600 font-semibold">
+                                        <span>20% Statutory Discount:</span>
+                                        <span>-₱{selectedTicket.discount_amount}.00</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between pt-1 border-t">
+                                    <span className="font-bold text-foreground">Total Fare Paid:</span>
+                                    <span className="font-mono font-extrabold text-emerald-600 text-sm">₱{selectedTicket.total_price}.00</span>
                                 </div>
                             </div>
+
+                            {selectedTicket.passenger_type && selectedTicket.passenger_type !== "REGULAR" && (
+                                <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-[11px] text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5 text-amber-600" />
+                                    <span>
+                                        <strong>Terminal Boarding Note:</strong> Passenger must present their valid physical {selectedTicket.passenger_type} ID upon terminal check-in.
+                                    </span>
+                                </div>
+                            )}
 
                             {/* Digital Ticket QR */}
                             <div className="flex flex-col items-center justify-center p-4 bg-muted/30 rounded-xl border border-dashed">
