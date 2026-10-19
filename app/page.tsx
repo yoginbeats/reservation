@@ -19,7 +19,7 @@ import {
 export default function Home() {
     const router = useRouter();
     const [tripType, setTripType] = useState<"one-way" | "round-trip">("one-way");
-    const [serviceClass, setServiceClass] = useState<"REGULAR AIRCON" | "DELUXE" | "FIRST CLASS">("REGULAR AIRCON");
+    const [serviceClass, setServiceClass] = useState<"REGULAR AIRCON" | "SUPER DELUXE" | "FIRST CLASS">("REGULAR AIRCON");
     const [origin, setOrigin] = useState("Cubao");
     const [destination, setDestination] = useState("Daet");
     const [departureDate, setDepartureDate] = useState("");
@@ -133,14 +133,14 @@ export default function Home() {
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => setServiceClass("DELUXE")}
+                                                onClick={() => setServiceClass("SUPER DELUXE")}
                                                 className={`rounded-xl py-3 px-2 text-xs font-black uppercase tracking-wider transition-all ${
-                                                    serviceClass === "DELUXE"
+                                                    serviceClass === "SUPER DELUXE"
                                                         ? "bg-red-600 text-white shadow-red-600/30 shadow-md"
                                                         : "bg-white text-zinc-700 border border-zinc-200 hover:border-zinc-300"
                                                 }`}
                                             >
-                                                DELUXE
+                                                SUPER DELUXE
                                             </button>
                                             <button
                                                 type="button"

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -161,9 +162,18 @@ export default function LoginPage() {
         <div className="flex min-h-[calc(100vh-64px)] items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 p-6 dark:from-zinc-950 dark:to-zinc-900">
             <div className="w-full max-w-sm">
                 <div className="mb-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-red-600 to-red-700 shadow-lg shadow-red-600/25">
-                        <Ticket className="h-8 w-8 text-white" />
-                    </div>
+                    <Link href="/" className="inline-block group">
+                        <div className="mx-auto mb-3 flex items-center justify-center">
+                            <Image
+                                src="/superlines_emblem_transparent.png"
+                                alt="Superlines Emblem"
+                                width={68}
+                                height={54}
+                                className="h-16 w-auto object-contain drop-shadow-md transition-transform group-hover:scale-105"
+                                priority
+                            />
+                        </div>
+                    </Link>
                     <h1 className="text-2xl font-black tracking-tight text-red-600 uppercase">Superlines</h1>
                     <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mt-0.5">Transportation Co. Inc.</p>
                 </div>

@@ -26,7 +26,7 @@ export default function AdminTripsPage() {
 
     const fetchDropdowns = async () => {
         const { data: rData } = await supabase.from('routes').select(`id, origin:origin_terminal_id(name), destination:destination_terminal_id(name)`);
-        const { data: bData } = await supabase.from('buses').select('id, bus_number');
+        const { data: bData } = await supabase.from('buses').select('id, bus_number, bus_type, seat_capacity').order('bus_number');
 
         if (rData && rData.length > 0) {
             setRoutes(rData);
@@ -44,7 +44,7 @@ export default function AdminTripsPage() {
 
         const { data, error } = await supabase
             .from('trips')
-            .select('*, bus:buses(bus_number, bus_type)')
+            .select('*, bus:buses(bus_number, bus_type, seat_capacity)')
             .order('departure_time', { ascending: true });
 
         if (error) {
@@ -66,7 +66,8 @@ export default function AdminTripsPage() {
                 destination: { name: t.destination || t.route?.destination?.name || "Daet" }
             },
             bus: t.bus || {
-                bus_number: "Superlines Express"
+                bus_number: "Superlines Express",
+                bus_type: "REGULAR_AIRCON"
             }
         }));
 
@@ -88,6 +89,9 @@ export default function AdminTripsPage() {
         const originName = selectedRoute?.origin?.name || "Cubao";
         const destName = selectedRoute?.destination?.name || "Daet";
 
+        const selectedBus = buses.find(b => b.id === busId);
+        const capacity = selectedBus?.seat_capacity || 49;
+
         const { data: newTrip } = await supabase.from('trips').insert({
             bus_id: busId,
             origin: originName,
@@ -98,8 +102,8 @@ export default function AdminTripsPage() {
         }).select().single();
 
         if (newTrip) {
-            // Auto initialize 45 seats for this new trip in trip_seats table
-            const seatsToInsert = Array.from({ length: 45 }, (_, i) => ({
+            // Auto initialize seats for this new trip matching bus capacity (49, 43, 41)
+            const seatsToInsert = Array.from({ length: capacity }, (_, i) => ({
                 trip_id: newTrip.id,
                 seat_number: i + 1,
                 is_available: true,
@@ -142,10 +146,14 @@ export default function AdminTripsPage() {
                                 </select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="tBus">Assign Bus Unit</Label>
-                                <select id="tBus" className="w-full rounded-md border p-2 bg-background" value={busId} onChange={(e) => setBusId(e.target.value)}>
-                                    {buses.map((b) => <option key={b.id} value={b.id}>{b.bus_number}</option>)}
-                                </select>
+                                 <Label htmlFor="tBus">Assign Bus Unit</Label>
+                                 <select id="tBus" className="w-full rounded-md border p-2 bg-background font-semibold text-sm" value={busId} onChange={(e) => setBusId(e.target.value)}>
+                                     {buses.map((b) => (
+                                         <option key={b.id} value={b.id}>
+                                             {b.bus_number} — {b.bus_type ? b.bus_type.replace(/_/g, ' ') : 'REGULAR AIRCON'} ({b.seat_capacity || 49} seats)
+                                         </option>
+                                     ))}
+                                 </select>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="tTime">Departure Date & Time</Label>
@@ -194,7 +202,14 @@ export default function AdminTripsPage() {
                                             <td className="p-4 font-medium">
                                                 {new Date(t.departure_time).toLocaleString()}
                                             </td>
-                                            <td className="p-4 font-mono font-bold text-blue-600">{t.bus?.bus_number}</td>
+                                            <td className="p-4">
+                                                <span className="font-mono font-bold text-blue-600 block">{t.bus?.bus_number}</span>
+                                                {t.bus?.bus_type && (
+                                                    <span className="text-[10px] uppercase font-bold text-zinc-500 block">
+                                                        {t.bus.bus_type.replace(/_/g, ' ')}
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td className="p-4 font-bold text-emerald-600">₱{t.fare_amount || 850}</td>
                                             <td className="p-4">
                                                 <span className="rounded-full bg-blue-100 dark:bg-blue-950 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:text-blue-300">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getUserWithRoleAndTerminal } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Bus, MapPin, User, LogOut, LayoutDashboard, Ticket, FileText } from "lucide-react";
@@ -25,9 +26,16 @@ export default async function TellerLayout({
             <header className="sticky top-0 z-30 border-b bg-white dark:bg-zinc-900 shadow-sm">
                 <div className="container mx-auto flex h-16 items-center justify-between px-4">
                     <div className="flex items-center gap-6">
-                        <Link href="/teller" className="flex items-center gap-2">
-                            <span className="rounded-lg bg-red-600 px-2.5 py-1 text-sm font-extrabold text-white">Superlines</span>
-                            <span className="text-lg font-bold">Teller Terminal</span>
+                        <Link href="/teller" className="flex items-center gap-2.5 group">
+                            <Image
+                                src="/superlines_emblem_transparent.png"
+                                alt="Superlines Emblem"
+                                width={36}
+                                height={28}
+                                className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
+                            />
+                            <span className="text-lg font-black uppercase tracking-tight text-red-600">Superlines</span>
+                            <span className="text-base font-bold text-zinc-900 dark:text-zinc-100">Teller</span>
                         </Link>
 
                         {/* Assigned Terminal Badge */}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getUserWithRoleAndTerminal } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Bus, QrCode, LayoutDashboard, User, FileText } from "lucide-react";
@@ -22,9 +23,16 @@ export default async function ConductorLayout({
             {/* Conductor Header */}
             <header className="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur shadow-sm">
                 <div className="container mx-auto flex h-16 items-center justify-between px-4">
-                    <Link href="/conductor" className="flex items-center gap-2">
-                        <span className="rounded-lg bg-red-600 px-2 py-1 text-xs font-black uppercase text-white">Superlines</span>
-                        <span className="text-base font-bold">Conductor Portal</span>
+                    <Link href="/conductor" className="flex items-center gap-2.5 group">
+                        <Image
+                            src="/superlines_emblem_transparent.png"
+                            alt="Superlines Emblem"
+                            width={32}
+                            height={25}
+                            className="h-7 w-auto object-contain transition-transform group-hover:scale-105"
+                        />
+                        <span className="text-base font-black uppercase tracking-tight text-red-500">Superlines</span>
+                        <span className="text-sm font-semibold text-zinc-300">Conductor</span>
                     </Link>
 
                     <nav className="flex items-center gap-3 sm:gap-4">

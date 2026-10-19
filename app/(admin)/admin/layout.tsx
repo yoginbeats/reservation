@@ -85,6 +85,13 @@ export default function AdminLayout({
                             Reservations
                         </Link>
                         <Link
+                            href="/admin/tickets"
+                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                        >
+                            <Ticket className="h-4 w-4 text-amber-600" />
+                            Tickets
+                        </Link>
+                        <Link
                             href="/admin/users"
                             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800"
                         >

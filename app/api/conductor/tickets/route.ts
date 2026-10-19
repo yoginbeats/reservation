@@ -17,11 +17,14 @@ export async function GET(req: NextRequest) {
             try {
                 const { data: busesData, error: bErr } = await supabase
                     .from("buses")
-                    .select("id, bus_number, bus_type, capacity")
+                    .select("id, bus_number, bus_type, seat_capacity")
                     .order("bus_number", { ascending: true });
 
                 if (!bErr && busesData && busesData.length > 0) {
-                    fleetList = busesData;
+                    fleetList = busesData.map(b => ({
+                        ...b,
+                        capacity: b.seat_capacity || 49
+                    }));
                 }
             } catch (err) {
                 console.warn("Could not query buses table:", err);
@@ -30,13 +33,13 @@ export async function GET(req: NextRequest) {
             // Fallback default Superlines fleet if empty or unseeded
             if (fleetList.length === 0) {
                 fleetList = [
-                    { id: "b1", bus_number: "BUS-101", bus_type: "REGULAR AIRCON", capacity: 45 },
-                    { id: "b2", bus_number: "BUS-102", bus_type: "SUPER DELUXE", capacity: 45 },
-                    { id: "b3", bus_number: "BUS-103", bus_type: "DELUXE AIRCON", capacity: 45 },
-                    { id: "b4", bus_number: "SL-501", bus_type: "ROYAL CLASS", capacity: 45 },
-                    { id: "b5", bus_number: "SL-702", bus_type: "REGULAR AIRCON", capacity: 45 },
-                    { id: "b6", bus_number: "SL-808", bus_type: "EXPRESS AIRCON", capacity: 45 },
-                    { id: "b7", bus_number: "DAET-204", bus_type: "REGULAR AIRCON", capacity: 45 },
+                    { id: "b1", bus_number: "BUS-101", bus_type: "REGULAR AIRCON", capacity: 49 },
+                    { id: "b2", bus_number: "BUS-102", bus_type: "SUPER DELUXE", capacity: 43 },
+                    { id: "b3", bus_number: "BUS-103", bus_type: "FIRST CLASS", capacity: 41 },
+                    { id: "b4", bus_number: "SL-501", bus_type: "REGULAR AIRCON", capacity: 49 },
+                    { id: "b5", bus_number: "SL-702", bus_type: "REGULAR AIRCON", capacity: 49 },
+                    { id: "b6", bus_number: "SL-808", bus_type: "SUPER DELUXE", capacity: 43 },
+                    { id: "b7", bus_number: "DAET-204", bus_type: "FIRST CLASS", capacity: 41 },
                 ];
             }
 

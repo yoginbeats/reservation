@@ -178,7 +178,7 @@ function ConductorManifestContent() {
 
         const { data, error } = await supabase
             .from('trips')
-            .select('*, bus:buses(bus_number, bus_type)')
+            .select('*, bus:buses(bus_number, bus_type, seat_capacity)')
             .order('departure_time', { ascending: true });
 
         if (!error && data) {
@@ -199,7 +199,7 @@ function ConductorManifestContent() {
                 origin: { name: t.origin || t.route?.origin?.name || "Cubao" },
                 destination: { name: t.destination || t.route?.destination?.name || "Daet" }
             },
-            bus: t.bus || { bus_number: "Superlines Express", bus_type: "REGULAR AIRCON" }
+            bus: t.bus || { bus_number: "Superlines Express", bus_type: "REGULAR AIRCON", seat_capacity: 49 }
         }));
 
         setTrips(normalizedTrips);
@@ -255,7 +255,7 @@ function ConductorManifestContent() {
         }
     };
 
-    const totalSeats = 45;
+    const totalSeats = selectedTrip?.bus?.seat_capacity || selectedTrip?.seat_capacity || 49;
     const boardedCount = bookings.filter(b => b.ticket_status === 'USED').length;
     const bookedCount = bookings.length;
     const pendingCount = bookedCount - boardedCount;
@@ -621,7 +621,7 @@ function ConductorManifestContent() {
                             <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Total Booked</p>
                             <div className="flex items-baseline gap-1 mt-1">
                                 <span className="font-mono text-2xl font-black text-white">{bookedCount}</span>
-                                <span className="text-xs text-zinc-500">/ 45 seats</span>
+                                <span className="text-xs text-zinc-500">/ {totalSeats} seats</span>
                             </div>
                         </Card>
 
@@ -670,14 +670,14 @@ function ConductorManifestContent() {
                         </div>
                     </div>
 
-                    {/* Interactive 45-Seat Bus Grid Map */}
+                    {/* Interactive Bus Grid Map */}
                     <Card className="border-zinc-800 bg-zinc-950 text-white print:hidden">
                         <CardHeader className="pb-3 border-b border-zinc-800/80">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <div>
                                     <CardTitle className="text-base font-bold flex items-center gap-2">
                                         <Bus className="h-4 w-4 text-red-500" />
-                                        45-Seat Interactive Bus Boarding Grid
+                                        {totalSeats}-Seat Interactive Bus Boarding Grid
                                     </CardTitle>
                                     <CardDescription className="text-xs text-zinc-400">
                                         Tap any seat to view passenger details, 20% discount verification, or confirm check-in.
@@ -704,9 +704,9 @@ function ConductorManifestContent() {
                                     <span className="text-[11px]">DOOR / ENTRANCE ➔</span>
                                 </div>
 
-                                {/* 45 Seats Grid (Rows of 4 with aisle) */}
+                                {/* Dynamic Seats Grid */}
                                 <div className="grid grid-cols-5 gap-2 text-xs font-mono">
-                                    {Array.from({ length: 45 }).map((_, i) => {
+                                    {Array.from({ length: totalSeats }).map((_, i) => {
                                         const seatNum = i + 1;
                                         const passenger = bookings.find(b => b.seat_number === seatNum);
                                         const isBoarded = passenger?.ticket_status === 'USED';

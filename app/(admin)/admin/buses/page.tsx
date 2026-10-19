@@ -20,6 +20,7 @@ import {
     ShieldAlert
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { SUPERLINES_BUS_CLASSIFICATIONS } from "@/lib/constants/bus-layouts";
 
 export default function AdminBusesPage() {
     const [buses, setBuses] = useState<any[]>([]);
@@ -27,14 +28,22 @@ export default function AdminBusesPage() {
     const [refreshing, setRefreshing] = useState(false);
     const [openModal, setOpenModal] = useState(false);
     const [busNumber, setBusNumber] = useState("");
-    const [busType, setBusType] = useState("AIRCON");
-    const [capacity, setCapacity] = useState(45);
+    const [busType, setBusType] = useState("REGULAR_AIRCON");
+    const [capacity, setCapacity] = useState(49);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
     const [typeFilter, setTypeFilter] = useState("ALL");
     const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
     const supabase = createClient();
+
+    const handleBusTypeSelect = (typeId: string) => {
+        setBusType(typeId);
+        const match = SUPERLINES_BUS_CLASSIFICATIONS.find(c => c.id === typeId);
+        if (match) {
+            setCapacity(match.capacity);
+        }
+    };
 
     const fetchBuses = async () => {
         setRefreshing(true);
@@ -188,18 +197,24 @@ export default function AdminBusesPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="bType">Bus Class / Specification</Label>
+                                    <Label htmlFor="bType">Bus Classification</Label>
                                     <select
                                         id="bType"
-                                        className="w-full rounded-md border p-2 bg-background text-sm font-medium"
+                                        className="w-full rounded-md border p-2 bg-background text-sm font-semibold"
                                         value={busType}
-                                        onChange={(e) => setBusType(e.target.value)}
+                                        onChange={(e) => handleBusTypeSelect(e.target.value)}
                                     >
-                                        <option value="STANDARD">Standard Class</option>
-                                        <option value="AIRCON">Aircon Express (2x2 Reclining)</option>
-                                        <option value="DELUXE">Deluxe Class (Wi-Fi, USB Charging)</option>
-                                        <option value="SUPER_DELUXE">Super Deluxe (Comfort 2x1 Class)</option>
+                                        {SUPERLINES_BUS_CLASSIFICATIONS.map((c) => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.name} ({c.capacity} Seater)
+                                            </option>
+                                        ))}
                                     </select>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        Official Layout: {SUPERLINES_BUS_CLASSIFICATIONS.find(c => c.id === busType)?.name} ({capacity} Seats)
+                                        {SUPERLINES_BUS_CLASSIFICATIONS.find(c => c.id === busType)?.hasCR && " • Comfort Room"}
+                                        {SUPERLINES_BUS_CLASSIFICATIONS.find(c => c.id === busType)?.hasStairs && " • Stairs"}
+                                    </p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="bCap">Official Passenger Seat Capacity</Label>

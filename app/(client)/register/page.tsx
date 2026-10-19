@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -224,13 +225,16 @@ export default function RegisterPage() {
             <div className="w-full max-w-xl">
                 {/* Logo/Branding */}
                 <div className="mb-6 text-center">
-                    <Link href="/" className="inline-flex items-center gap-2">
-                        <div className="flex h-12 w-14 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-400 via-red-600 to-blue-700 p-0.5 shadow-md">
-                            <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-zinc-900 font-black italic text-amber-400 text-2xl">
-                                S
-                            </div>
-                        </div>
-                        <span className="text-2xl font-black uppercase tracking-tight text-red-600">
+                    <Link href="/" className="inline-flex items-center gap-3 group">
+                        <Image
+                            src="/superlines_emblem_transparent.png"
+                            alt="Superlines Emblem"
+                            width={56}
+                            height={44}
+                            className="h-11 sm:h-12 w-auto object-contain drop-shadow transition-transform group-hover:scale-105"
+                            priority
+                        />
+                        <span className="text-2xl font-black uppercase tracking-tight text-red-600 transition-colors group-hover:text-red-700">
                             Superlines
                         </span>
                     </Link>

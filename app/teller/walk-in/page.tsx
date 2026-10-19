@@ -585,7 +585,9 @@ export default function TellerWalkInBookingPage() {
                             )}
                         </div>
                         <SeatPicker
-                            totalSeats={45}
+                            busType={selectedTrip?.bus?.bus_type || selectedTrip?.service_class || "REGULAR_AIRCON"}
+                            busNumber={selectedTrip?.bus?.bus_number || selectedTrip?.bus_number}
+                            totalSeats={selectedTrip?.bus?.seat_capacity || 49}
                             bookedSeats={bookedSeats}
                             selectedSeat={selectedSeat}
                             selectedSeats={selectedSeats}
