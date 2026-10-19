@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarCheck, Ticket, Clock, ArrowRight, User, Phone, MapPin, Calendar, ShieldCheck, Edit, AlertCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { CalendarCheck, Ticket, Clock, ArrowRight, User, Phone, MapPin, Calendar, ShieldCheck, Edit, AlertCircle, LayoutDashboard, Bus } from "lucide-react";
+import { createClient, getUserWithRoleAndTerminal } from "@/lib/supabase/server";
 
 export default async function ClientDashboard() {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { user, role, terminal } = await getUserWithRoleAndTerminal();
 
-    if (authError || !user) {
+    if (!user) {
         return (
             <div className="flex h-[50vh] flex-col items-center justify-center gap-4">
                 <p className="text-muted-foreground">Please log in to view your dashboard.</p>
@@ -72,6 +72,56 @@ export default async function ClientDashboard() {
                 </div>
                 <div className="absolute -bottom-10 -right-10 h-64 w-64 rounded-full bg-white/10 blur-2xl pointer-events-none" />
             </div>
+
+            {/* Staff & Terminal Portal Quick Access Banner (If user has special role) */}
+            {(role === 'ADMIN' || role === 'TELLER' || role === 'CONDUCTOR') && (
+                <div className="rounded-xl border-2 border-blue-500/50 bg-gradient-to-r from-blue-950/60 to-zinc-900 p-4 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-blue-600 text-white font-bold">
+                            <ShieldCheck className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-black uppercase tracking-wider text-blue-400">
+                                    Official Staff Account
+                                </span>
+                                <span className="bg-blue-600/30 text-blue-200 border border-blue-500/40 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                    ROLE: {role}
+                                </span>
+                            </div>
+                            <p className="text-sm font-bold text-white mt-0.5">
+                                You are signed in as an authorized Superlines {role.toLowerCase()}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {role === 'ADMIN' && (
+                            <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700 font-bold text-white shadow">
+                                <Link href="/admin">
+                                    <LayoutDashboard className="h-4 w-4 mr-1.5" />
+                                    Go to Admin Portal
+                                </Link>
+                            </Button>
+                        )}
+                        {role === 'TELLER' && (
+                            <Button asChild size="sm" className="bg-emerald-600 hover:bg-emerald-700 font-bold text-white shadow">
+                                <Link href="/teller">
+                                    <Ticket className="h-4 w-4 mr-1.5" />
+                                    Open Teller Counter
+                                </Link>
+                            </Button>
+                        )}
+                        {role === 'CONDUCTOR' && (
+                            <Button asChild size="sm" className="bg-red-600 hover:bg-red-700 font-bold text-white shadow">
+                                <Link href="/conductor">
+                                    <Bus className="h-4 w-4 mr-1.5" />
+                                    Open Conductor Portal
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Profile Completion Warning (if missing fields) */}
             {!isProfileComplete && (
