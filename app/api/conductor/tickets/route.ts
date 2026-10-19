@@ -7,8 +7,41 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const token = searchParams.get("token")?.trim();
         const tripId = searchParams.get("trip_id")?.trim();
+        const action = searchParams.get("action")?.trim();
 
         const supabase = await createClient();
+
+        // 0. FETCH BUS FLEET LIST FOR UNIT ASSIGNMENT
+        if (action === "buses") {
+            let fleetList: any[] = [];
+            try {
+                const { data: busesData, error: bErr } = await supabase
+                    .from("buses")
+                    .select("id, bus_number, bus_type, capacity")
+                    .order("bus_number", { ascending: true });
+
+                if (!bErr && busesData && busesData.length > 0) {
+                    fleetList = busesData;
+                }
+            } catch (err) {
+                console.warn("Could not query buses table:", err);
+            }
+
+            // Fallback default Superlines fleet if empty or unseeded
+            if (fleetList.length === 0) {
+                fleetList = [
+                    { id: "b1", bus_number: "BUS-101", bus_type: "REGULAR AIRCON", capacity: 45 },
+                    { id: "b2", bus_number: "BUS-102", bus_type: "SUPER DELUXE", capacity: 45 },
+                    { id: "b3", bus_number: "BUS-103", bus_type: "DELUXE AIRCON", capacity: 45 },
+                    { id: "b4", bus_number: "SL-501", bus_type: "ROYAL CLASS", capacity: 45 },
+                    { id: "b5", bus_number: "SL-702", bus_type: "REGULAR AIRCON", capacity: 45 },
+                    { id: "b6", bus_number: "SL-808", bus_type: "EXPRESS AIRCON", capacity: 45 },
+                    { id: "b7", bus_number: "DAET-204", bus_type: "REGULAR AIRCON", capacity: 45 },
+                ];
+            }
+
+            return NextResponse.json({ success: true, buses: fleetList });
+        }
 
         // 1. LOOKUP SINGLE TICKET BY TOKEN
         if (token) {
@@ -233,17 +266,82 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { token, action } = body;
+        const { token, action, trip_id, bus_number, bus_type, trip_status } = body;
+        const supabase = await createClient();
 
+        // 1. DYNAMIC BUS UNIT REASSIGNMENT (On-the-fly bus change by Conductor/Dispatcher)
+        if (action === "UPDATE_BUS_UNIT") {
+            if (!trip_id || !bus_number) {
+                return NextResponse.json({ error: "Missing trip_id or bus_number parameter." }, { status: 400 });
+            }
+
+            const cleanBusNum = bus_number.trim().toUpperCase();
+            const cleanBusType = (bus_type || "REGULAR AIRCON").trim().toUpperCase();
+            let busId: string | null = null;
+
+            try {
+                // Check if bus exists in fleet
+                const { data: existingBus } = await supabase
+                    .from("buses")
+                    .select("id")
+                    .ilike("bus_number", cleanBusNum)
+                    .maybeSingle();
+
+                if (existingBus) {
+                    busId = existingBus.id;
+                } else {
+                    // Register dynamic bus unit into fleet
+                    const { data: newBus } = await supabase
+                        .from("buses")
+                        .insert({
+                            bus_number: cleanBusNum,
+                            bus_type: cleanBusType,
+                            capacity: 45,
+                        })
+                        .select("id")
+                        .single();
+
+                    if (newBus) busId = newBus.id;
+                }
+            } catch (bErr) {
+                console.warn("Could not query or register bus unit in buses table:", bErr);
+            }
+
+            let tripUpdated = false;
+            try {
+                const updatePayload: any = {};
+                if (busId) updatePayload.bus_id = busId;
+                if (trip_status) updatePayload.status = trip_status;
+
+                const { error: tripErr } = await supabase
+                    .from("trips")
+                    .update(updatePayload)
+                    .eq("id", trip_id);
+
+                if (!tripErr) tripUpdated = true;
+            } catch (tErr) {
+                console.warn("Could not update trip bus_id:", tErr);
+            }
+
+            return NextResponse.json({
+                success: true,
+                message: `Bus unit "${cleanBusNum}" assigned to trip successfully.`,
+                bus_number: cleanBusNum,
+                bus_type: cleanBusType,
+                trip_status: trip_status || "SCHEDULED",
+                database_synced: tripUpdated,
+            });
+        }
+
+        // 2. CONFIRM PASSENGER BOARDING (Mark ticket as USED)
         if (!token) {
             return NextResponse.json({ error: "Missing QR ticket token." }, { status: 400 });
         }
 
         const cleanToken = token.trim().toUpperCase();
-        const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
-        // 1. Update in Local Store
+        // A. Update in Local Store
         const updatedLocal = updateLocalTicketStatus(cleanToken, "USED");
 
         // 2. Update in Supabase Tickets Table
