@@ -412,3 +412,33 @@ GRANT ALL ON public.payments TO anon, authenticated, service_role;
 GRANT ALL ON public.tickets TO anon, authenticated, service_role;
 GRANT ALL ON public.trip_seats TO anon, authenticated, service_role;
 GRANT ALL ON public.trips TO anon, authenticated, service_role;
+
+-- ----------------------------------------------------------------------------
+-- 12. ANNOUNCEMENTS TABLE & POLICIES
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.announcements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    image_url TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    DROP POLICY IF EXISTS "Allow all for announcements" ON public.announcements;
+    CREATE POLICY "Allow all for announcements" ON public.announcements FOR ALL USING (true) WITH CHECK (true);
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+GRANT ALL ON public.announcements TO anon, authenticated, service_role;
+
+-- Seed Initial Superlines Announcement
+INSERT INTO public.announcements (title, content, is_active)
+VALUES 
+('New Ride, Better Journey', 'We are happy to announce that a new bus unit has officially arrived and is now ready to serve our passengers! Enjoy a safer, smoother, and more comfortable trip.', TRUE)
+ON CONFLICT DO NOTHING;
+

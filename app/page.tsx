@@ -32,21 +32,6 @@ export default function Home() {
 
     return (
         <div className="min-h-screen bg-zinc-950 font-sans text-white">
-            {/* ANNOUNCEMENT RED BANNER BAR */}
-            <div className="bg-gradient-to-r from-red-700 via-red-600 to-red-700 px-4 py-2.5 text-xs text-white shadow-inner">
-                <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-red-950/80 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white border border-red-400/30">
-                            <Megaphone className="h-3.5 w-3.5 text-red-300" />
-                            Announcements
-                        </span>
-                        <p className="truncate text-xs font-semibold text-red-50">
-                            <span className="font-extrabold text-amber-300">New Ride, Better Journey:</span> We&apos;re happy to announce that a new bus unit has officially arrived and is now ready to serve our passengers! Enjoy a safer, smoother, and more comfortable trip.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
             {/* HERO SECTION WITH SCENIC HIGHWAY BACKGROUND */}
             <section className="relative min-h-[calc(100vh-120px)] flex items-center justify-center overflow-hidden bg-cover bg-center bg-no-repeat py-12 px-4 sm:px-6"
                 style={{

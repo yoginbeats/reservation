@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { LayoutDashboard, MapPin, Bus, Route, Calendar, Users, Ticket, BarChart3, ShieldCheck, Settings } from "lucide-react";
+import Image from "next/image";
+import { LayoutDashboard, MapPin, Bus, Route, Calendar, Users, Ticket, BarChart3, ShieldCheck, Settings, Megaphone, CalendarCheck } from "lucide-react";
 import { AdminLogoutButton } from "@/components/admin-logout-button";
 
 export default function AdminLayout({
@@ -13,9 +14,19 @@ export default function AdminLayout({
             <aside className="w-64 border-r bg-zinc-50 dark:bg-zinc-900">
                 <div className="flex h-full flex-col">
                     <div className="flex-1 space-y-1 p-4">
-                        <p className="mb-4 px-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                            Superlines Admin
-                        </p>
+                        <Link href="/admin" className="flex items-center gap-2.5 px-2 mb-4 group">
+                            <Image
+                                src="/superlines_emblem_transparent.png"
+                                alt="Superlines Emblem"
+                                width={32}
+                                height={26}
+                                className="h-7 w-auto object-contain transition-transform group-hover:scale-105"
+                            />
+                            <div>
+                                <span className="text-sm font-black uppercase tracking-tight text-red-600 block leading-tight">Superlines</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block">Admin Portal</span>
+                            </div>
+                        </Link>
                         <Link
                             href="/admin"
                             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800"
@@ -25,8 +36,15 @@ export default function AdminLayout({
                         </Link>
 
                         <p className="mt-4 mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                            Master Data
+                            Master Data & CMS
                         </p>
+                        <Link
+                            href="/admin/announcements"
+                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                        >
+                            <Megaphone className="h-4 w-4 text-red-600" />
+                            Announcements
+                        </Link>
                         <Link
                             href="/admin/terminals"
                             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800"
@@ -57,8 +75,15 @@ export default function AdminLayout({
                         </Link>
 
                         <p className="mt-4 mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                            Operations & Users
+                            Bookings & Operations
                         </p>
+                        <Link
+                            href="/admin/reservations"
+                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                        >
+                            <CalendarCheck className="h-4 w-4 text-emerald-600" />
+                            Reservations
+                        </Link>
                         <Link
                             href="/admin/users"
                             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800"
