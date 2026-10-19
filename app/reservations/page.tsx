@@ -60,12 +60,12 @@ export default async function ReservationsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Available Trips & Reservations</h1>
-                    <p className="text-muted-foreground">Select a trip and pay securely online via PayMongo (GCash, Maya, Cards).</p>
+                    <p className="text-muted-foreground">Select a trip and pay securely online via GCash (powered by PayMongo).</p>
                 </div>
-                <div className="flex items-center gap-2 text-xs bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 px-3 py-1.5 rounded-full border border-red-200">
+                <div className="flex items-center gap-2 text-xs bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 px-3 py-1.5 rounded-full border border-blue-200">
                     <span className="font-semibold">Secured by PayMongo</span>
                     <span>•</span>
-                    <span>GCash / Maya / Card</span>
+                    <span>GCash e-Wallet</span>
                 </div>
             </div>
 
@@ -107,7 +107,7 @@ export default async function ReservationsPage() {
                                 <CardFooter>
                                     <Button asChild className="w-full bg-red-600 hover:bg-red-700 text-white font-bold">
                                         <Link href={`/book?tripId=${trip.id}`}>
-                                            Book & Pay with PayMongo
+                                            Book & Pay with GCash
                                         </Link>
                                     </Button>
                                 </CardFooter>

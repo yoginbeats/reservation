@@ -11,20 +11,21 @@ export async function POST(req: NextRequest) {
         if (eventType === "checkout_session.payment.paid" && bookingId) {
             const supabase = await createClient();
 
-            // Mark Booking as CONFIRMED
-            await supabase
-                .from("bookings")
-                .update({ booking_status: "CONFIRMED" })
-                .eq("id", bookingId);
+            // Mark Booking as CONFIRMED (in both tables)
+            await supabase.from("bookings").update({ booking_status: "CONFIRMED" }).eq("id", bookingId);
+            await supabase.from("reservations").update({ status: "CONFIRMED" }).eq("id", bookingId);
 
-            // Mark Payment as PAID
+            // Mark Payment as PAID (in both columns)
+            const txId = body?.data?.id || "paymongo_webhook";
             await supabase
                 .from("payments")
-                .update({
-                    payment_status: "PAID",
-                    transaction_ref: body?.data?.id || "paymongo_webhook",
-                })
+                .update({ payment_status: "PAID", transaction_ref: txId })
                 .eq("booking_id", bookingId);
+
+            await supabase
+                .from("payments")
+                .update({ status: "PAID", transaction_id: txId })
+                .eq("reservation_id", bookingId);
 
             // Mark Ticket as VALID
             await supabase
@@ -32,7 +33,12 @@ export async function POST(req: NextRequest) {
                 .update({ ticket_status: "VALID" })
                 .eq("booking_id", bookingId);
 
-            console.log(`Successfully verified and confirmed booking #${bookingId} via PayMongo Webhook.`);
+            await supabase
+                .from("tickets")
+                .update({ ticket_status: "VALID" })
+                .eq("reservation_id", bookingId);
+
+            console.log(`Successfully verified and confirmed booking/reservation #${bookingId} via PayMongo Webhook.`);
         }
 
         return NextResponse.json({ received: true });

@@ -18,9 +18,10 @@ export async function createPayMongoCheckoutSession(params: CheckoutSessionParam
     // Fallback to Sandbox / Demo mode if live credentials are not set
     if (!paymongoSecretKey || paymongoSecretKey.trim() === '' || paymongoSecretKey.includes('your_')) {
         console.warn('PayMongo secret key not set in environment. Using Sandbox Checkout Simulation.');
+        const separator = params.successUrl.includes('?') ? '&' : '?';
         return {
             id: `cs_sim_${Date.now()}`,
-            checkout_url: `${params.successUrl}?session_id=sim_${params.bookingId}&simulated=true`,
+            checkout_url: `${params.successUrl}${separator}session_id=sim_${params.bookingId}&simulated=true`,
             is_simulated: true,
         };
     }
@@ -46,7 +47,7 @@ export async function createPayMongoCheckoutSession(params: CheckoutSessionParam
                                 quantity: 1,
                             },
                         ],
-                        payment_method_types: ['gcash', 'paymaya', 'card', 'grab_pay'],
+                        payment_method_types: ['gcash'],
                         success_url: params.successUrl,
                         cancel_url: params.cancelUrl,
                         description: params.description,
@@ -80,9 +81,10 @@ export async function createPayMongoCheckoutSession(params: CheckoutSessionParam
     } catch (err) {
         console.error('PayMongo Error:', err);
         // Soft fallback for development smooth testing
+        const separator = params.successUrl.includes('?') ? '&' : '?';
         return {
             id: `cs_sim_${Date.now()}`,
-            checkout_url: `${params.successUrl}?session_id=sim_${params.bookingId}&simulated=true`,
+            checkout_url: `${params.successUrl}${separator}session_id=sim_${params.bookingId}&simulated=true`,
             is_simulated: true,
         };
     }
@@ -119,12 +121,20 @@ export async function retrievePayMongoCheckoutSession(checkoutSessionId: string)
         }
 
         const payments = data.data?.attributes?.payments || [];
-        const isPaid = payments.some((p: any) => p.attributes?.status === 'paid') || data.data?.attributes?.status === 'paid';
+        const paymentIntent = data.data?.attributes?.payment_intent;
+        const piPayments = paymentIntent?.attributes?.payments || [];
+
+        const isPaid = 
+            payments.some((p: any) => p.attributes?.status === 'paid') ||
+            piPayments.some((p: any) => p.attributes?.status === 'paid') ||
+            paymentIntent?.attributes?.status === 'succeeded' ||
+            data.data?.attributes?.status === 'paid';
 
         return {
             id: data.data.id,
             paid: isPaid,
             payments,
+            paymentIntent,
             attributes: data.data.attributes,
             is_simulated: false,
         };

@@ -33,13 +33,19 @@ export default async function AdminDashboard() {
     // For scalability, specific query or RPC is better.
     // For now, checking 'payments' table size might be misleading if we want AMOUNT.
     // Let's just count 'Confirmed' reservations or similar for now as a proxy or fetch all payments (careful with large data).
-    // Given it's a demo/start, fetching successful payments amount is okay.
-    const { data: payments } = await supabase
-        .from('payments')
-        .select('amount')
-        .eq('payment_status', 'paid');
-
-    const revenue = payments?.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) || 0;
+    // Fetch successful payments (supporting case-insensitive PAID / paid, or status column)
+    let revenue = 0;
+    try {
+        const { data: payments } = await supabase
+            .from('payments')
+            .select('amount, payment_status, status');
+        
+        if (payments) {
+            revenue = payments
+                .filter(p => (p.payment_status || p.status || '').toUpperCase() === 'PAID')
+                .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+        }
+    } catch {}
 
     // Fetch recent activity (recent reservations)
     const { data: recentReservations } = await supabase
@@ -96,7 +102,7 @@ export default async function AdminDashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(revenue)}
+                            {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(revenue)}
                         </div>
                         <p className="text-xs text-muted-foreground">Total collected</p>
                     </CardContent>

@@ -35,7 +35,9 @@ function TicketsContent() {
     const [paymentVerified, setPaymentVerified] = useState(false);
     const searchParams = useSearchParams();
     const paymentStatus = searchParams.get("payment");
+    const statusParam = searchParams.get("status");
     const bookingId = searchParams.get("booking_id");
+    const [isWaitingForApproval, setIsWaitingForApproval] = useState(statusParam === "pending_verification");
     const supabase = createClient();
 
     const fetchTickets = async () => {
@@ -71,11 +73,105 @@ function TicketsContent() {
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error("Error fetching tickets:", error);
+                console.warn("Tickets relation query unavailable, querying reservations table fallback:", error.message || error);
+                try {
+                    const { data: userReservations } = await supabase
+                        .from('reservations')
+                        .select('*, trip:trips(*)')
+                        .eq('customer_id', user.id)
+                        .order('created_at', { ascending: false });
+
+                    if (userReservations && userReservations.length > 0) {
+                        const resIds = userReservations.map((r: any) => r.id);
+                        const { data: rawTickets } = await supabase
+                            .from('tickets')
+                            .select('*')
+                            .in('reservation_id', resIds);
+
+                        const ticketMap = new Map((rawTickets || []).map((t: any) => [t.reservation_id, t]));
+
+                        const formattedTickets: UserTicket[] = userReservations.map((res: any) => {
+                            const matchingTicket = ticketMap.get(res.id);
+                            const trip = res.trip;
+                            return {
+                                id: matchingTicket?.id || res.id,
+                                qr_token: matchingTicket?.qr_code || matchingTicket?.qr_token || `TKT-${res.id.slice(0, 8).toUpperCase()}`,
+                                ticket_status: matchingTicket?.ticket_status || (res.status === 'CONFIRMED' || res.status === 'confirmed' ? 'VALID' : 'PENDING'),
+                                created_at: res.created_at,
+                                booking: {
+                                    id: res.id,
+                                    passenger_name: res.passenger_name || user.user_metadata?.full_name || "Passenger",
+                                    seat_number: res.seat_number,
+                                    total_price: res.total_price || 850,
+                                    booking_source: "ONLINE",
+                                    passenger_id: res.customer_id,
+                                    trip: {
+                                        departure_time: trip?.departure_time || new Date().toISOString(),
+                                        bus: { bus_number: "Superlines Express" },
+                                        route: {
+                                            origin: { name: trip?.origin || "Cubao" },
+                                            destination: { name: trip?.destination || "Daet" },
+                                        }
+                                    }
+                                }
+                            };
+                        });
+                        setTickets(formattedTickets);
+                    } else {
+                        setTickets([]);
+                    }
+                } catch (fallbackErr) {
+                    console.error("Fallback ticket fetch error:", fallbackErr);
+                }
             } else if (data) {
                 setTickets(data as any);
             }
         }
+
+        // Integrate client-side ticket storage (supports guest bookings & offline ticket view)
+        if (typeof window !== "undefined") {
+            try {
+                const keys = Object.keys(localStorage).filter(k => k.startsWith("superlines_booking_"));
+                const localTickets: UserTicket[] = keys.map(k => {
+                    const raw = localStorage.getItem(k);
+                    if (!raw) return null;
+                    const item = JSON.parse(raw);
+                    return {
+                        id: item.booking_id,
+                        qr_token: item.qr_token,
+                        ticket_status: "VALID",
+                        created_at: item.created_at || new Date().toISOString(),
+                        booking: {
+                            id: item.booking_id,
+                            passenger_name: item.passenger_name,
+                            seat_number: item.seat_number,
+                            total_price: item.total_price,
+                            booking_source: "ONLINE",
+                            passenger_id: item.passenger_id || null,
+                            trip: {
+                                departure_time: item.trip?.departure_time || new Date().toISOString(),
+                                bus: { bus_number: item.trip?.bus?.bus_number || "Superlines Express" },
+                                route: {
+                                    origin: { name: item.trip?.origin || item.trip?.route?.origin?.name || "Cubao" },
+                                    destination: { name: item.trip?.destination || item.trip?.route?.destination?.name || "Daet" }
+                                }
+                            }
+                        }
+                    };
+                }).filter(Boolean) as UserTicket[];
+
+                if (localTickets.length > 0) {
+                    setTickets(prev => {
+                        const existingIds = new Set(prev.map(t => t.id || t.booking?.id));
+                        const additions = localTickets.filter(lt => !existingIds.has(lt.id) && !existingIds.has(lt.booking?.id));
+                        return [...additions, ...prev];
+                    });
+                }
+            } catch (err) {
+                console.warn("Could not read local tickets:", err);
+            }
+        }
+
         setLoading(false);
     };
 
@@ -83,6 +179,7 @@ function TicketsContent() {
         // If returning from PayMongo checkout with payment=success
         if (paymentStatus === "success" && bookingId) {
             setPaymentVerified(true);
+            setIsWaitingForApproval(false);
             // Verify payment and update ticket status
             fetch(`/api/payments/paymongo/verify?booking_id=${bookingId}`)
                 .then((res) => res.json())
@@ -91,10 +188,29 @@ function TicketsContent() {
                     console.error("Verification error:", err);
                     fetchTickets();
                 });
+        } else if (isWaitingForApproval && bookingId) {
+            fetchTickets();
+            // Real-time polling for cashier approval in Manual Verification Mode
+            const pollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/payments/paymongo/verify?booking_id=${bookingId}`);
+                    const data = await res.json();
+                    if (data.status === "PAID" || data.status === "CONFIRMED") {
+                        setIsWaitingForApproval(false);
+                        setPaymentVerified(true);
+                        clearInterval(pollInterval);
+                        await fetchTickets();
+                    }
+                } catch (e) {
+                    console.error("Polling error:", e);
+                }
+            }, 2500);
+
+            return () => clearInterval(pollInterval);
         } else {
             fetchTickets();
         }
-    }, [paymentStatus, bookingId]);
+    }, [paymentStatus, bookingId, isWaitingForApproval]);
 
     return (
         <div className="container mx-auto max-w-4xl py-8 space-y-6">
@@ -103,12 +219,35 @@ function TicketsContent() {
                 <p className="text-muted-foreground">Present your digital QR ticket to the conductor when boarding.</p>
             </div>
 
+            {/* Waiting for Cashier Approval Banner (Mode 2) */}
+            {isWaitingForApproval && (
+                <div className="flex items-start gap-4 rounded-xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-50 to-white dark:from-amber-950/40 dark:to-zinc-900 p-5 text-amber-900 dark:text-amber-200 shadow-sm">
+                    <div className="h-10 w-10 rounded-full bg-amber-500 text-white flex items-center justify-center flex-shrink-0 font-bold shadow-md">
+                        <Clock className="h-5 w-5 animate-spin" />
+                    </div>
+                    <div className="space-y-1 flex-1">
+                        <div className="flex items-center justify-between">
+                            <p className="font-extrabold text-base flex items-center gap-2">
+                                <span>Awaiting Cashier Approval...</span>
+                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 animate-pulse">
+                                    Live Sync Active
+                                </span>
+                            </p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Your GCash payment reference has been submitted. As soon as the Superlines Cashier confirms your payment and clicks <strong>[Approve Ticket]</strong> on their terminal, your validated digital ticket will automatically appear here in real-time without needing to refresh!
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Payment Verified & Confirmed Banner */}
             {paymentVerified && (
-                <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-400">
+                <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-400 shadow-sm">
                     <CheckCircle2 className="h-6 w-6 flex-shrink-0 text-emerald-600" />
                     <div>
-                        <p className="font-bold">Payment Successful via PayMongo!</p>
-                        <p className="text-sm">Your booking #{bookingId?.slice(0, 8)} has been confirmed and your digital ticket is now active.</p>
+                        <p className="font-bold">Payment Verified & Ticket Issued!</p>
+                        <p className="text-sm">Your booking #{bookingId?.slice(0, 8)} has been confirmed and your digital ticket is now active for boarding.</p>
                     </div>
                 </div>
             )}

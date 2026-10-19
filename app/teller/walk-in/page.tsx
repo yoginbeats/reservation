@@ -116,29 +116,41 @@ export default function TellerWalkInBookingPage() {
             let bookingQrToken: string;
 
             // Attempt atomic seat booking procedure
-            const { data: result, error: rpcError } = await supabase.rpc(
-                "book_seat_atomic",
-                {
-                    p_trip_id: selectedTrip.id,
-                    p_seat_number: selectedSeat,
-                    p_passenger_id: null, // Walk-in non-registered
-                    p_passenger_name: passengerName,
-                    p_passenger_contact: passengerContact || "",
-                    p_total_price: selectedTrip.fare_amount || 850,
-                    p_booking_source: "WALK_IN",
-                    p_booking_terminal_id: roleData?.terminal_id || null,
-                    p_created_by: user?.id || null,
-                    p_payment_method: "CASH_WALKIN",
-                    p_transaction_ref: `CASH-${Date.now()}`,
-                }
-            );
+            let result: any = null;
+            let rpcError: any = null;
+
+            try {
+                const res = await supabase.rpc(
+                    "book_seat_atomic",
+                    {
+                        p_trip_id: selectedTrip.id,
+                        p_seat_number: selectedSeat,
+                        p_passenger_id: null, // Walk-in non-registered
+                        p_passenger_name: passengerName,
+                        p_passenger_contact: passengerContact || "",
+                        p_total_price: selectedTrip.fare_amount || 850,
+                        p_booking_source: "WALK_IN",
+                        p_booking_terminal_id: roleData?.terminal_id || null,
+                        p_created_by: user?.id || null,
+                        p_payment_method: "CASH_WALKIN",
+                        p_transaction_ref: `CASH-${Date.now()}`,
+                    }
+                );
+                result = res.data;
+                rpcError = res.error;
+            } catch (err: any) {
+                rpcError = err;
+            }
 
             if (!rpcError && result?.qr_token) {
                 bookingQrToken = result.qr_token;
             } else {
                 console.warn("Atomic RPC unavailable, falling back to direct database table booking:", rpcError);
 
-                // Fallback direct table inserts for Walk-in
+                // Fallback direct table inserts for Walk-in (try bookings first, then reservations)
+                let bookingId: string | null = null;
+                let isUsingReservations = false;
+
                 const { data: newBooking, error: bErr } = await supabase
                     .from('bookings')
                     .insert({
@@ -156,38 +168,123 @@ export default function TellerWalkInBookingPage() {
                     .select('id')
                     .single();
 
-                if (bErr || !newBooking) {
-                    throw new Error(bErr?.message || "Failed to create booking.");
+                if (newBooking && !bErr) {
+                    bookingId = newBooking.id;
+                } else {
+                    console.warn("Could not insert to 'bookings' table, falling back to 'reservations':", bErr?.message);
+                    const { data: newRes, error: resErr } = await supabase
+                        .from('reservations')
+                        .insert({
+                            trip_id: selectedTrip.id,
+                            customer_id: null,
+                            passenger_name: passengerName,
+                            seat_number: selectedSeat,
+                            total_price: selectedTrip.fare_amount || 850,
+                            status: 'CONFIRMED'
+                        })
+                        .select('id')
+                        .single();
+
+                    if (newRes && !resErr) {
+                        bookingId = newRes.id;
+                        isUsingReservations = true;
+                    } else {
+                        throw new Error(bErr?.message || resErr?.message || "Failed to create booking record.");
+                    }
                 }
 
                 bookingQrToken = `TKT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-                // Mark seat as occupied
-                await supabase
-                    .from('trip_seats')
-                    .update({ is_available: false, booked_by_booking_id: newBooking.id })
-                    .eq('trip_id', selectedTrip.id)
-                    .eq('seat_number', selectedSeat);
+                // Mark seat as occupied in trip_seats if exists
+                try {
+                    await supabase
+                        .from('trip_seats')
+                        .update({ is_available: false, booked_by_booking_id: bookingId })
+                        .eq('trip_id', selectedTrip.id)
+                        .eq('seat_number', selectedSeat);
+                } catch {
+                    // Ignore if trip_seats does not exist
+                }
 
                 // Insert paid payment
-                await supabase
-                    .from('payments')
-                    .insert({
-                        booking_id: newBooking.id,
-                        amount: selectedTrip.fare_amount || 850,
-                        payment_method: 'CASH_WALKIN',
-                        payment_status: 'PAID',
-                        transaction_ref: `CASH-${Date.now()}`
-                    });
+                if (!isUsingReservations) {
+                    const { error: payErr } = await supabase
+                        .from('payments')
+                        .insert({
+                            booking_id: bookingId,
+                            amount: selectedTrip.fare_amount || 850,
+                            payment_method: 'CASH_WALKIN',
+                            payment_status: 'PAID',
+                            transaction_ref: `CASH-${Date.now()}`
+                        });
+                    if (payErr) {
+                        await supabase
+                            .from('payments')
+                            .insert({
+                                reservation_id: bookingId,
+                                amount: selectedTrip.fare_amount || 850,
+                                payment_method: 'CASH_WALKIN',
+                                status: 'PAID',
+                                transaction_id: `CASH-${Date.now()}`
+                            });
+                    }
+                } else {
+                    const { error: payErr } = await supabase
+                        .from('payments')
+                        .insert({
+                            reservation_id: bookingId,
+                            amount: selectedTrip.fare_amount || 850,
+                            payment_method: 'CASH_WALKIN',
+                            status: 'PAID',
+                            transaction_id: `CASH-${Date.now()}`
+                        });
+                    if (payErr) {
+                        await supabase
+                            .from('payments')
+                            .insert({
+                                booking_id: bookingId,
+                                amount: selectedTrip.fare_amount || 850,
+                                payment_method: 'CASH_WALKIN',
+                                payment_status: 'PAID',
+                                transaction_ref: `CASH-${Date.now()}`
+                            });
+                    }
+                }
 
                 // Insert valid ticket
-                await supabase
-                    .from('tickets')
-                    .insert({
-                        booking_id: newBooking.id,
-                        qr_token: bookingQrToken,
-                        ticket_status: 'VALID'
-                    });
+                if (!isUsingReservations) {
+                    const { error: tktErr } = await supabase
+                        .from('tickets')
+                        .insert({
+                            booking_id: bookingId,
+                            qr_token: bookingQrToken,
+                            ticket_status: 'VALID'
+                        });
+                    if (tktErr) {
+                        await supabase
+                            .from('tickets')
+                            .insert({
+                                reservation_id: bookingId,
+                                qr_code: bookingQrToken,
+                            });
+                    }
+                } else {
+                    const { error: tktErr } = await supabase
+                        .from('tickets')
+                        .insert({
+                            reservation_id: bookingId,
+                            qr_code: bookingQrToken,
+                        });
+                    if (tktErr) {
+                        await supabase
+                            .from('tickets')
+                            .insert({
+                                booking_id: bookingId,
+                                qr_token: bookingQrToken,
+                                ticket_status: 'VALID'
+                            });
+                    }
+                }
             }
 
             setCompletedBooking({

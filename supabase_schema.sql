@@ -187,6 +187,11 @@ CREATE TABLE IF NOT EXISTS public.payments (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Migration helpers if payments table already exists
+ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS booking_id UUID;
+ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS payment_status VARCHAR(20) DEFAULT 'PAID';
+ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS transaction_ref VARCHAR(255);
+
 -- ----------------------------------------------------------------------------
 -- 9. TICKETS TABLE
 -- ----------------------------------------------------------------------------
@@ -197,6 +202,15 @@ CREATE TABLE IF NOT EXISTS public.tickets (
     ticket_status VARCHAR(20) DEFAULT 'VALID' CHECK (ticket_status IN ('PENDING', 'VALID', 'USED', 'CANCELLED', 'EXPIRED')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Migration helpers if tickets table already exists
+ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS booking_id UUID;
+ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS qr_token VARCHAR(255);
+ALTER TABLE public.tickets ADD COLUMN IF NOT EXISTS ticket_status VARCHAR(20) DEFAULT 'VALID';
+
+-- Migration helpers if trips table already exists
+ALTER TABLE public.trips ADD COLUMN IF NOT EXISTS fare_amount NUMERIC(10,2) DEFAULT 850.00;
+ALTER TABLE public.trips ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'SCHEDULED';
 
 -- ----------------------------------------------------------------------------
 -- 10. TICKET VERIFICATIONS (CONDUCTOR AUDIT LOG)
@@ -364,3 +378,37 @@ CREATE TRIGGER trigger_initialize_trip_seats
 AFTER INSERT ON public.trips
 FOR EACH ROW
 EXECUTE FUNCTION public.initialize_trip_seats();
+
+-- ----------------------------------------------------------------------------
+-- ROW LEVEL SECURITY (RLS) POLICIES & PERMISSIONS
+-- ----------------------------------------------------------------------------
+ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.trip_seats ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    -- Bookings policies
+    DROP POLICY IF EXISTS "Allow all for bookings" ON public.bookings;
+    CREATE POLICY "Allow all for bookings" ON public.bookings FOR ALL USING (true) WITH CHECK (true);
+
+    -- Payments policies
+    DROP POLICY IF EXISTS "Allow all for payments" ON public.payments;
+    CREATE POLICY "Allow all for payments" ON public.payments FOR ALL USING (true) WITH CHECK (true);
+
+    -- Tickets policies
+    DROP POLICY IF EXISTS "Allow all for tickets" ON public.tickets;
+    CREATE POLICY "Allow all for tickets" ON public.tickets FOR ALL USING (true) WITH CHECK (true);
+
+    -- Trip seats policies
+    DROP POLICY IF EXISTS "Allow all for trip_seats" ON public.trip_seats;
+    CREATE POLICY "Allow all for trip_seats" ON public.trip_seats FOR ALL USING (true) WITH CHECK (true);
+EXCEPTION WHEN OTHERS THEN
+    NULL;
+END $$;
+
+GRANT ALL ON public.bookings TO anon, authenticated, service_role;
+GRANT ALL ON public.payments TO anon, authenticated, service_role;
+GRANT ALL ON public.tickets TO anon, authenticated, service_role;
+GRANT ALL ON public.trip_seats TO anon, authenticated, service_role;
+GRANT ALL ON public.trips TO anon, authenticated, service_role;

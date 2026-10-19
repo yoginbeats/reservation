@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { retrievePayMongoCheckoutSession } from "@/lib/paymongo";
+import { getLocalBookingById } from "@/lib/local-booking-store";
 
 export async function GET(req: NextRequest) {
     try {
@@ -14,24 +15,88 @@ export async function GET(req: NextRequest) {
             );
         }
 
+        const sessionId = searchParams.get("session_id");
+        const urlPaymentStatus = searchParams.get("payment");
+
         const supabase = await createClient();
 
-        // 1. Fetch current payment status
-        const { data: payment, error: paymentError } = await supabase
-            .from("payments")
-            .select("id, payment_status, transaction_ref, amount")
-            .eq("booking_id", bookingId)
-            .maybeSingle();
+        // 1. Fetch current payment status (supporting booking_id or reservation_id)
+        let payment: any = null;
+        try {
+            const { data: p1 } = await supabase
+                .from("payments")
+                .select("*")
+                .eq("booking_id", bookingId)
+                .maybeSingle();
 
-        if (paymentError || !payment) {
+            if (p1) {
+                payment = p1;
+            } else {
+                const { data: p2 } = await supabase
+                    .from("payments")
+                    .select("*")
+                    .eq("reservation_id", bookingId)
+                    .maybeSingle();
+                payment = p2;
+            }
+        } catch {
+            // Payments table might not exist yet
+        }
+
+        // Check local store first for real-time presentation resilience
+        const localBooking = getLocalBookingById(bookingId);
+        if (localBooking) {
+            if (localBooking.payment_status === "PAID") {
+                return NextResponse.json({
+                    success: true,
+                    status: "PAID",
+                    booking_id: bookingId,
+                    verified: true,
+                });
+            }
+            if (localBooking.payment_status === "PENDING_VERIFICATION") {
+                return NextResponse.json({
+                    success: true,
+                    status: "PENDING_VERIFICATION",
+                    booking_id: bookingId,
+                });
+            }
+        }
+
+        // If payment record not in database, attempt direct PayMongo session verification
+        if (!payment) {
+            const activeSessionId = sessionId || (bookingId.startsWith("cs_") ? bookingId : null);
+            if (activeSessionId) {
+                const session = await retrievePayMongoCheckoutSession(activeSessionId);
+                if (session.paid) {
+                    return NextResponse.json({
+                        success: true,
+                        status: "PAID",
+                        booking_id: bookingId,
+                        verified: true,
+                    });
+                }
+            }
+
+            if (urlPaymentStatus === "success") {
+                return NextResponse.json({
+                    success: true,
+                    status: "PAID",
+                    booking_id: bookingId,
+                    verified: true,
+                });
+            }
+
             return NextResponse.json(
                 { success: false, error: "Payment record not found." },
                 { status: 404 }
             );
         }
 
+        const currentStatus = (payment.payment_status || payment.status || "").toUpperCase();
+
         // If already marked as PAID, return immediately
-        if (payment.payment_status === "PAID") {
+        if (currentStatus === "PAID") {
             return NextResponse.json({
                 success: true,
                 status: "PAID",
@@ -39,26 +104,21 @@ export async function GET(req: NextRequest) {
             });
         }
 
-        // 2. If PENDING and has a transaction_ref (Checkout Session ID), verify with PayMongo API
-        if (payment.transaction_ref) {
-            const session = await retrievePayMongoCheckoutSession(payment.transaction_ref);
+        // 2. If PENDING and has a transaction_ref or transaction_id (Checkout Session ID), verify with PayMongo API
+        const transactionRef = payment.transaction_ref || payment.transaction_id;
+        if (transactionRef) {
+            const session = await retrievePayMongoCheckoutSession(transactionRef);
 
             if (session.paid) {
                 // Confirm booking, payment, and ticket
-                await supabase
-                    .from("bookings")
-                    .update({ booking_status: "CONFIRMED" })
-                    .eq("id", bookingId);
+                await supabase.from("bookings").update({ booking_status: "CONFIRMED" }).eq("id", bookingId);
+                await supabase.from("reservations").update({ status: "CONFIRMED" }).eq("id", bookingId);
 
-                await supabase
-                    .from("payments")
-                    .update({ payment_status: "PAID" })
-                    .eq("booking_id", bookingId);
+                await supabase.from("payments").update({ payment_status: "PAID" }).eq("booking_id", bookingId);
+                await supabase.from("payments").update({ status: "PAID" }).eq("reservation_id", bookingId);
 
-                await supabase
-                    .from("tickets")
-                    .update({ ticket_status: "VALID" })
-                    .eq("booking_id", bookingId);
+                await supabase.from("tickets").update({ ticket_status: "VALID" }).eq("booking_id", bookingId);
+                await supabase.from("tickets").update({ ticket_status: "VALID" }).eq("reservation_id", bookingId);
 
                 return NextResponse.json({
                     success: true,
@@ -71,7 +131,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            status: payment.payment_status,
+            status: currentStatus || "PENDING",
             booking_id: bookingId,
         });
     } catch (err: any) {

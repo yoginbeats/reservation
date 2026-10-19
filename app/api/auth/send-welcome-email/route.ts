@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
                     <div class="content">
                         <div class="greeting">Mabuhay, ${fullName}! 🎉</div>
                         <p>Your Superlines Passenger Account has been successfully created and verified.</p>
-                        <p>You can now book bus schedules online, pay securely via PayMongo (GCash, Maya, Cards), and access your digital QR tickets anytime.</p>
+                        <p>You can now book bus schedules online, pay securely via GCash, and access your digital QR tickets anytime.</p>
                         
                         <div class="details-box">
                             <div class="detail-row">
