@@ -30,7 +30,8 @@ import {
     ChevronDown,
     ChevronUp,
     Percent,
-    Info
+    Info,
+    Calculator
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -808,29 +809,63 @@ function BookTripContent() {
                                     </div>
                                 )}
 
-                                {/* Realtime Fare Calculation Breakdown */}
-                                <div className="rounded-xl bg-zinc-50 dark:bg-zinc-900/60 p-3.5 border text-xs space-y-2">
-                                    <div className="flex justify-between text-muted-foreground">
-                                        <span>Base Regular Fare ({seatCount} seat{seatCount > 1 ? "s" : ""} × ₱{unitFare}.00):</span>
-                                        <span className="font-mono">₱{totalBaseFare}.00</span>
-                                    </div>
-                                    {effectiveDiscountCount > 0 && (
-                                        <div className="space-y-1 pt-1.5 border-t border-dashed">
-                                            <div className="flex justify-between font-bold text-emerald-600 dark:text-emerald-400">
-                                                <span>Total 20% Discount ({effectiveDiscountCount} passenger{effectiveDiscountCount > 1 ? "s" : ""}):</span>
-                                                <span className="font-mono">-₱{totalDiscountAmount}.00</span>
-                                            </div>
-                                            {discountPersons.slice(0, effectiveDiscountCount).map((p, idx) => (
-                                                <div key={p.id || idx} className="flex justify-between text-[11px] text-muted-foreground pl-2">
-                                                    <span>• {p.name || `Passenger ${idx + 1}`} ({p.classification} - 20% Off):</span>
-                                                    <span className="font-mono">-₱{discountPerPassenger}.00</span>
-                                                </div>
-                                            ))}
+                                {/* Realtime Fare & Discount Calculation Breakdown */}
+                                <div className="rounded-xl border-2 border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 space-y-3">
+                                    <div className="flex items-center justify-between border-b border-emerald-200/60 dark:border-emerald-900/60 pb-2">
+                                        <div className="flex items-center gap-1.5 font-black text-xs text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                                            <Calculator className="h-4 w-4" />
+                                            <span>Automatic Fare & Discount Calculation</span>
                                         </div>
-                                    )}
-                                    <div className="flex justify-between font-black text-sm pt-2 border-t text-foreground">
-                                        <span>Total Amount Due:</span>
-                                        <span className="font-mono text-emerald-600 text-base">₱{finalFare}.00</span>
+                                        <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-full">
+                                            Auto-Calculated
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-1.5 text-xs">
+                                        <div className="flex justify-between items-center text-muted-foreground">
+                                            <span>Fare ({seatCount} seat{seatCount > 1 ? "s" : ""} × ₱{unitFare}.00):</span>
+                                            <span className="font-mono font-bold text-foreground">₱{totalBaseFare}.00</span>
+                                        </div>
+
+                                        {effectiveDiscountCount > 0 ? (
+                                            <div className="space-y-1 pt-1 border-t border-dashed border-emerald-200 dark:border-emerald-900">
+                                                <div className="flex justify-between items-center font-bold text-emerald-600 dark:text-emerald-400">
+                                                    <span>20% Statutory Discount ({effectiveDiscountCount} passenger{effectiveDiscountCount > 1 ? "s" : ""} × ₱{discountPerPassenger}.00):</span>
+                                                    <span className="font-mono">-₱{totalDiscountAmount}.00</span>
+                                                </div>
+                                                {discountPersons.slice(0, effectiveDiscountCount).map((p, idx) => (
+                                                    <div key={p.id || idx} className="flex justify-between text-[11px] text-muted-foreground pl-3">
+                                                        <span>• #{idx + 1} {p.name || `Passenger ${idx + 1}`} ({p.classification} 20%):</span>
+                                                        <span className="font-mono">-₱{discountPerPassenger}.00</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="flex justify-between text-muted-foreground text-[11px] italic">
+                                                <span>20% Statutory Discount:</span>
+                                                <span className="font-mono">₱0.00 (No discount applied)</span>
+                                            </div>
+                                        )}
+
+                                        {/* Formula Callout Example */}
+                                        <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-800 flex flex-wrap items-center justify-between text-xs font-semibold gap-1 mt-2">
+                                            <span className="text-muted-foreground">Calculation Formula:</span>
+                                            <div className="font-mono flex items-center gap-1.5 text-xs">
+                                                <span className="text-foreground">₱{totalBaseFare}.00 <span className="text-[10px] text-muted-foreground">(Fare)</span></span>
+                                                <span className="text-emerald-600 font-bold">-</span>
+                                                <span className="text-emerald-600 font-bold">₱{totalDiscountAmount}.00 <span className="text-[10px] text-emerald-700 dark:text-emerald-300">(Discount)</span></span>
+                                                <span className="font-black text-foreground">=</span>
+                                                <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">₱{finalFare}.00 <span className="text-[10px] text-foreground font-normal">(Total)</span></span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-between items-center font-black text-sm pt-2 border-t text-foreground">
+                                            <div className="flex flex-col">
+                                                <span>Total Amount to Pay via GCash:</span>
+                                                <span className="text-[10px] font-normal text-muted-foreground">Exact amount to be transferred to merchant</span>
+                                            </div>
+                                            <span className="font-mono text-emerald-600 dark:text-emerald-400 text-xl font-black">₱{finalFare}.00</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -851,6 +886,28 @@ function BookTripContent() {
                                         <ShieldCheck className="h-3.5 w-3.5" />
                                         Verified
                                     </span>
+                                </div>
+
+                                {/* Calculation Summary Highlight Bar */}
+                                <div className="rounded-xl bg-blue-100/70 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 p-3.5 text-xs space-y-1.5">
+                                    <div className="flex justify-between items-center text-blue-900 dark:text-blue-200">
+                                        <span className="font-bold">Trip Base Fare:</span>
+                                        <span className="font-mono font-bold">₱{totalBaseFare}.00</span>
+                                    </div>
+                                    {totalDiscountAmount > 0 && (
+                                        <div className="flex justify-between items-center text-emerald-700 dark:text-emerald-300 font-bold">
+                                            <span>20% Statutory Discount ({effectiveDiscountCount} passenger{effectiveDiscountCount > 1 ? "s" : ""}):</span>
+                                            <span className="font-mono">-₱{totalDiscountAmount}.00</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center pt-1.5 border-t border-blue-200 dark:border-blue-800">
+                                        <div className="font-black text-sm text-blue-950 dark:text-blue-100 flex items-center gap-1">
+                                            <span>Total to Send via GCash:</span>
+                                        </div>
+                                        <span className="font-mono text-xl font-black text-blue-600 dark:text-blue-400">
+                                            ₱{finalFare}.00
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {/* QR Code Display */}
@@ -915,20 +972,35 @@ function BookTripContent() {
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between py-1">
-                                        <span className="text-muted-foreground">Amount to Send:</span>
+                                        <div className="flex flex-col">
+                                            <span className="text-muted-foreground font-bold">Total Amount to Send via GCash:</span>
+                                            {totalDiscountAmount > 0 && (
+                                                <span className="text-[10px] text-emerald-600 font-medium">
+                                                    (Fare ₱{totalBaseFare}.00 - Discount ₱{totalDiscountAmount}.00)
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="flex items-center gap-1.5">
-                                            <span className="font-black text-base text-red-600 font-mono">
+                                            <span className="font-black text-lg text-emerald-600 font-mono">
                                                 ₱{finalFare}.00
                                             </span>
                                             <Button
                                                 type="button"
-                                                variant="ghost"
+                                                variant="outline"
                                                 size="sm"
-                                                className="h-6 w-6 p-0"
+                                                className="h-7 px-2 text-xs font-bold text-blue-600 hover:text-blue-700"
                                                 onClick={() => handleCopy(String(finalFare), "amount")}
-                                                title="Copy Amount"
+                                                title="Copy Exact Amount"
                                             >
-                                                {copied === "amount" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                                                {copied === "amount" ? (
+                                                    <span className="flex items-center gap-1 text-emerald-600">
+                                                        <Check className="h-3 w-3" /> Copied
+                                                    </span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1">
+                                                        <Copy className="h-3 w-3" /> Copy ₱{finalFare}
+                                                    </span>
+                                                )}
                                             </Button>
                                         </div>
                                     </div>
@@ -937,8 +1009,11 @@ function BookTripContent() {
                                 {/* Step Instructions */}
                                 <div className="space-y-1.5 text-xs text-blue-900 dark:text-blue-200 bg-blue-50/70 dark:bg-blue-950/40 p-3.5 rounded-lg border border-blue-200">
                                     <p className="font-bold text-sm">How to Pay via GCash:</p>
-                                    <p>1. Open your GCash app and select <strong>QR (Scan)</strong> to scan the code above, or tap <strong>Send Money</strong> to the mobile number listed.</p>
-                                    <p>2. Send the exact fare amount of <strong>₱{finalFare}.00</strong>.</p>
+                                    <p>1. Open your GCash app and select <strong>QR (Scan)</strong> to scan the code above, or tap <strong>Send Money</strong> to <strong>{process.env.NEXT_PUBLIC_GCASH_NUMBER || "0993 317 6559"}</strong>.</p>
+                                    <p>
+                                        2. Enter the exact calculated total of <strong>₱{finalFare}.00</strong>
+                                        {totalDiscountAmount > 0 ? ` (Base Fare ₱${totalBaseFare}.00 minus Statutory Discount ₱${totalDiscountAmount}.00)` : ""}.
+                                    </p>
                                     <p>3. Copy the <strong>13-digit Reference Number</strong> from your GCash confirmation receipt or SMS and enter it below.</p>
                                 </div>
 

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SeatPicker } from "@/components/seat-picker";
-import { Ticket, Bus, ArrowRight, Printer, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { Ticket, Bus, ArrowRight, Printer, CheckCircle, AlertCircle, RefreshCw, Calculator } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface DiscountPerson {
@@ -776,20 +776,44 @@ export default function TellerWalkInBookingPage() {
                                     </div>
 
                                     {/* Real-time Fare Breakdown */}
-                                    <div className="p-3 rounded-lg bg-muted/60 border text-xs space-y-1.5">
-                                        <div className="flex justify-between text-muted-foreground">
-                                            <span>Base Fare ({seatCount || 1} seat{seatCount > 1 ? "s" : ""} × ₱{unitFare}):</span>
-                                            <span>₱{totalBaseFare}.00</span>
+                                    <div className="p-3.5 rounded-xl bg-muted/60 border text-xs space-y-2">
+                                        <div className="flex items-center gap-1.5 font-bold text-xs text-foreground uppercase tracking-wider pb-1 border-b">
+                                            <Calculator className="h-3.5 w-3.5 text-emerald-600" />
+                                            <span>Automatic Cash Fare Calculation</span>
                                         </div>
-                                        {effectiveDiscountCount > 0 && (
+
+                                        <div className="flex justify-between text-muted-foreground">
+                                            <span>Base Fare ({seatCount || 1} seat{seatCount > 1 ? "s" : ""} × ₱{unitFare}.00):</span>
+                                            <span className="font-mono font-bold text-foreground">₱{totalBaseFare}.00</span>
+                                        </div>
+
+                                        {effectiveDiscountCount > 0 ? (
                                             <div className="flex justify-between text-emerald-600 font-semibold">
-                                                <span>20% Statutory Discount ({effectiveDiscountCount} pax × ₱{discountPerPassenger}):</span>
-                                                <span>-₱{totalDiscountAmount}.00</span>
+                                                <span>20% Statutory Discount ({effectiveDiscountCount} pax × ₱{discountPerPassenger}.00):</span>
+                                                <span className="font-mono">-₱{totalDiscountAmount}.00</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex justify-between text-muted-foreground text-[11px] italic">
+                                                <span>20% Statutory Discount:</span>
+                                                <span className="font-mono">₱0.00</span>
                                             </div>
                                         )}
-                                        <div className="flex justify-between pt-1 border-t font-bold text-sm text-foreground">
-                                            <span>Total Cash Due:</span>
-                                            <span className="font-mono text-emerald-600 text-base">₱{fare}.00</span>
+
+                                        {/* Formula Callout */}
+                                        <div className="p-2.5 rounded-lg bg-background border flex flex-wrap items-center justify-between text-xs font-semibold gap-1">
+                                            <span className="text-muted-foreground">Calculation Formula:</span>
+                                            <div className="font-mono flex items-center gap-1.5 text-xs">
+                                                <span className="text-foreground">₱{totalBaseFare}.00 <span className="text-[10px] text-muted-foreground">(Fare)</span></span>
+                                                <span className="text-emerald-600 font-bold">-</span>
+                                                <span className="text-emerald-600 font-bold">₱{totalDiscountAmount}.00 <span className="text-[10px] text-emerald-700 dark:text-emerald-300">(Discount)</span></span>
+                                                <span className="font-black text-foreground">=</span>
+                                                <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">₱{fare}.00 <span className="text-[10px] text-foreground font-normal">(Total Due)</span></span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-between pt-1 border-t font-black text-sm text-foreground">
+                                            <span>Total Cash Due to Collect:</span>
+                                            <span className="font-mono text-emerald-600 text-base font-black">₱{fare}.00</span>
                                         </div>
                                     </div>
 
