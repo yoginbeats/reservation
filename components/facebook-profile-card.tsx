@@ -341,20 +341,20 @@ export function FacebookProfileCard({
                             </div>
                         </div>
 
-                        {/* 3. Mobile Phone */}
+                        {/* 3. Mobile Phone / Contact */}
                         <div className="flex items-start gap-3 p-3 rounded-xl bg-zinc-50/80 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800/80">
-                            <div className="h-9 w-9 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                <Phone className="h-4 w-4" />
+                            <div className={`h-9 w-9 rounded-full ${phoneNumber?.includes("@") ? "bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400" : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400"} flex items-center justify-center shrink-0`}>
+                                {phoneNumber?.includes("@") ? <Mail className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                                    Mobile Phone
+                                    {phoneNumber?.includes("@") ? "Contact Phone / Email" : "Mobile Phone"}
                                 </p>
-                                <p className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                                <p className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">
                                     {phoneNumber || "Not provided yet"}
                                 </p>
                                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                    For ticket & SMS alerts
+                                    {phoneNumber?.includes("@") ? "For booking updates & tickets" : "For ticket & SMS alerts"}
                                 </p>
                             </div>
                         </div>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { User, Phone, Calendar, MapPin, Lock, Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
+import { User, Phone, Mail, Calendar, MapPin, Lock, Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 
@@ -114,7 +114,7 @@ function CompleteProfileContent() {
             return;
         }
         if (!phoneNumber.trim()) {
-            setError("Please provide your phone number (e.g. 09171234567).");
+            setError("Please provide your phone number or email address (e.g. 09171234567 or user@example.com).");
             return;
         }
         if (!address.trim()) {
@@ -359,23 +359,43 @@ function CompleteProfileContent() {
 
                             {/* Section 2: Contact & Address */}
                             <div className="space-y-4 pt-2 border-t">
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                                    2. Contact & Residential Address
-                                </h3>
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                                        2. Contact & Residential Address
+                                    </h3>
+                                    {email && phoneNumber !== email && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setPhoneNumber(email)}
+                                            className="text-[11px] font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400 px-2 py-0.5 rounded-md transition-colors"
+                                            title="Click to fill with your connected email"
+                                        >
+                                            Use {email}
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="phoneNumber">Phone Number (Required for SMS & Tickets) *</Label>
+                                    <Label htmlFor="phoneNumber">Phone Number or Email Address (Required for SMS & Tickets) *</Label>
                                     <div className="relative">
-                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        {phoneNumber.includes("@") ? (
+                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-600 dark:text-red-400 transition-colors" />
+                                        ) : (
+                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors" />
+                                        )}
                                         <Input
                                             id="phoneNumber"
                                             required
-                                            type="tel"
-                                            placeholder="0917 123 4567"
+                                            type="text"
+                                            autoComplete="tel email"
+                                            placeholder="0917 123 4567 or yourname@gmail.com"
                                             className="pl-9"
                                             value={phoneNumber}
                                             onChange={(e) => setPhoneNumber(e.target.value)}
                                         />
                                     </div>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        Provide either a mobile number (for SMS notifications) or an email address (for electronic tickets & trip alerts).
+                                    </p>
                                 </div>
 
                                 <div className="space-y-1.5">
