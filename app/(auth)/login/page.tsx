@@ -36,9 +36,44 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
+    // Staff Portal Security Gate States
+    const [showStaffModal, setShowStaffModal] = useState(false);
+    const [staffPasscode, setStaffPasscode] = useState("");
+    const [showStaffPasscode, setShowStaffPasscode] = useState(false);
+    const [staffGateError, setStaffGateError] = useState<string | null>(null);
+    const [isVerifyingStaff, setIsVerifyingStaff] = useState(false);
+
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
     const supabase = createClient();
+
+    const handleStaffGateSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setStaffGateError(null);
+        setIsVerifyingStaff(true);
+
+        const clean = staffPasscode.trim().toLowerCase();
+        const validPasscodes = [
+            "staff123",
+            "admin123",
+            "teller123",
+            "conductor123",
+            "superlines2026",
+            "superlines",
+        ];
+
+        if (validPasscodes.includes(clean)) {
+            if (typeof window !== "undefined") {
+                sessionStorage.setItem("superlines_staff_gate_unlocked", "true");
+                document.cookie = "superlines_staff_gate=unlocked; path=/; max-age=3600; SameSite=Lax";
+            }
+            setShowStaffModal(false);
+            router.push("/admin/login");
+        } else {
+            setStaffGateError("Access Denied: Invalid staff security passcode. Unauthorized passenger access to the staff portal is strictly prohibited.");
+            setIsVerifyingStaff(false);
+        }
+    };
 
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -138,12 +173,17 @@ export default function LoginPage() {
                             <ArrowLeft className="h-3.5 w-3.5" /> Back to Home
                         </Link>
                         <div className="h-4 w-[1px] bg-zinc-800" />
-                        <Link
-                            href="/admin/login"
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 transition-colors bg-red-950/40 border border-red-800/40 px-3 py-1.5 rounded-lg"
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setStaffPasscode("");
+                                setStaffGateError(null);
+                                setShowStaffModal(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 transition-colors bg-red-950/40 border border-red-800/40 px-3 py-1.5 rounded-lg cursor-pointer"
                         >
                             <ShieldCheck className="h-3.5 w-3.5" /> Staff Portal
-                        </Link>
+                        </button>
                     </div>
                 </div>
             </header>
@@ -350,13 +390,18 @@ export default function LoginPage() {
                                 </div>
 
                                 <div className="pt-3 text-center text-xs border-t border-zinc-800/80">
-                                    <Link
-                                        href="/admin/login"
-                                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStaffPasscode("");
+                                            setStaffGateError(null);
+                                            setShowStaffModal(true);
+                                        }}
+                                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition-colors cursor-pointer"
                                     >
                                         <ShieldCheck className="h-4 w-4 text-red-500" />
                                         <span>Authorized Superlines Staff & Admin Portal ➔</span>
-                                    </Link>
+                                    </button>
                                 </div>
                             </CardContent>
                         </Card>
@@ -371,6 +416,96 @@ export default function LoginPage() {
                     <p className="font-mono text-[11px] text-zinc-600">Daet • Cubao • PITX Integrated Terminal</p>
                 </div>
             </footer>
+
+            {/* Staff Portal Security Gate Modal */}
+            {showStaffModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+                    <div className="w-full max-w-md bg-zinc-900 border-2 border-red-600/60 rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 text-zinc-100 relative">
+                        {/* Close button */}
+                        <button
+                            type="button"
+                            onClick={() => setShowStaffModal(false)}
+                            className="absolute top-5 right-5 text-zinc-400 hover:text-white transition-colors h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center text-sm"
+                        >
+                            ✕
+                        </button>
+
+                        {/* Header */}
+                        <div className="text-center space-y-2">
+                            <div className="h-12 w-12 rounded-2xl bg-red-950/80 border border-red-600/40 text-red-500 flex items-center justify-center mx-auto shadow-lg shadow-red-900/30">
+                                <ShieldCheck className="h-6 w-6" />
+                            </div>
+                            <div className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-950/60 px-3 py-0.5 text-[10px] font-black uppercase tracking-wider text-red-400">
+                                Personnel Verification Gate
+                            </div>
+                            <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                                Superlines Staff Access Gate
+                            </h3>
+                            <p className="text-xs text-zinc-400 leading-relaxed max-w-xs mx-auto">
+                                Restricted Area: For authorized Superlines Head Admin, Station Tellers, and Bus Conductors only.
+                            </p>
+                        </div>
+
+                        {/* Form */}
+                        <form onSubmit={handleStaffGateSubmit} className="space-y-4">
+                            {staffGateError && (
+                                <div className="rounded-xl bg-red-950/80 border border-red-800 p-3 text-xs text-red-200 flex items-start gap-2 shadow-inner">
+                                    <ShieldAlert className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                                    <span className="leading-relaxed">{staffGateError}</span>
+                                </div>
+                            )}
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="staffPasscode" className="text-xs font-bold text-zinc-300">
+                                    Staff Security Passcode *
+                                </Label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                                    <Input
+                                        id="staffPasscode"
+                                        type={showStaffPasscode ? "text" : "password"}
+                                        placeholder="Enter staff security passcode..."
+                                        value={staffPasscode}
+                                        onChange={(e) => setStaffPasscode(e.target.value)}
+                                        className="pl-10 pr-10 bg-zinc-950 border-zinc-800 text-white text-sm h-11 placeholder:text-zinc-600 focus:border-red-500 rounded-xl font-mono"
+                                        required
+                                        autoFocus
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowStaffPasscode(!showStaffPasscode)}
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                                    >
+                                        {showStaffPasscode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                                <p className="text-[11px] text-zinc-500 italic">
+                                    Passengers must sign in using their registered email and password on the passenger portal.
+                                </p>
+                            </div>
+
+                            <div className="flex gap-2.5 pt-1">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowStaffModal(false)}
+                                    className="flex-1 border-zinc-800 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 h-11 rounded-xl text-xs font-semibold"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isVerifyingStaff || !staffPasscode.trim()}
+                                    className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold h-11 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-red-600/30 flex items-center justify-center gap-1.5"
+                                >
+                                    <span>Unlock & Enter</span>
+                                    <ArrowRight className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
