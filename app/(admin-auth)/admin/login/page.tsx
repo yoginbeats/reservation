@@ -284,7 +284,6 @@ export default function AdminLoginPage() {
                                     </div>
                                 )}
 
-<<<<<<< HEAD
                                 <div className="space-y-1.5">
                                     <Label htmlFor="adminEmail" className="text-xs text-zinc-300 font-semibold">
                                         Admin Email Address
