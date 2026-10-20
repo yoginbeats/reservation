@@ -6,6 +6,14 @@ export async function updateSession(request: NextRequest) {
         request,
     })
 
+    // Immediately expire any bloated cookies (e.g. legacy base64 avatar in cookies) to prevent HTTP 431
+    const allCookies = request.cookies.getAll()
+    for (const c of allCookies) {
+        if (c.value && (c.value.length > 3500 || c.value.includes("data%3Aimage") || c.value.includes("data:image"))) {
+            supabaseResponse.cookies.set(c.name, '', { maxAge: 0, path: '/' })
+        }
+    }
+
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

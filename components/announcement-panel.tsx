@@ -22,9 +22,28 @@ export function AnnouncementPanel() {
         let isMounted = true;
         const fetchAnnouncements = async () => {
             try {
+                // Check local storage first for instant offline/cached announcement load
+                if (typeof window !== "undefined") {
+                    const localRaw = localStorage.getItem("superlines_announcements");
+                    if (localRaw) {
+                        try {
+                            const parsed = JSON.parse(localRaw);
+                            if (Array.isArray(parsed) && parsed.length > 0 && isMounted) {
+                                const activeList = parsed.filter((a: any) => a.is_active !== false);
+                                if (activeList.length > 0) setAnnouncements(activeList);
+                            }
+                        } catch (e) {
+                            // Ignore json parse error
+                        }
+                    }
+                }
+
                 const res = await getActiveAnnouncementsAction();
                 if (isMounted && res.success && res.data && res.data.length > 0) {
                     setAnnouncements(res.data);
+                    if (typeof window !== "undefined") {
+                        localStorage.setItem("superlines_announcements", JSON.stringify(res.data));
+                    }
                 }
             } catch (err) {
                 console.warn("Announcement panel load notice:", err);

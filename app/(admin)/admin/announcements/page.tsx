@@ -35,6 +35,9 @@ export default function AdminAnnouncementsPage() {
             const res = await getAnnouncementsAction();
             if (res.success && res.data) {
                 setAnnouncements(res.data);
+                if (typeof window !== "undefined") {
+                    localStorage.setItem("superlines_announcements", JSON.stringify(res.data));
+                }
             }
         } catch (err: any) {
             console.error("Failed to load announcements:", err);

@@ -57,7 +57,7 @@ export function FacebookProfileCard({
     const [uploadSuccess, setUploadSuccess] = useState(false);
     const supabase = createClient();
 
-    // Check localStorage on mount for locally saved avatar preview or user photo
+    // Check localStorage on mount and sanitize any legacy bloated auth user_metadata
     useEffect(() => {
         if (typeof window !== "undefined" && userId) {
             const localAvatar = localStorage.getItem(`superlines_avatar_${userId}`);
@@ -65,6 +65,21 @@ export function FacebookProfileCard({
                 setAvatarUrl(localAvatar);
             }
         }
+
+        // Clean up legacy bloated avatar_url from Auth JWT cookies if it exists
+        const sanitizeAuthCookies = async () => {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user?.user_metadata?.avatar_url && String(user.user_metadata.avatar_url).startsWith("data:")) {
+                    await supabase.auth.updateUser({
+                        data: { avatar_url: null }
+                    });
+                }
+            } catch (err) {
+                // Ignore silent cleanup errors
+            }
+        };
+        sanitizeAuthCookies();
     }, [userId]);
 
     const handleCameraClick = () => {
@@ -75,43 +90,71 @@ export function FacebookProfileCard({
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Preview immediately using FileReader
-        const reader = new FileReader();
-        reader.onload = async () => {
-            const base64 = reader.result as string;
-            setAvatarUrl(base64);
-            setUploading(true);
+        // Compress and resize image using HTML5 canvas to max 160x160 (under 12KB)
+        const img = document.createElement("img");
+        const objectUrl = URL.createObjectURL(file);
+        img.src = objectUrl;
 
-            // Persist to localStorage for instant local loading
-            if (typeof window !== "undefined") {
-                try {
-                    localStorage.setItem(`superlines_avatar_${userId}`, base64);
-                } catch (storageErr) {
-                    console.warn("Storage quota exceeded for base64 avatar:", storageErr);
+        img.onload = async () => {
+            URL.revokeObjectURL(objectUrl);
+            const canvas = document.createElement("canvas");
+            const maxDim = 160;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > maxDim) {
+                    height = Math.round((height * maxDim) / width);
+                    width = maxDim;
+                }
+            } else {
+                if (height > maxDim) {
+                    width = Math.round((width * maxDim) / height);
+                    height = maxDim;
                 }
             }
 
-            // Sync with Supabase Auth user metadata & profiles table if available
-            try {
-                await supabase.auth.updateUser({
-                    data: { avatar_url: base64 }
-                });
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+            ctx.drawImage(img, 0, 0, width, height);
 
+            // Export as lightweight compressed JPEG (under 12KB)
+            const compressedBase64 = canvas.toDataURL("image/jpeg", 0.82);
+
+            setAvatarUrl(compressedBase64);
+            setUploading(true);
+
+            // 1. Persist to localStorage for immediate client-side instant load
+            if (typeof window !== "undefined") {
+                try {
+                    localStorage.setItem(`superlines_avatar_${userId}`, compressedBase64);
+                } catch (storageErr) {
+                    console.warn("Storage quota warning:", storageErr);
+                }
+            }
+
+            // 2. Persist to database profiles table ONLY (NEVER in auth user_metadata cookies)
+            try {
                 await supabase.from("profiles").upsert({
                     id: userId,
-                    avatar_url: base64,
+                    avatar_url: compressedBase64,
                     updated_at: new Date().toISOString()
                 });
+
+                // Ensure auth user_metadata does NOT have base64 to prevent HTTP 431
+                await supabase.auth.updateUser({
+                    data: { avatar_url: null }
+                });
             } catch (err) {
-                console.warn("Could not sync avatar to remote database:", err);
+                console.warn("Could not sync avatar to profiles table:", err);
             } finally {
                 setUploading(false);
                 setUploadSuccess(true);
                 setTimeout(() => setUploadSuccess(false), 2500);
             }
         };
-
-        reader.readAsDataURL(file);
     };
 
     // Calculate user initials for fallback avatar
