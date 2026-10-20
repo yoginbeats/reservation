@@ -45,3 +45,6 @@ next-env.d.ts
 .env
 .local_bookings.json
 hostinger-deploy.zip
+hostinger-deploy*.zip
+deploy_temp/
+node_modules_old/
