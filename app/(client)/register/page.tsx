@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { UserPlus, Mail, Lock, User, Eye, EyeOff, Ticket, Check, Calendar, Phone, MapPin, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 
 export default function RegisterPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -353,17 +354,16 @@ export default function RegisterPage() {
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <div className="space-y-1.5">
                                     <Label htmlFor="birthdate">Date of Birth *</Label>
-                                    <div className="relative">
-                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            id="birthdate"
-                                            type="date"
-                                            className="pl-9"
-                                            value={formData.birthdate}
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                    </div>
+                                    <ModernDatePicker
+                                        id="birthdate"
+                                        value={formData.birthdate}
+                                        onChange={(val) => {
+                                            handleChange({ target: { id: "birthdate", value: val } } as any);
+                                        }}
+                                        placeholder="Select birthdate"
+                                        maxDate={new Date().toISOString().split("T")[0]}
+                                        showShortcuts={false}
+                                    />
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label htmlFor="age">Age</Label>

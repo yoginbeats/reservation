@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 import {
     TrendingUp,
     Ticket,
@@ -305,16 +306,28 @@ export default function AdminReportsPage() {
 
                     {/* Custom Date Inputs if selected */}
                     {dateRange === "CUSTOM" && (
-                        <div className="col-span-full grid grid-cols-2 gap-3 pt-2 border-t">
+                        <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t">
                             <div className="space-y-1">
                                 <label className="text-[11px] font-bold text-muted-foreground">Start Date</label>
-                                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-9 text-xs" />
+                                <ModernDatePicker
+                                    value={startDate}
+                                    onChange={(val) => setStartDate(val)}
+                                    placeholder="Select start date"
+                                    showShortcuts={false}
+                                />
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[11px] font-bold text-muted-foreground">End Date</label>
                                 <div className="flex gap-2">
-                                    <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-9 text-xs" />
-                                    <Button size="sm" onClick={fetchReports} className="bg-blue-600 hover:bg-blue-700 h-9 px-3">
+                                    <div className="flex-1">
+                                        <ModernDatePicker
+                                            value={endDate}
+                                            onChange={(val) => setEndDate(val)}
+                                            placeholder="Select end date"
+                                            showShortcuts={false}
+                                        />
+                                    </div>
+                                    <Button size="sm" onClick={fetchReports} className="bg-blue-600 hover:bg-blue-700 h-10 px-4 font-bold shrink-0">
                                         Apply
                                     </Button>
                                 </div>

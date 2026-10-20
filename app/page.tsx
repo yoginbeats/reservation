@@ -15,6 +15,7 @@ import {
     Megaphone,
     ArrowRight
 } from "lucide-react";
+import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 
 export default function Home() {
     const router = useRouter();
@@ -23,6 +24,7 @@ export default function Home() {
     const [origin, setOrigin] = useState("Cubao");
     const [destination, setDestination] = useState("Daet");
     const [departureDate, setDepartureDate] = useState("");
+    const [returnDate, setReturnDate] = useState("");
     const [passengers, setPassengers] = useState("1");
 
     const handleSearch = (e: React.FormEvent) => {
@@ -206,31 +208,28 @@ export default function Home() {
                                             <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500 block">
                                                 DEPARTURE
                                             </label>
-                                            <div className="relative flex items-center">
-                                                <Calendar className="absolute left-2.5 h-3.5 w-3.5 text-red-600" />
-                                                <input
-                                                    type="date"
-                                                    value={departureDate}
-                                                    onChange={(e) => setDepartureDate(e.target.value)}
-                                                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 py-3 pl-8 pr-1.5 text-[11px] font-bold text-zinc-800 outline-none"
-                                                />
-                                            </div>
+                                            <ModernDatePicker
+                                                value={departureDate}
+                                                onChange={(val) => setDepartureDate(val)}
+                                                minDate={new Date().toISOString().split("T")[0]}
+                                                placeholder="Pick departure"
+                                                className="w-full"
+                                            />
                                         </div>
 
                                         {/* Return */}
                                         <div className="space-y-1">
-                                            <label className="text-[10px] font-black uppercase tracking-wider text-zinc-400 block">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500 block">
                                                 RETURN
                                             </label>
-                                            <div className="relative flex items-center opacity-50">
-                                                <Calendar className="absolute left-2.5 h-3.5 w-3.5 text-zinc-400" />
-                                                <input
-                                                    type="date"
-                                                    disabled
-                                                    placeholder="mm/dd/yyyy"
-                                                    className="w-full rounded-xl border border-zinc-200 bg-zinc-100 py-3 pl-8 pr-1.5 text-[11px] font-bold text-zinc-400 cursor-not-allowed outline-none"
-                                                />
-                                            </div>
+                                            <ModernDatePicker
+                                                value={returnDate}
+                                                onChange={(val) => setReturnDate(val)}
+                                                minDate={departureDate || new Date().toISOString().split("T")[0]}
+                                                disabled={tripType === "one-way"}
+                                                placeholder={tripType === "one-way" ? "One-way only" : "Pick return"}
+                                                className="w-full"
+                                            />
                                         </div>
 
                                         {/* Passengers */}

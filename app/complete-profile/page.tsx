@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { User, Phone, Calendar, MapPin, Lock, Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 
 function CompleteProfileContent() {
     const router = useRouter();
@@ -317,17 +318,30 @@ function CompleteProfileContent() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <Label htmlFor="birthdate">Date of Birth *</Label>
-                                        <div className="relative">
-                                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                            <Input
-                                                id="birthdate"
-                                                type="date"
-                                                required
-                                                className="pl-9"
-                                                value={birthdate}
-                                                onChange={handleBirthdateChange}
-                                            />
-                                        </div>
+                                        <ModernDatePicker
+                                            id="birthdate"
+                                            value={birthdate}
+                                            onChange={(val) => {
+                                                setBirthdate(val);
+                                                if (val) {
+                                                    const birth = new Date(val);
+                                                    const today = new Date();
+                                                    let calculatedAge = today.getFullYear() - birth.getFullYear();
+                                                    const m = today.getMonth() - birth.getMonth();
+                                                    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                                                        calculatedAge--;
+                                                    }
+                                                    if (calculatedAge >= 0) {
+                                                        setAge(String(calculatedAge));
+                                                    }
+                                                } else {
+                                                    setAge("");
+                                                }
+                                            }}
+                                            placeholder="Select birthdate"
+                                            maxDate={new Date().toISOString().split("T")[0]}
+                                            showShortcuts={false}
+                                        />
                                     </div>
 
                                     <div className="space-y-1.5">
