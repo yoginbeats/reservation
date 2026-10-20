@@ -100,8 +100,14 @@ export default async function proxy(request: NextRequest) {
 
     // Protect /admin routes - require ADMIN role
     if (url.pathname.startsWith('/admin')) {
+        if (url.pathname === '/admin/login') {
+            if (user && role === 'ADMIN') {
+                return NextResponse.redirect(new URL('/admin', request.url))
+            }
+            return response
+        }
         if (!user) {
-            return NextResponse.redirect(new URL('/login', request.url))
+            return NextResponse.redirect(new URL('/admin/login', request.url))
         }
         if (role !== 'ADMIN') {
             return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
@@ -118,7 +124,7 @@ export default async function proxy(request: NextRequest) {
     // Protect /teller routes - require TELLER or ADMIN role
     if (url.pathname.startsWith('/teller')) {
         if (!user) {
-            return NextResponse.redirect(new URL('/login', request.url))
+            return NextResponse.redirect(new URL('/admin/login', request.url))
         }
         if (role !== 'TELLER' && role !== 'ADMIN') {
             return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
@@ -128,7 +134,7 @@ export default async function proxy(request: NextRequest) {
     // Protect /conductor routes - require CONDUCTOR or ADMIN role
     if (url.pathname.startsWith('/conductor')) {
         if (!user) {
-            return NextResponse.redirect(new URL('/login', request.url))
+            return NextResponse.redirect(new URL('/admin/login', request.url))
         }
         if (role !== 'CONDUCTOR' && role !== 'ADMIN') {
             return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
