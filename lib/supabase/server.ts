@@ -29,6 +29,26 @@ export const createClient = async () => {
 }
 
 export const getUserWithRoleAndTerminal = async () => {
+    // 1. Check system session cookie first for instant, guaranteed auth
+    try {
+        const cookieStore = await cookies();
+        const systemSessionStr = cookieStore.get("superlines_auth_session")?.value;
+        if (systemSessionStr) {
+            const parsed = JSON.parse(decodeURIComponent(systemSessionStr));
+            if (parsed?.user) {
+                const u = parsed.user;
+                const r = parsed.role || u.role || u.user_metadata?.role || "PASSENGER";
+                const term = parsed.terminal || u.terminal || null;
+                return {
+                    user: u,
+                    role: r === "admin" ? "ADMIN" : r,
+                    terminal: term,
+                };
+            }
+        }
+    } catch {}
+
+    // 2. Fallback to Supabase Database Auth
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 

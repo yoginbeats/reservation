@@ -81,7 +81,30 @@ export default function ConductorDashboardPage() {
             bus: t.bus || { bus_number: "Superlines Express", bus_type: "REGULAR AIRCON" }
         }));
 
-        setTrips(normalizedTrips);
+        let finalTrips = normalizedTrips;
+        if (finalTrips.length === 0) {
+            try {
+                const res = await fetch("/api/trips/available");
+                const availData = await res.json();
+                if (availData?.trips && Array.isArray(availData.trips)) {
+                    finalTrips = availData.trips.map((t: any) => ({
+                        ...t,
+                        fare_amount: t.fare_amount ?? 850,
+                        status: "SCHEDULED",
+                        route: {
+                            origin: { name: t.origin || "Cubao" },
+                            destination: { name: t.destination || "Daet" }
+                        },
+                        bus: {
+                            bus_number: t.bus_number || "SL-401 (Superlines Aircon)",
+                            bus_type: t.bus_type || "REGULAR AIRCON"
+                        }
+                    }));
+                }
+            } catch {}
+        }
+
+        setTrips(finalTrips);
         setLoading(false);
     };
 

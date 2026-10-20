@@ -16,7 +16,7 @@ export default async function ConductorLayout({
         redirect("/login");
     }
 
-    const conductorName = user.email?.split('@')[0] || "Conductor";
+    const conductorName = user.user_metadata?.full_name || user.email?.split('@')[0] || "Conductor";
 
     return (
         <div className="min-h-screen bg-zinc-900 text-zinc-100">

@@ -16,8 +16,21 @@ export function GlobalHeader() {
 
     useEffect(() => {
         const checkUser = async () => {
-            const { data } = await supabase.auth.getUser();
-            setUser(data?.user || null);
+            try {
+                const res = await fetch("/api/auth/session");
+                const data = await res.json();
+                if (data.authenticated && data.user) {
+                    setUser(data.user);
+                    return;
+                }
+            } catch {}
+
+            try {
+                const { data } = await supabase.auth.getUser();
+                setUser(data?.user || null);
+            } catch {
+                setUser(null);
+            }
         };
         checkUser();
     }, [pathname]);
@@ -28,7 +41,17 @@ export function GlobalHeader() {
     }, [pathname]);
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
+        try {
+            await fetch("/api/auth/logout", { method: "POST" });
+        } catch {}
+        try {
+            await supabase.auth.signOut();
+        } catch {}
+        if (typeof document !== "undefined") {
+            document.cookie = "superlines_auth_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+            document.cookie = "superlines_user_role=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+            document.cookie = "superlines_user_terminal=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+        }
         setUser(null);
         setMobileMenuOpen(false);
         router.push("/login");

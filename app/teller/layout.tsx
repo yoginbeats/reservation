@@ -16,9 +16,9 @@ export default async function TellerLayout({
         redirect("/login");
     }
 
-    const tellerName = user.email?.split('@')[0] || "Teller";
+    const tellerName = user.user_metadata?.full_name || user.email?.split('@')[0] || "Teller";
     const termObj = Array.isArray(terminal) ? (terminal as any)[0] : (terminal as any);
-    const terminalName = termObj?.name || "Terminal Counter";
+    const terminalName = termObj?.name || user.user_metadata?.terminal_name || "Terminal Counter";
 
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">

@@ -32,24 +32,39 @@ export default async function proxy(request: NextRequest) {
     let user: any = null;
     let role: string = 'PASSENGER';
 
-    try {
-        const { data: userData } = await supabase.auth.getUser();
-        user = userData?.user || null;
-
-        if (user) {
-            role = user.user_metadata?.role || role;
-            const { data: roleData } = await supabase
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', user.id)
-                .single();
-
-            if (roleData?.role) {
-                role = roleData.role;
+    // 1. Check system session cookie for instant, zero-delay authentication
+    const systemSessionCookie = request.cookies.get('superlines_auth_session')?.value;
+    if (systemSessionCookie) {
+        try {
+            const parsed = JSON.parse(decodeURIComponent(systemSessionCookie));
+            if (parsed?.user) {
+                user = parsed.user;
+                role = parsed.role || user.role || user.user_metadata?.role || 'PASSENGER';
             }
+        } catch {}
+    }
+
+    // 2. Fallback to Supabase Database Auth if not logged in via system session
+    if (!user) {
+        try {
+            const { data: userData } = await supabase.auth.getUser();
+            user = userData?.user || null;
+
+            if (user) {
+                role = user.user_metadata?.role || role;
+                const { data: roleData } = await supabase
+                    .from('user_roles')
+                    .select('role')
+                    .eq('user_id', user.id)
+                    .single();
+
+                if (roleData?.role) {
+                    role = roleData.role;
+                }
+            }
+        } catch (err) {
+            console.warn('Supabase Auth connection offline/paused in middleware:', err);
         }
-    } catch (err) {
-        console.warn('Supabase Auth connection offline/paused in middleware:', err);
     }
 
     // Default & Standardize role string
@@ -63,7 +78,7 @@ export default async function proxy(request: NextRequest) {
     const getRoleHomePage = (userRole: string) => {
         switch (userRole) {
             case 'ADMIN': return '/admin'
-            case 'TELLER': return '/teller'
+            case 'TELLER': return '/teller/walk-in'
             case 'CONDUCTOR': return '/conductor'
             default: return '/dashboard'
         }
@@ -75,7 +90,7 @@ export default async function proxy(request: NextRequest) {
             return NextResponse.redirect(new URL('/admin', request.url))
         }
         if (user && role === 'TELLER') {
-            return NextResponse.redirect(new URL('/teller', request.url))
+            return NextResponse.redirect(new URL('/teller/walk-in', request.url))
         }
         if (user && role === 'CONDUCTOR') {
             return NextResponse.redirect(new URL('/conductor', request.url))

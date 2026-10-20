@@ -14,11 +14,23 @@ export function ClientLogoutButton() {
     const handleLogout = async () => {
         try {
             setIsLoading(true);
-            await supabase.auth.signOut();
-            router.refresh(); // Refresh to clear server session state
-            router.push("/");
+            try {
+                await fetch("/api/auth/logout", { method: "POST" });
+            } catch {}
+            try {
+                await supabase.auth.signOut();
+            } catch {}
+            // Explicitly delete cookies on document
+            if (typeof document !== "undefined") {
+                document.cookie = "superlines_auth_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+                document.cookie = "superlines_user_role=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+                document.cookie = "superlines_user_terminal=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+            }
+            router.refresh();
+            router.push("/login");
         } catch (error) {
             console.error("Logout failed:", error);
+            router.push("/login");
         } finally {
             setIsLoading(false);
         }
