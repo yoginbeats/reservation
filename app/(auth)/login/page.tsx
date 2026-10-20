@@ -15,28 +15,20 @@ import {
     Lock,
     Eye,
     EyeOff,
-    Phone,
-    MessageSquare,
     ShieldAlert,
-    ShieldCheck,
     ArrowRight,
     User,
-    CheckCircle2
+    ShieldCheck
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [authMethod, setAuthMethod] = useState<"email" | "phone">("email");
-    const [loginStep, setLoginStep] = useState<"phone-input" | "otp-input">("phone-input");
 
     // Form States
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [phone, setPhone] = useState("");
-    const [otp, setOtp] = useState("");
 
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
@@ -78,69 +70,6 @@ export default function LoginPage() {
         } catch (err: any) {
             console.error("Passenger Login Error:", err);
             setError(err?.message || "An unexpected error occurred during login.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleSendOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError(null);
-        setIsLoading(true);
-
-        try {
-            let formattedPhone = phone.trim();
-            if (formattedPhone.startsWith("09")) {
-                formattedPhone = "+63" + formattedPhone.slice(1);
-            } else if (!formattedPhone.startsWith("+")) {
-                formattedPhone = "+" + formattedPhone;
-            }
-
-            const { error: otpError } = await supabase.auth.signInWithOtp({
-                phone: formattedPhone,
-            });
-
-            if (otpError) {
-                setError(otpError.message);
-                return;
-            }
-
-            setLoginStep("otp-input");
-        } catch (err: any) {
-            setError(err?.message || "Failed to send SMS OTP.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleVerifyOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError(null);
-        setIsLoading(true);
-
-        try {
-            let formattedPhone = phone.trim();
-            if (formattedPhone.startsWith("09")) {
-                formattedPhone = "+63" + formattedPhone.slice(1);
-            } else if (!formattedPhone.startsWith("+")) {
-                formattedPhone = "+" + formattedPhone;
-            }
-
-            const { error: verifyError } = await supabase.auth.verifyOtp({
-                phone: formattedPhone,
-                token: otp.trim(),
-                type: "sms",
-            });
-
-            if (verifyError) {
-                setError(verifyError.message);
-                return;
-            }
-
-            router.refresh();
-            router.push("/dashboard");
-        } catch (err: any) {
-            setError(err?.message || "Failed to verify OTP.");
         } finally {
             setIsLoading(false);
         }
@@ -198,168 +127,86 @@ export default function LoginPage() {
                         <span>Passenger Sign In</span>
                     </CardTitle>
                     <CardDescription className="text-zinc-400 text-xs">
-                        Enter your account details to access your bookings and profile
+                        Enter your email and password to access your bookings and profile
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as any)} className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 bg-zinc-950 p-1 border border-zinc-800">
-                            <TabsTrigger value="email" className="text-xs font-bold data-[state=active]:bg-red-600 data-[state=active]:text-white">
-                                Email / Password
-                            </TabsTrigger>
-                            <TabsTrigger value="phone" className="text-xs font-bold data-[state=active]:bg-zinc-800 data-[state=active]:text-white">
-                                SMS Mobile Number
-                            </TabsTrigger>
-                        </TabsList>
+                    <form onSubmit={handleEmailLogin} className="space-y-4">
+                        {error && (
+                            <div className="rounded-xl bg-red-950/60 border border-red-800 p-3 text-xs text-red-200 flex items-start gap-2">
+                                <ShieldAlert className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                                <span>{error}</span>
+                            </div>
+                        )}
 
-                        {/* TAB 1: EMAIL & PASSWORD */}
-                        <TabsContent value="email" className="mt-4 space-y-4">
-                            <form onSubmit={handleEmailLogin} className="space-y-4">
-                                {error && (
-                                    <div className="rounded-xl bg-red-950/60 border border-red-800 p-3 text-xs text-red-200 flex items-start gap-2">
-                                        <ShieldAlert className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
-                                        <span>{error}</span>
-                                    </div>
-                                )}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="passengerEmail" className="text-xs text-zinc-300 font-semibold">
+                                Email Address
+                            </Label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                                <Input
+                                    id="passengerEmail"
+                                    type="email"
+                                    placeholder="passenger@example.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="pl-9 bg-zinc-950 border-zinc-800 text-white text-xs h-10 placeholder:text-zinc-600 focus:border-red-500"
+                                    required
+                                />
+                            </div>
+                        </div>
 
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="passengerEmail" className="text-xs text-zinc-300 font-semibold">
-                                        Email Address
-                                    </Label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                                        <Input
-                                            id="passengerEmail"
-                                            type="email"
-                                            placeholder="passenger@example.com"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="pl-9 bg-zinc-950 border-zinc-800 text-white text-xs h-10 placeholder:text-zinc-600 focus:border-red-500"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="passengerPassword" className="text-xs text-zinc-300 font-semibold">
-                                            Password
-                                        </Label>
-                                        <Link href="/forgot-password" className="text-[11px] text-red-400 hover:underline">
-                                            Forgot password?
-                                        </Link>
-                                    </div>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                                        <Input
-                                            id="passengerPassword"
-                                            type={showPassword ? "text" : "password"}
-                                            placeholder="••••••••••••"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            className="pl-9 pr-9 bg-zinc-950 border-zinc-800 text-white text-xs h-10 placeholder:text-zinc-600 focus:border-red-500"
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-                                        >
-                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center space-x-2 pt-1">
-                                    <Checkbox id="rememberPassenger" className="border-zinc-700 data-[state=checked]:bg-red-600" />
-                                    <label htmlFor="rememberPassenger" className="text-xs text-zinc-400 font-medium">
-                                        Remember my login on this device
-                                    </label>
-                                </div>
-
-                                <Button
-                                    type="submit"
-                                    className="w-full bg-red-600 hover:bg-red-500 text-white font-bold h-11 shadow-lg shadow-red-600/25 rounded-xl uppercase tracking-wider text-xs flex items-center justify-center gap-2"
-                                    disabled={isLoading}
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="passengerPassword" className="text-xs text-zinc-300 font-semibold">
+                                    Password
+                                </Label>
+                                <Link href="/forgot-password" className="text-[11px] text-red-400 hover:underline">
+                                    Forgot password?
+                                </Link>
+                            </div>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                                <Input
+                                    id="passengerPassword"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="••••••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="pl-9 pr-9 bg-zinc-950 border-zinc-800 text-white text-xs h-10 placeholder:text-zinc-600 focus:border-red-500"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
                                 >
-                                    {isLoading ? "Signing In..." : (
-                                        <>
-                                            <span>Sign In</span>
-                                            <ArrowRight className="h-4 w-4" />
-                                        </>
-                                    )}
-                                </Button>
-                            </form>
-                        </TabsContent>
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
+                        </div>
 
-                        {/* TAB 2: PHONE OTP */}
-                        <TabsContent value="phone" className="mt-4 space-y-4">
-                            <form onSubmit={loginStep === "phone-input" ? handleSendOtp : handleVerifyOtp} className="space-y-4">
-                                {error && (
-                                    <div className="rounded-xl bg-red-950/60 border border-red-800 p-3 text-xs text-red-200">
-                                        {error}
-                                    </div>
-                                )}
+                        <div className="flex items-center space-x-2 pt-1">
+                            <Checkbox id="rememberPassenger" className="border-zinc-700 data-[state=checked]:bg-red-600" />
+                            <label htmlFor="rememberPassenger" className="text-xs text-zinc-400 font-medium">
+                                Remember my login on this device
+                            </label>
+                        </div>
 
-                                {loginStep === "phone-input" ? (
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="phonePassenger" className="text-xs text-zinc-300 font-semibold">
-                                            Mobile Phone Number
-                                        </Label>
-                                        <div className="relative">
-                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                                            <Input
-                                                id="phonePassenger"
-                                                type="tel"
-                                                placeholder="09171234567 or +639171234567"
-                                                value={phone}
-                                                onChange={(e) => setPhone(e.target.value)}
-                                                className="pl-9 bg-zinc-950 border-zinc-800 text-white text-xs h-10"
-                                                required
-                                            />
-                                        </div>
-                                        <p className="text-[11px] text-zinc-500">
-                                            We will send a 6-digit one-time PIN via SMS to your phone.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="otpPassenger" className="text-xs text-zinc-300 font-semibold">
-                                            Enter 6-Digit SMS Code
-                                        </Label>
-                                        <div className="relative">
-                                            <MessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                                            <Input
-                                                id="otpPassenger"
-                                                type="text"
-                                                placeholder="123456"
-                                                value={otp}
-                                                onChange={(e) => setOtp(e.target.value)}
-                                                className="pl-9 tracking-widest bg-zinc-950 border-zinc-800 text-white font-mono text-sm h-10"
-                                                required
-                                            />
-                                        </div>
-                                        <Button
-                                            variant="link"
-                                            type="button"
-                                            onClick={() => setLoginStep("phone-input")}
-                                            className="px-0 text-[11px] text-zinc-400 hover:text-white"
-                                        >
-                                            Wrong number? Change phone
-                                        </Button>
-                                    </div>
-                                )}
-
-                                <Button
-                                    type="submit"
-                                    className="w-full bg-red-600 hover:bg-red-500 text-white font-bold h-11 rounded-xl shadow-lg shadow-red-600/25 uppercase tracking-wider text-xs"
-                                    disabled={isLoading}
-                                >
-                                    {isLoading ? "Verifying..." : loginStep === "phone-input" ? "Send SMS Code" : "Verify & Sign In"}
-                                </Button>
-                            </form>
-                        </TabsContent>
-                    </Tabs>
+                        <Button
+                            type="submit"
+                            className="w-full bg-red-600 hover:bg-red-500 text-white font-bold h-11 shadow-lg shadow-red-600/25 rounded-xl uppercase tracking-wider text-xs flex items-center justify-center gap-2"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? "Signing In..." : (
+                                <>
+                                    <span>Sign In</span>
+                                    <ArrowRight className="h-4 w-4" />
+                                </>
+                            )}
+                        </Button>
+                    </form>
 
                     <Separator className="bg-zinc-800 my-4" />
 
@@ -384,6 +231,16 @@ export default function LoginPage() {
                         <span>New passenger? </span>
                         <Link href="/register" className="font-bold text-red-400 hover:text-red-300 hover:underline">
                             Create an account
+                        </Link>
+                    </div>
+
+                    <div className="pt-2 text-center text-xs border-t border-zinc-800/80">
+                        <Link
+                            href="/admin/login"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-300 transition-colors"
+                        >
+                            <ShieldCheck className="h-3.5 w-3.5 text-zinc-500" />
+                            Staff & Admin Portal Sign In
                         </Link>
                     </div>
                 </CardContent>
