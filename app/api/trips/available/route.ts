@@ -78,13 +78,25 @@ export async function GET(req: NextRequest) {
                     const tripKey = `${r.origin}_${r.destination}_${depDate.toISOString()}`;
                     const occupied = occupiedSeatsMap[syntheticId] || occupiedSeatsMap[tripKey] || [3, 7, 12, 18];
 
+                    // Bind physical bus units to turnaround rotation schedules
+                    let assignedBus = "SL-401 (Superlines Aircon)";
+                    if (t.startsWith("06") || t.startsWith("07")) {
+                        assignedBus = "SL-205 (Executive Express)";
+                    } else if (t.startsWith("12") || t.startsWith("13")) {
+                        assignedBus = "SL-310 (De Luxe Aircon)";
+                    } else if (t.startsWith("20")) {
+                        assignedBus = "SL-401 (Superlines Aircon)";
+                    } else if (t.startsWith("22")) {
+                        assignedBus = "SL-515 (Premier Sleeper)";
+                    }
+
                     generatedTrips.push({
                         id: syntheticId,
                         origin: r.origin,
                         destination: r.destination,
                         departure_time: depDate.toISOString(),
                         fare_amount: r.fare,
-                        bus_number: `SL-${r.origin === "Cubao" ? "401" : "302"} (Superlines Aircon)`,
+                        bus_number: assignedBus,
                         bus_type: "REGULAR AIRCON",
                         seat_capacity: 45,
                         occupied_seats: occupied,

@@ -292,6 +292,13 @@ function BookTripContent() {
                     discountedPassengers: activeDiscountedList,
                     discountIdNumber: discountIdSummary,
                     gcashRefNumber: gcashRef.trim(),
+                    trip: {
+                        id: selectedTrip.id,
+                        origin: selectedTrip.origin || selectedTrip.route?.origin?.name || "Cubao",
+                        destination: selectedTrip.destination || selectedTrip.route?.destination?.name || "Daet",
+                        departure_time: selectedTrip.departure_time,
+                        bus_number: selectedTrip.bus?.bus_number || selectedTrip.bus_number || "Superlines Express",
+                    },
                 }),
             });
 

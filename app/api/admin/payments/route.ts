@@ -88,7 +88,11 @@ export async function GET(req: NextRequest) {
                 payment_method: p?.payment_method || "GCASH_DIRECT",
                 transaction_ref: p?.transaction_ref || p?.transaction_id || "N/A",
                 qr_token: t?.qr_token || t?.qr_code || `TKT-${b.id.slice(0, 8).toUpperCase()}`,
+                booking_source: b.booking_source || "ONLINE",
+                booking_terminal_id: b.booking_terminal_id || null,
                 trip: {
+                    id: b.trip_id || b.trip?.id,
+                    bus_id: b.trip?.bus_id || b.trip?.bus?.id,
                     origin: b.trip?.origin || b.trip?.route?.origin?.name || "Cubao",
                     destination: b.trip?.destination || b.trip?.route?.destination?.name || "Daet",
                     departure_time: b.trip?.departure_time,
@@ -117,7 +121,11 @@ export async function GET(req: NextRequest) {
                 payment_method: p?.payment_method || "GCASH_DIRECT",
                 transaction_ref: p?.transaction_id || p?.transaction_ref || "N/A",
                 qr_token: t?.qr_code || t?.qr_token || `TKT-${r.id.slice(0, 8).toUpperCase()}`,
+                booking_source: r.booking_source || "WALK_IN",
+                booking_terminal_id: r.terminal_id || null,
                 trip: {
+                    id: r.trip_id || r.trip?.id,
+                    bus_id: r.trip?.bus_id || r.trip?.bus?.id,
                     origin: r.trip?.origin || r.trip?.route?.origin?.name || "Cubao",
                     destination: r.trip?.destination || r.trip?.route?.destination?.name || "Daet",
                     departure_time: r.trip?.departure_time,

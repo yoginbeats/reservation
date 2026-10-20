@@ -95,14 +95,83 @@ if (!globalForStore.localBookingsCache) {
 
 const CACHE_FILE = path.join(process.cwd(), ".local_bookings.json");
 
+const OCT_30_CUBAO_ID = "oct30-cubao-daet-401";
+const OCT_30_DAET_ID = "oct30-daet-cubao-401";
+
+function ensureOctober30SeedData(list: CachedBooking[]) {
+    const hasCubao = list.some(b => b.id === OCT_30_CUBAO_ID || (b.passenger_name === "Juan Dela Cruz" && b.trip?.origin === "Cubao"));
+    if (!hasCubao) {
+        list.push({
+            id: OCT_30_CUBAO_ID,
+            created_at: "2026-10-20T08:00:00.000Z",
+            passenger_name: "Juan Dela Cruz",
+            passenger_contact: "09171234567",
+            passenger_email: "juan.delacruz@gmail.com",
+            passenger_type: "REGULAR",
+            seat_number: 12,
+            seat_numbers: [12],
+            seat_count: 1,
+            total_price: 850,
+            original_price: 850,
+            booking_status: "CONFIRMED",
+            payment_status: "PAID",
+            ticket_status: "VALID",
+            payment_method: "GCASH_DIRECT",
+            transaction_ref: "GCASH-982144729110",
+            qr_token: "TKT-20261030-JD401",
+            trip: {
+                origin: "Cubao",
+                destination: "Daet",
+                departure_time: "2026-10-30T20:00:00.000Z",
+                bus_number: "SL-401 (Superlines Aircon)",
+            }
+        });
+    }
+
+    const hasDaet = list.some(b => b.id === OCT_30_DAET_ID || (b.passenger_name === "Elena Magno" && b.trip?.origin === "Daet"));
+    if (!hasDaet) {
+        list.push({
+            id: OCT_30_DAET_ID,
+            created_at: "2026-10-20T08:30:00.000Z",
+            passenger_name: "Elena Magno",
+            passenger_contact: "09987654321",
+            passenger_email: "elena.magno@gmail.com",
+            passenger_type: "REGULAR",
+            seat_number: 15,
+            seat_numbers: [15],
+            seat_count: 1,
+            total_price: 850,
+            original_price: 850,
+            booking_status: "CONFIRMED",
+            payment_status: "PAID",
+            ticket_status: "VALID",
+            payment_method: "GCASH_DIRECT",
+            transaction_ref: "GCASH-982144729155",
+            qr_token: "TKT-20261030-EM401",
+            trip: {
+                origin: "Daet",
+                destination: "Cubao",
+                departure_time: "2026-10-30T20:00:00.000Z",
+                bus_number: "SL-401 (Superlines Aircon)",
+            }
+        });
+    }
+}
+
 function loadFromFile(): CachedBooking[] {
     try {
         if (fs.existsSync(CACHE_FILE)) {
             const data = fs.readFileSync(CACHE_FILE, "utf-8");
-            return JSON.parse(data);
+            const parsed = JSON.parse(data);
+            if (Array.isArray(parsed)) {
+                ensureOctober30SeedData(parsed);
+                return parsed;
+            }
         }
     } catch {}
-    return [];
+    const defaultList: CachedBooking[] = [];
+    ensureOctober30SeedData(defaultList);
+    return defaultList;
 }
 
 function saveToFile(bookings: CachedBooking[]) {

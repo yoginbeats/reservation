@@ -233,10 +233,10 @@ export async function POST(req: NextRequest) {
             transaction_ref: `GCASH-${cleanRef}`,
             qr_token: qrToken,
             trip: {
-                origin: "Cubao",
-                destination: "Daet",
-                departure_time: new Date().toISOString(),
-                bus_number: "Superlines Express",
+                origin: body.trip?.origin || "Cubao",
+                destination: body.trip?.destination || "Daet",
+                departure_time: body.trip?.departure_time || new Date().toISOString(),
+                bus_number: body.trip?.bus_number || "Superlines Express",
             }
         });
 
