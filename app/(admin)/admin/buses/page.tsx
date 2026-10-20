@@ -206,12 +206,12 @@ export default function AdminBusesPage() {
                                     >
                                         {SUPERLINES_BUS_CLASSIFICATIONS.map((c) => (
                                             <option key={c.id} value={c.id}>
-                                                {c.name} ({c.capacity} Seater)
+                                                {c.name} ({c.capacity} Seater • ₱{c.fare})
                                             </option>
                                         ))}
                                     </select>
                                     <p className="text-[11px] text-muted-foreground">
-                                        Official Layout: {SUPERLINES_BUS_CLASSIFICATIONS.find(c => c.id === busType)?.name} ({capacity} Seats)
+                                        Official Layout: {SUPERLINES_BUS_CLASSIFICATIONS.find(c => c.id === busType)?.name} ({capacity} Seats • ₱{SUPERLINES_BUS_CLASSIFICATIONS.find(c => c.id === busType)?.fare})
                                         {SUPERLINES_BUS_CLASSIFICATIONS.find(c => c.id === busType)?.hasCR && " • Comfort Room"}
                                         {SUPERLINES_BUS_CLASSIFICATIONS.find(c => c.id === busType)?.hasStairs && " • Stairs"}
                                     </p>

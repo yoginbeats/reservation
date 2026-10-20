@@ -139,35 +139,38 @@ export default function Home() {
                                             <button
                                                 type="button"
                                                 onClick={() => setServiceClass("REGULAR AIRCON")}
-                                                className={`rounded-xl py-3 px-2 text-xs font-black uppercase tracking-wider transition-all shadow-sm ${
+                                                className={`rounded-xl py-2.5 px-2 flex flex-col items-center justify-center transition-all shadow-sm ${
                                                     serviceClass === "REGULAR AIRCON"
-                                                        ? "bg-red-600 text-white shadow-red-600/30 shadow-md"
+                                                        ? "bg-red-600 text-white shadow-red-600/30 shadow-md ring-2 ring-red-600"
                                                         : "bg-white text-zinc-700 border border-zinc-200 hover:border-zinc-300"
                                                 }`}
                                             >
-                                                REGULAR AIRCON
+                                                <span className="text-[11px] font-black uppercase tracking-wider">REGULAR AIRCON</span>
+                                                <span className={`text-xs font-black mt-0.5 ${serviceClass === "REGULAR AIRCON" ? "text-red-100" : "text-red-600"}`}>₱850</span>
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setServiceClass("SUPER DELUXE")}
-                                                className={`rounded-xl py-3 px-2 text-xs font-black uppercase tracking-wider transition-all ${
+                                                className={`rounded-xl py-2.5 px-2 flex flex-col items-center justify-center transition-all shadow-sm ${
                                                     serviceClass === "SUPER DELUXE"
-                                                        ? "bg-red-600 text-white shadow-red-600/30 shadow-md"
+                                                        ? "bg-red-600 text-white shadow-red-600/30 shadow-md ring-2 ring-red-600"
                                                         : "bg-white text-zinc-700 border border-zinc-200 hover:border-zinc-300"
                                                 }`}
                                             >
-                                                SUPER DELUXE
+                                                <span className="text-[11px] font-black uppercase tracking-wider">SUPER DELUXE</span>
+                                                <span className={`text-xs font-black mt-0.5 ${serviceClass === "SUPER DELUXE" ? "text-red-100" : "text-amber-600"}`}>₱950</span>
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setServiceClass("FIRST CLASS")}
-                                                className={`rounded-xl py-3 px-2 text-xs font-black uppercase tracking-wider transition-all ${
+                                                className={`rounded-xl py-2.5 px-2 flex flex-col items-center justify-center transition-all shadow-sm ${
                                                     serviceClass === "FIRST CLASS"
-                                                        ? "bg-red-600 text-white shadow-red-600/30 shadow-md"
+                                                        ? "bg-red-600 text-white shadow-red-600/30 shadow-md ring-2 ring-red-600"
                                                         : "bg-white text-zinc-700 border border-zinc-200 hover:border-zinc-300"
                                                 }`}
                                             >
-                                                FIRST CLASS
+                                                <span className="text-[11px] font-black uppercase tracking-wider">FIRST CLASS</span>
+                                                <span className={`text-xs font-black mt-0.5 ${serviceClass === "FIRST CLASS" ? "text-red-100" : "text-purple-600"}`}>₱1,100</span>
                                             </button>
                                         </div>
                                     </div>
@@ -304,32 +307,32 @@ export default function Home() {
                                 <span className="text-white text-base font-black">₱850</span>
                             </div>
                             <h4 className="font-bold text-lg text-white">Cubao ➔ Daet</h4>
-                            <p className="text-xs text-zinc-400">Daily Morning & Evening Departure</p>
-                            <Link href={`/book?origin=Cubao&destination=Daet&date=${getTodayPH()}`} className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
+                            <p className="text-xs text-zinc-400">49 Seats • Daily Standard Express</p>
+                            <Link href={`/book?origin=Cubao&destination=Daet&date=${getTodayPH()}&serviceClass=REGULAR+AIRCON`} className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
                                 Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
                             </Link>
                         </div>
 
                         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-left space-y-3">
                             <div className="flex justify-between items-center text-xs text-amber-400 font-bold">
-                                <span>EXECUTIVE EXPRESS</span>
-                                <span className="text-white text-base font-black">₱850</span>
+                                <span>SUPER DELUXE</span>
+                                <span className="text-white text-base font-black">₱950</span>
                             </div>
                             <h4 className="font-bold text-lg text-white">PITX ➔ Daet</h4>
-                            <p className="text-xs text-zinc-400">Direct Express via South Luzon Expressway</p>
-                            <Link href={`/book?origin=PITX&destination=Daet&date=${getTodayPH()}`} className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
+                            <p className="text-xs text-zinc-400">43 Seats • Onboard Restroom & Direct SLEX Route</p>
+                            <Link href={`/book?origin=PITX&destination=Daet&date=${getTodayPH()}&serviceClass=SUPER+DELUXE`} className="inline-flex items-center text-xs font-bold text-amber-400 hover:underline pt-2">
                                 Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
                             </Link>
                         </div>
 
                         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-left space-y-3">
-                            <div className="flex justify-between items-center text-xs text-blue-400 font-bold">
-                                <span>RETURN LEG</span>
-                                <span className="text-white text-base font-black">₱850</span>
+                            <div className="flex justify-between items-center text-xs text-purple-400 font-bold">
+                                <span>FIRST CLASS</span>
+                                <span className="text-white text-base font-black">₱1,100</span>
                             </div>
-                            <h4 className="font-bold text-lg text-white">Daet ➔ Cubao</h4>
-                            <p className="text-xs text-zinc-400">Scheduled Daily Return Trips</p>
-                            <Link href={`/book?origin=Daet&destination=Cubao&date=${getTodayPH()}`} className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
+                            <h4 className="font-bold text-lg text-white">Cubao ➔ Daet</h4>
+                            <p className="text-xs text-zinc-400">41 Seats • Premier Sleeper Recliner with Restroom</p>
+                            <Link href={`/book?origin=Cubao&destination=Daet&date=${getTodayPH()}&serviceClass=FIRST+CLASS`} className="inline-flex items-center text-xs font-bold text-purple-400 hover:underline pt-2">
                                 Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
                             </Link>
                         </div>

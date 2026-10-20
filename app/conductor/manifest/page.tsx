@@ -562,10 +562,9 @@ function ConductorManifestContent() {
                                             onChange={(e) => setNewBusType(e.target.value)}
                                             className="w-full rounded-xl bg-zinc-900 border border-zinc-700 px-3 py-2.5 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-red-500"
                                         >
-                                            <option value="REGULAR AIRCON">REGULAR AIRCON (2x2 standard seating)</option>
-                                            <option value="DELUXE AIRCON">DELUXE AIRCON (Aircon with onboard Wi-Fi & USB)</option>
-                                            <option value="SUPER DELUXE">SUPER DELUXE (Comfort Class 2x1 seating)</option>
-                                            <option value="EXECUTIVE SLEEPER">EXECUTIVE SLEEPER (Bed / Sleeper configuration)</option>
+                                            <option value="REGULAR AIRCON">REGULAR AIRCON (49 seats standard • ₱850)</option>
+                                            <option value="SUPER DELUXE">SUPER DELUXE (43 seats with Restroom & Stairs • ₱950)</option>
+                                            <option value="FIRST CLASS">FIRST CLASS (41 seats Premier Sleeper • ₱1,100)</option>
                                         </select>
                                     </div>
 

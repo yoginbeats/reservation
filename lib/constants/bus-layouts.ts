@@ -21,6 +21,7 @@ export interface BusClassification {
     name: string;
     alias: string[];
     capacity: number;
+    fare: number;
     hasCR: boolean;
     hasStairs: boolean;
     assignedBuses: string[];
@@ -38,6 +39,7 @@ export const REGULAR_AIRCON_LAYOUT: BusClassification = {
     name: "Regular Aircon",
     alias: ["REGULAR AIRCON", "AIRCON", "STANDARD", "REGULAR_AIRCON"],
     capacity: 49,
+    fare: 850,
     hasCR: false,
     hasStairs: false,
     assignedBuses: ["101", "102", "103", "104", "105"],
@@ -75,6 +77,7 @@ export const SUPER_DELUXE_LAYOUT: BusClassification = {
     name: "Super Deluxe",
     alias: ["SUPER DELUXE", "SUPER_DELUXE", "DELUXE"],
     capacity: 43,
+    fare: 950,
     hasCR: true,
     hasStairs: true,
     assignedBuses: ["311", "316", "319"],
@@ -111,6 +114,7 @@ export const FIRST_CLASS_LAYOUT: BusClassification = {
     name: "First Class",
     alias: ["FIRST CLASS", "FIRST_CLASS"],
     capacity: 41,
+    fare: 1100,
     hasCR: true,
     hasStairs: true,
     assignedBuses: ["330", "331", "336"],
@@ -139,6 +143,23 @@ export const SUPERLINES_BUS_CLASSIFICATIONS: BusClassification[] = [
     SUPER_DELUXE_LAYOUT,
     FIRST_CLASS_LAYOUT,
 ];
+
+export const BUS_FARE_MAP: Record<SuperlinesBusType, number> = {
+    REGULAR_AIRCON: 850,
+    SUPER_DELUXE: 950,
+    FIRST_CLASS: 1100,
+};
+
+/**
+ * Returns the official fare (₱850, ₱950, or ₱1,100) based on service class.
+ */
+export function getBusFare(busType?: string | null): number {
+    if (!busType) return 850;
+    const normalized = busType.toUpperCase().trim().replace(/[-_]/g, " ");
+    if (normalized.includes("FIRST")) return 1100;
+    if (normalized.includes("SUPER") || normalized.includes("DELUXE")) return 950;
+    return 850;
+}
 
 /**
  * Helper to resolve any input string or bus number to the proper Superlines bus classification.

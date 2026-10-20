@@ -25,6 +25,7 @@ import {
     Link as LinkIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getBusFare } from "@/lib/constants/bus-layouts";
 
 interface TripItem {
     id: string;
@@ -79,6 +80,7 @@ export default function AdminTripsPage() {
         if (bData && bData.length > 0) {
             setBuses(bData);
             setBusId(bData[0].id);
+            setFareAmount(String(getBusFare(bData[0].bus_type || bData[0].bus_number)));
         }
     };
 
@@ -107,7 +109,7 @@ export default function AdminTripsPage() {
             origin: t.origin || t.route?.origin?.name || "Cubao",
             destination: t.destination || t.route?.destination?.name || "Daet",
             departure_time: t.departure_time,
-            fare_amount: t.fare_amount ?? t.price ?? 850,
+            fare_amount: t.fare_amount ?? t.price ?? getBusFare(t.bus?.bus_type || t.bus_type),
             status: t.status || 'SCHEDULED',
             bus_id: t.bus_id || t.bus?.id,
             route_id: t.route_id,
@@ -312,7 +314,14 @@ export default function AdminTripsPage() {
                                         id="tBus"
                                         className="w-full rounded-md border p-2 bg-background font-mono font-bold text-sm"
                                         value={busId}
-                                        onChange={(e) => setBusId(e.target.value)}
+                                        onChange={(e) => {
+                                            const bId = e.target.value;
+                                            setBusId(bId);
+                                            const chosenBus = buses.find(b => b.id === bId);
+                                            if (chosenBus) {
+                                                setFareAmount(String(getBusFare(chosenBus.bus_type || chosenBus.bus_number)));
+                                            }
+                                        }}
                                     >
                                         {buses.map((b) => (
                                             <option key={b.id} value={b.id}>

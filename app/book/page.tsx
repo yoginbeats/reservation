@@ -38,6 +38,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 import { formatDatePH, formatTimePH, formatDateTimePH, getTodayPH } from "@/lib/date-utils";
+import { getBusFare } from "@/lib/constants/bus-layouts";
 
 export interface DiscountPerson {
     id: string;
@@ -129,19 +130,22 @@ function BookTripContent() {
             const json = await res.json();
 
             if (json?.success && Array.isArray(json.trips) && json.trips.length > 0) {
-                const normalized = json.trips.map((t: any) => ({
-                    ...t,
-                    fare_amount: t.fare_amount ?? t.price ?? 850,
-                    route: {
-                        origin: { name: t.origin || currentOrigin || "Cubao" },
-                        destination: { name: t.destination || currentDest || "Daet" }
-                    },
-                    bus: {
-                        bus_number: t.bus_number || "Superlines Express",
-                        bus_type: t.bus_type || "REGULAR AIRCON",
-                        seat_capacity: t.seat_capacity || 45
-                    }
-                }));
+                const normalized = json.trips.map((t: any) => {
+                    const bType = t.bus_type || t.bus?.bus_type || "REGULAR AIRCON";
+                    return {
+                        ...t,
+                        fare_amount: t.fare_amount ?? t.price ?? getBusFare(bType),
+                        route: {
+                            origin: { name: t.origin || currentOrigin || "Cubao" },
+                            destination: { name: t.destination || currentDest || "Daet" }
+                        },
+                        bus: {
+                            bus_number: t.bus_number || "Superlines Express",
+                            bus_type: bType,
+                            seat_capacity: t.seat_capacity || 49
+                        }
+                    };
+                });
 
                 setTrips(normalized);
                 if (tripIdParam) {
@@ -175,18 +179,21 @@ function BookTripContent() {
             rawData = data;
         }
 
-        const normalizedTrips = rawData.map((t: any) => ({
-            ...t,
-            fare_amount: t.fare_amount ?? t.price ?? 850,
-            route: {
-                origin: { name: t.origin || t.route?.origin?.name || "Cubao" },
-                destination: { name: t.destination || t.route?.destination?.name || "Daet" }
-            },
-            bus: t.bus || {
-                bus_number: "Superlines Express",
-                bus_type: "REGULAR AIRCON"
-            }
-        }));
+        const normalizedTrips = rawData.map((t: any) => {
+            const bType = t.bus?.bus_type || t.bus_type || "REGULAR AIRCON";
+            return {
+                ...t,
+                fare_amount: t.fare_amount ?? t.price ?? getBusFare(bType),
+                route: {
+                    origin: { name: t.origin || t.route?.origin?.name || "Cubao" },
+                    destination: { name: t.destination || t.route?.destination?.name || "Daet" }
+                },
+                bus: t.bus || {
+                    bus_number: "Superlines Express",
+                    bus_type: bType
+                }
+            };
+        });
 
         setTrips(normalizedTrips);
         setLoading(false);

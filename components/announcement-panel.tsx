@@ -8,6 +8,12 @@ import { Megaphone } from "lucide-react";
 const DEFAULT_ANNOUNCEMENTS: AnnouncementItem[] = [
     {
         id: "default-1",
+        title: "Official Superlines Service Classes & Fares",
+        content: "Regular Aircon (₱850 • 49 Seats) | Super Deluxe with Restroom (₱950 • 43 Seats) | First Class Premier Sleeper (₱1,100 • 41 Seats). Book online with instant e-boarding pass!",
+        is_active: true,
+    },
+    {
+        id: "default-2",
         title: "New Ride, Better Journey",
         content: "We're happy to announce that a new bus unit has officially arrived and is now ready to serve our passengers! Enjoy a safer, smoother, and more comfortable trip.",
         is_active: true,

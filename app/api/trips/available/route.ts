@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getLocalBookings } from "@/lib/local-booking-store";
 import { getTodayPH, buildDepartureIsoPH, isSameDatePH } from "@/lib/date-utils";
+import { getBusClassification, getBusFare } from "@/lib/constants/bus-layouts";
 
 export async function GET(req: NextRequest) {
     try {
@@ -64,31 +65,35 @@ export async function GET(req: NextRequest) {
         });
 
         // Standard Superlines scheduled routes with accurate service classes, fleets, and daily departure times
+        // Official Superlines Service Class Pricing:
+        // - Regular Aircon: ₱850 (49 Seats)
+        // - Super Deluxe: ₱950 (43 Seats with Onboard Restroom & Stairs)
+        // - First Class: ₱1,100 (41 Seats Premier Reclining Sleeper with Onboard Restroom & Stairs)
         const dailyScheduleTemplates = [
             // Cubao -> Daet
             {
                 origin: "Cubao",
                 destination: "Daet",
                 time: "06:00",
-                busNumber: "SL-205 (Executive Express)",
+                busNumber: "SL-101 (Regular Aircon)",
                 busType: "REGULAR AIRCON",
                 fare: 850,
-                capacity: 45
+                capacity: 49
             },
             {
                 origin: "Cubao",
                 destination: "Daet",
                 time: "12:00",
-                busNumber: "SL-310 (De Luxe Aircon)",
+                busNumber: "SL-311 (Super Deluxe)",
                 busType: "SUPER DELUXE",
                 fare: 950,
-                capacity: 45
+                capacity: 43
             },
             {
                 origin: "Cubao",
                 destination: "Daet",
                 time: "20:00",
-                busNumber: "SL-401 (Superlines Aircon)",
+                busNumber: "SL-102 (Regular Aircon)",
                 busType: "REGULAR AIRCON",
                 fare: 850,
                 capacity: 49
@@ -97,10 +102,10 @@ export async function GET(req: NextRequest) {
                 origin: "Cubao",
                 destination: "Daet",
                 time: "22:00",
-                busNumber: "SL-515 (Premier Sleeper)",
+                busNumber: "SL-330 (First Class)",
                 busType: "FIRST CLASS",
                 fare: 1100,
-                capacity: 32
+                capacity: 41
             },
 
             // Daet -> Cubao
@@ -108,25 +113,25 @@ export async function GET(req: NextRequest) {
                 origin: "Daet",
                 destination: "Cubao",
                 time: "07:00",
-                busNumber: "SL-205 (Executive Express)",
+                busNumber: "SL-103 (Regular Aircon)",
                 busType: "REGULAR AIRCON",
                 fare: 850,
-                capacity: 45
+                capacity: 49
             },
             {
                 origin: "Daet",
                 destination: "Cubao",
                 time: "13:00",
-                busNumber: "SL-310 (De Luxe Aircon)",
+                busNumber: "SL-316 (Super Deluxe)",
                 busType: "SUPER DELUXE",
                 fare: 950,
-                capacity: 45
+                capacity: 43
             },
             {
                 origin: "Daet",
                 destination: "Cubao",
                 time: "20:30",
-                busNumber: "SL-401 (Superlines Aircon)",
+                busNumber: "SL-104 (Regular Aircon)",
                 busType: "REGULAR AIRCON",
                 fare: 850,
                 capacity: 49
@@ -135,10 +140,10 @@ export async function GET(req: NextRequest) {
                 origin: "Daet",
                 destination: "Cubao",
                 time: "22:30",
-                busNumber: "SL-515 (Premier Sleeper)",
+                busNumber: "SL-331 (First Class)",
                 busType: "FIRST CLASS",
                 fare: 1100,
-                capacity: 32
+                capacity: 41
             },
 
             // PITX -> Daet
@@ -146,19 +151,19 @@ export async function GET(req: NextRequest) {
                 origin: "PITX",
                 destination: "Daet",
                 time: "08:30",
-                busNumber: "SL-212 (Executive Express)",
+                busNumber: "SL-105 (Regular Aircon)",
                 busType: "REGULAR AIRCON",
                 fare: 850,
-                capacity: 45
+                capacity: 49
             },
             {
                 origin: "PITX",
                 destination: "Daet",
                 time: "20:30",
-                busNumber: "SL-212 (Executive Express)",
+                busNumber: "SL-319 (Super Deluxe)",
                 busType: "SUPER DELUXE",
                 fare: 950,
-                capacity: 45
+                capacity: 43
             },
 
             // Daet -> PITX
@@ -166,19 +171,19 @@ export async function GET(req: NextRequest) {
                 origin: "Daet",
                 destination: "PITX",
                 time: "09:00",
-                busNumber: "SL-212 (Executive Express)",
+                busNumber: "SL-105 (Regular Aircon)",
                 busType: "REGULAR AIRCON",
                 fare: 850,
-                capacity: 45
+                capacity: 49
             },
             {
                 origin: "Daet",
                 destination: "PITX",
                 time: "21:00",
-                busNumber: "SL-212 (Executive Express)",
+                busNumber: "SL-319 (Super Deluxe)",
                 busType: "SUPER DELUXE",
                 fare: 950,
-                capacity: 45
+                capacity: 43
             },
         ];
 
@@ -211,17 +216,20 @@ export async function GET(req: NextRequest) {
         // DB trips matching requested date in Philippine Standard Time
         const matchingDbTrips = dbTrips
             .filter(t => t.departure_time && isSameDatePH(t.departure_time, dateQuery))
-            .map(t => ({
-                id: t.id,
-                origin: t.origin || t.route?.origin?.name || "Cubao",
-                destination: t.destination || t.route?.destination?.name || "Daet",
-                departure_time: t.departure_time,
-                fare_amount: t.fare_amount || t.price || 850,
-                bus_number: t.bus?.bus_number || t.bus_number || "Superlines Express",
-                bus_type: t.bus?.bus_type || t.bus_type || "REGULAR AIRCON",
-                seat_capacity: t.bus?.seat_capacity || t.seat_capacity || 45,
-                occupied_seats: occupiedSeatsMap[t.id] || [],
-            }));
+            .map(t => {
+                const busClass = getBusClassification(t.bus?.bus_type || t.bus_type, t.bus?.bus_number || t.bus_number);
+                return {
+                    id: t.id,
+                    origin: t.origin || t.route?.origin?.name || "Cubao",
+                    destination: t.destination || t.route?.destination?.name || "Daet",
+                    departure_time: t.departure_time,
+                    fare_amount: t.fare_amount || t.price || busClass.fare || getBusFare(busClass.name),
+                    bus_number: t.bus?.bus_number || t.bus_number || `SL-${busClass.assignedBuses[0]} (${busClass.name})`,
+                    bus_type: busClass.alias[0] || busClass.name.toUpperCase(),
+                    seat_capacity: t.bus?.seat_capacity || t.seat_capacity || busClass.capacity,
+                    occupied_seats: occupiedSeatsMap[t.id] || [],
+                };
+            });
 
         // Merge: Priority given to matching DB trips, then generated daily schedules
         let allTrips = [...matchingDbTrips, ...generatedTrips];
