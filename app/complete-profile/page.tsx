@@ -210,12 +210,7 @@ function CompleteProfileContent() {
     }
 
     return (
-        <div 
-            className="min-h-[calc(100vh-80px)] py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center relative bg-cover bg-center bg-no-repeat bg-fixed text-zinc-100"
-            style={{
-                backgroundImage: `linear-gradient(to bottom, rgba(9, 9, 11, 0.82), rgba(9, 9, 11, 0.92)), url('/scenic_highway_bg.jpg')`
-            }}
-        >
+        <div className="min-h-[calc(100vh-80px)] py-12 px-4 sm:px-6 lg:px-8 bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
             <div className="w-full max-w-2xl">
                 {/* Header Logo */}
                 <div className="text-center mb-6">
