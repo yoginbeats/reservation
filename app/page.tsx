@@ -51,7 +51,7 @@ export default function Home() {
             {/* HERO SECTION WITH SCENIC HIGHWAY BACKGROUND */}
             <section className="relative min-h-[calc(100vh-120px)] flex items-center justify-center overflow-hidden bg-cover bg-center bg-no-repeat py-12 px-4 sm:px-6"
                 style={{
-                    backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.85)), url('https://images.unsplash.com/photo-1519003722824-194d4455a60c?q=80&w=2000&auto=format&fit=crop')`
+                    backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.35), rgba(9, 9, 11, 0.8)), url('/scenic_highway_bg.jpg')`
                 }}
             >
                 {/* Subtle Grid Overlay */}

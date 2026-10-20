@@ -102,7 +102,12 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen w-full bg-zinc-950 text-zinc-100 flex flex-col justify-between">
+        <div 
+            className="min-h-screen w-full bg-zinc-950 text-zinc-100 flex flex-col justify-between relative bg-cover bg-center bg-no-repeat bg-fixed"
+            style={{
+                backgroundImage: `linear-gradient(to bottom, rgba(9, 9, 11, 0.78), rgba(9, 9, 11, 0.88)), url('/scenic_highway_bg.jpg')`
+            }}
+        >
             {/* Top Navigation Bar */}
             <header className="w-full border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">

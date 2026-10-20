@@ -72,7 +72,12 @@ export default async function ClientDashboard() {
     return (
         <div className="space-y-8 py-6">
             {/* Header Banner */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-700 via-red-600 to-red-800 p-8 text-white shadow-xl">
+            <div 
+                className="relative overflow-hidden rounded-2xl p-8 text-white shadow-xl bg-cover bg-center bg-no-repeat"
+                style={{
+                    backgroundImage: `linear-gradient(to right, rgba(185, 28, 28, 0.88), rgba(153, 27, 27, 0.78)), url('/scenic_highway_bg.jpg')`
+                }}
+            >
                 <div className="relative z-10 max-w-2xl">
                     <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white backdrop-blur">
                         Official Passenger Portal
