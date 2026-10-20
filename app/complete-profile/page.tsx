@@ -64,20 +64,24 @@ function CompleteProfileContent() {
                 .maybeSingle();
 
             if (profile) {
-                if (profile.profile_completed || profile.first_name) {
+                if (profile.profile_completed || profile.first_name || meta.first_name) {
                     setIsExistingProfile(true);
                 }
-                setFirstName(profile.first_name || googleGivenName || metaFullName.split(" ")[0] || "");
-                setMiddleName(profile.middle_name || "");
-                setLastName(profile.last_name || googleFamilyName || metaFullName.split(" ").slice(1).join(" ") || "");
-                setBirthdate(profile.birthdate || "");
-                setAge(profile.age ? String(profile.age) : "");
+                setFirstName(profile.first_name || meta.first_name || googleGivenName || metaFullName.split(" ")[0] || "");
+                setMiddleName(profile.middle_name || meta.middle_name || "");
+                setLastName(profile.last_name || meta.last_name || googleFamilyName || metaFullName.split(" ").slice(1).join(" ") || "");
+                setBirthdate(profile.birthdate || meta.birthdate || "");
+                setAge(profile.age ? String(profile.age) : meta.age ? String(meta.age) : "");
                 setPhoneNumber(profile.phone_number || meta.phone_number || "");
-                setAddress(profile.address || "");
+                setAddress(profile.address || meta.address || "");
             } else {
-                setFirstName(googleGivenName || metaFullName.split(" ")[0] || "");
-                setLastName(googleFamilyName || metaFullName.split(" ").slice(1).join(" ") || "");
+                setFirstName(meta.first_name || googleGivenName || metaFullName.split(" ")[0] || "");
+                setMiddleName(meta.middle_name || "");
+                setLastName(meta.last_name || googleFamilyName || metaFullName.split(" ").slice(1).join(" ") || "");
+                setBirthdate(meta.birthdate || "");
+                setAge(meta.age ? String(meta.age) : "");
                 setPhoneNumber(meta.phone_number || "");
+                setAddress(meta.address || "");
             }
 
             setLoading(false);
