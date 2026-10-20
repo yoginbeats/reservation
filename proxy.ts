@@ -93,6 +93,13 @@ export default async function proxy(request: NextRequest) {
         }
     }
 
+    // Protect /api/admin routes - require ADMIN role
+    if (url.pathname.startsWith('/api/admin')) {
+        if (!user || role !== 'ADMIN') {
+            return NextResponse.json({ success: false, error: "Unauthorized access: Main Admin privileges required." }, { status: 403 });
+        }
+    }
+
     // Protect /teller routes - require TELLER or ADMIN role
     if (url.pathname.startsWith('/teller')) {
         if (!user) {

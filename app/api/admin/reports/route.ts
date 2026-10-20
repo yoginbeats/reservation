@@ -14,6 +14,28 @@ export async function GET(req: NextRequest) {
 
         const supabase = await createClient();
 
+        // Security check: Only Main Admin has permission to access financial and remittance reports
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                let role = user.user_metadata?.role;
+                const { data: roleData } = await supabase
+                    .from("user_roles")
+                    .select("role")
+                    .eq("user_id", user.id)
+                    .single();
+                if (roleData?.role) role = roleData.role;
+                if (role && role.toUpperCase() !== "ADMIN") {
+                    return NextResponse.json({
+                        success: false,
+                        error: "Access Denied: Financial and remittance reports are restricted to Main Admin only."
+                    }, { status: 403 });
+                }
+            }
+        } catch (authErr) {
+            console.warn("Auth role check skipped for offline dev:", authErr);
+        }
+
         // 1. Fetch Terminals
         let terminalsList: any[] = [];
         try {
