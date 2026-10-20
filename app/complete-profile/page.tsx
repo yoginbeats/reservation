@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -214,9 +215,16 @@ function CompleteProfileContent() {
             <div className="w-full max-w-2xl">
                 {/* Header Logo */}
                 <div className="text-center mb-6">
-                    <div className="inline-flex h-12 w-14 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-400 via-red-600 to-blue-700 p-0.5 shadow-md mb-3">
-                        <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-zinc-900 font-black italic text-amber-400 text-2xl">
-                            S
+                    <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-400 via-red-600 to-blue-700 p-0.5 shadow-lg mb-3">
+                        <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-zinc-950 p-2">
+                            <Image
+                                src="/superlines_emblem_transparent.png"
+                                alt="Superlines Emblem"
+                                width={44}
+                                height={36}
+                                className="h-8 w-auto object-contain"
+                                priority
+                            />
                         </div>
                     </div>
                     <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
