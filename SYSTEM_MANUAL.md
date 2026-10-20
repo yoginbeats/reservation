@@ -163,5 +163,9 @@ The system is strictly configured for the three primary Superlines terminals and
 2. **Unified Cookie Session Authentication**
    - Cookie `superlines_auth_session` provides zero-latency server/client authentication.
    - Automatically synchronizes with Supabase Auth when online.
-3. **Resilient Local Store Fallback (`lib/local-booking-store.ts`)**
+3. **Automated Password Reset & Account Recovery (`/forgot-password` & `/reset-password`)**
+   - **Email Dispatch Engine (`/api/auth/forgot-password`)**: Sends secure, cryptographically-signed recovery links directly to the passenger's registered inbox with 1-hour expiration.
+   - **Unified Callback Handshake (`/auth/callback?next=/reset-password`)**: Exchanges recovery tokens into secure authenticated sessions, bypassing profile completion blockers for seamless password updating.
+   - **Password Update Gateway (`/api/auth/reset-password`)**: Cryptographically validates and applies the passenger's new password with live criteria checks (minimum 6 characters, matching confirmation).
+4. **Resilient Local Store Fallback (`lib/local-booking-store.ts`)**
    - Guarantees 100% operational uptime at counter booths even during internet or Supabase maintenance windows.

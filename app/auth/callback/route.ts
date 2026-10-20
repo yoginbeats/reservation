@@ -69,6 +69,11 @@ export async function GET(request: Request) {
                     await supabase.from('user_roles').insert({ user_id: user.id, role: 'PASSENGER' });
                 }
 
+                // If user is resetting password, allow them to proceed straight to /reset-password
+                if (next === '/reset-password' || next.startsWith('/reset-password')) {
+                    return NextResponse.redirect(`${origin}${next}`);
+                }
+
                 // If profile details are incomplete, redirect them to the completion form!
                 if (!isComplete) {
                     return NextResponse.redirect(`${origin}/complete-profile?next=${encodeURIComponent(next)}`);
@@ -81,6 +86,6 @@ export async function GET(request: Request) {
         }
     }
 
-    // return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+    // Return the user to login with an informative message if code exchange failed
+    return NextResponse.redirect(`${origin}/login?error=The+link+has+expired+or+is+invalid.+Please+request+a+new+one.`)
 }
