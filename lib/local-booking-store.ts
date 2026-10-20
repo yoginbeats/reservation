@@ -135,3 +135,35 @@ export function updateLocalTicketStatus(
     }
     return target;
 }
+
+export function rebookLocalSeat(
+    idOrToken: string,
+    newSeatNumber: number
+): CachedBooking | undefined {
+    const clean = idOrToken.trim().toUpperCase();
+    const list = getLocalBookings();
+    const target = list.find(b => b.id === idOrToken || (b.qr_token && b.qr_token.toUpperCase() === clean));
+    if (target) {
+        target.seat_number = newSeatNumber;
+        target.seat_numbers = [newSeatNumber];
+        saveToFile(list);
+    }
+    return target;
+}
+
+export function voidLocalBooking(
+    idOrToken: string,
+    reason?: string
+): CachedBooking | undefined {
+    const clean = idOrToken.trim().toUpperCase();
+    const list = getLocalBookings();
+    const target = list.find(b => b.id === idOrToken || (b.qr_token && b.qr_token.toUpperCase() === clean));
+    if (target) {
+        target.booking_status = "CANCELLED";
+        target.ticket_status = "CANCELLED";
+        target.payment_status = "REJECTED";
+        saveToFile(list);
+    }
+    return target;
+}
+
