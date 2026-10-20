@@ -11,29 +11,89 @@ export function GlobalHeader() {
     const pathname = usePathname();
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
+    const [profileData, setProfileData] = useState<{ first_name?: string; full_name?: string; avatar_url?: string } | null>(null);
+    const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+    const [localFirstName, setLocalFirstName] = useState<string | null>(null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const supabase = createClient();
 
-    useEffect(() => {
-        const checkUser = async () => {
-            try {
-                const res = await fetch("/api/auth/session");
-                const data = await res.json();
-                if (data.authenticated && data.user) {
-                    setUser(data.user);
-                    return;
-                }
-            } catch {}
+    const checkUser = async () => {
+        let currentUser: any = null;
+        try {
+            const res = await fetch("/api/auth/session");
+            const data = await res.json();
+            if (data.authenticated && data.user) {
+                currentUser = data.user;
+            }
+        } catch {}
 
+        if (!currentUser) {
             try {
                 const { data } = await supabase.auth.getUser();
-                setUser(data?.user || null);
+                currentUser = data?.user || null;
             } catch {
-                setUser(null);
+                currentUser = null;
             }
-        };
+        }
+
+        setUser(currentUser);
+
+        if (currentUser) {
+            // Check localStorage first for instant client cache
+            if (typeof window !== "undefined") {
+                const storedAvatar = localStorage.getItem(`superlines_avatar_${currentUser.id}`);
+                if (storedAvatar) setLocalAvatar(storedAvatar);
+                const storedName = localStorage.getItem(`superlines_first_name_${currentUser.id}`);
+                if (storedName) setLocalFirstName(storedName);
+            }
+
+            // Query Supabase profiles table for latest DB values
+            try {
+                const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("first_name, full_name, avatar_url")
+                    .eq("id", currentUser.id)
+                    .maybeSingle();
+
+                if (profile) {
+                    setProfileData(profile);
+                    if (profile.avatar_url && !localAvatar) {
+                        setLocalAvatar(profile.avatar_url);
+                    }
+                    if (profile.first_name && !localFirstName) {
+                        setLocalFirstName(profile.first_name);
+                    }
+                }
+            } catch (err) {
+                console.warn("Could not fetch header profile:", err);
+            }
+        } else {
+            setProfileData(null);
+            setLocalAvatar(null);
+            setLocalFirstName(null);
+        }
+    };
+
+    useEffect(() => {
         checkUser();
     }, [pathname]);
+
+    // Real-time synchronization when profile or avatar is updated
+    useEffect(() => {
+        const handleProfileUpdated = (e: any) => {
+            if (e?.detail?.avatarUrl) setLocalAvatar(e.detail.avatarUrl);
+            if (e?.detail?.firstName) setLocalFirstName(e.detail.firstName);
+            if (user?.id && typeof window !== "undefined") {
+                const storedAvatar = localStorage.getItem(`superlines_avatar_${user.id}`);
+                if (storedAvatar) setLocalAvatar(storedAvatar);
+                const storedName = localStorage.getItem(`superlines_first_name_${user.id}`);
+                if (storedName) setLocalFirstName(storedName);
+            }
+        };
+
+        window.addEventListener("superlines_profile_updated", handleProfileUpdated);
+        return () => window.removeEventListener("superlines_profile_updated", handleProfileUpdated);
+    }, [user?.id]);
 
     // Automatically close mobile menu on route change
     useEffect(() => {
@@ -53,6 +113,9 @@ export function GlobalHeader() {
             document.cookie = "superlines_user_terminal=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
         }
         setUser(null);
+        setProfileData(null);
+        setLocalAvatar(null);
+        setLocalFirstName(null);
         setMobileMenuOpen(false);
         router.push("/login");
         router.refresh();
@@ -77,7 +140,25 @@ export function GlobalHeader() {
         ),
     ];
 
-    const username = user?.email ? user.email.split("@")[0] : "Passenger";
+    // Compute display First Name (instead of email username)
+    const meta = user?.user_metadata || {};
+    const firstName = 
+        localFirstName ||
+        profileData?.first_name ||
+        meta.first_name ||
+        meta.given_name ||
+        (profileData?.full_name ? profileData.full_name.trim().split(" ")[0] : null) ||
+        (meta.full_name ? meta.full_name.trim().split(" ")[0] : null) ||
+        (meta.name ? meta.name.trim().split(" ")[0] : null) ||
+        (user?.email ? user.email.split("@")[0] : "Passenger");
+
+    // Compute display Avatar URL
+    const avatarUrl =
+        localAvatar ||
+        profileData?.avatar_url ||
+        meta.avatar_url ||
+        meta.picture ||
+        null;
 
     return (
         <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-zinc-200 shadow-sm transition-all">
@@ -121,21 +202,24 @@ export function GlobalHeader() {
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                     {user ? (
                         <div className="flex items-center gap-1.5 sm:gap-2">
+                            {/* Profile Pill Button: Displays First Name & Profile Picture */}
                             <Link
                                 href="/dashboard"
-                                className="hidden md:flex items-center gap-1.5 text-xs font-bold text-zinc-700 hover:text-red-600 border border-zinc-200 px-3 py-1.5 sm:py-2 rounded-full hover:border-zinc-300 transition-colors max-w-[140px] truncate"
+                                className="hidden md:flex items-center gap-2 text-xs font-bold text-zinc-800 hover:text-red-600 border border-zinc-200 px-3 py-1.5 sm:py-2 rounded-full hover:border-zinc-300 hover:bg-zinc-50 transition-all max-w-[170px]"
                                 title={user.email}
                             >
-                                {user.user_metadata?.avatar_url || user.user_metadata?.picture ? (
+                                {avatarUrl ? (
                                     <img
-                                        src={user.user_metadata.avatar_url || user.user_metadata.picture}
-                                        alt={username}
-                                        className="h-4 w-4 rounded-full object-cover shrink-0"
+                                        src={avatarUrl}
+                                        alt={firstName}
+                                        className="h-5 w-5 rounded-full object-cover shrink-0 ring-1 ring-zinc-200"
                                     />
                                 ) : (
-                                    <User className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+                                    <div className="h-5 w-5 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-[10px] font-black shrink-0">
+                                        {firstName.charAt(0).toUpperCase()}
+                                    </div>
                                 )}
-                                <span className="truncate">{username}</span>
+                                <span className="truncate">{firstName}</span>
                             </Link>
 
                             <button
@@ -179,19 +263,19 @@ export function GlobalHeader() {
                 <div className="lg:hidden border-t border-zinc-200 bg-white/98 backdrop-blur-lg px-4 pt-3 pb-5 space-y-3 shadow-xl animate-in slide-in-from-top-2 duration-200">
                     {user && (
                         <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-zinc-50 border border-zinc-100 text-xs">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-600 font-bold overflow-hidden shrink-0">
-                                {user.user_metadata?.avatar_url || user.user_metadata?.picture ? (
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-600 font-bold overflow-hidden shrink-0 ring-1 ring-zinc-200">
+                                {avatarUrl ? (
                                     <img
-                                        src={user.user_metadata.avatar_url || user.user_metadata.picture}
-                                        alt={username}
+                                        src={avatarUrl}
+                                        alt={firstName}
                                         className="h-full w-full object-cover"
                                     />
                                 ) : (
-                                    username.charAt(0).toUpperCase()
+                                    firstName.charAt(0).toUpperCase()
                                 )}
                             </div>
                             <div className="flex-1 truncate">
-                                <p className="font-bold text-zinc-900 truncate">{username}</p>
+                                <p className="font-bold text-zinc-900 truncate">{firstName}</p>
                                 <p className="text-[11px] text-zinc-500 truncate">{user.email}</p>
                             </div>
                         </div>

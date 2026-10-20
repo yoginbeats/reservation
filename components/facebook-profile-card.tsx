@@ -172,6 +172,7 @@ export function FacebookProfileCard({
             if (typeof window !== "undefined") {
                 try {
                     localStorage.setItem(`superlines_avatar_${userId}`, compressedBase64);
+                    window.dispatchEvent(new CustomEvent("superlines_profile_updated", { detail: { avatarUrl: compressedBase64 } }));
                 } catch (storageErr) {
                     console.warn("Storage quota warning:", storageErr);
                 }
@@ -279,6 +280,11 @@ export function FacebookProfileCard({
             setCurrentBirthdate(editBirthdate);
             setCurrentAge(parsedAge ? String(parsedAge) : "");
             setCurrentAddress(editAddress.trim());
+
+            if (typeof window !== "undefined") {
+                localStorage.setItem(`superlines_first_name_${userId}`, editFirstName.trim());
+                window.dispatchEvent(new CustomEvent("superlines_profile_updated", { detail: { firstName: editFirstName.trim(), fullName: newFullName } }));
+            }
 
             setSaveSuccess(true);
             setTimeout(() => {
