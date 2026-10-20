@@ -104,7 +104,7 @@ export default async function proxy(request: NextRequest) {
         if (user && role !== 'ADMIN') {
             return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
         }
-        if (url.pathname === '/admin/login') {
+        if (url.pathname === '/admin/login' || url.pathname === '/admin/register') {
             if (user && role === 'ADMIN') {
                 return NextResponse.redirect(new URL('/admin', request.url))
             }

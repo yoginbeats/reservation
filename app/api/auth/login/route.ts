@@ -105,8 +105,21 @@ export async function POST(req: NextRequest) {
                 );
             }
 
-            const userRole = (data.user?.user_metadata?.role || "PASSENGER").toUpperCase();
-            
+            let userRole = (data.user?.user_metadata?.role || "PASSENGER").toUpperCase();
+            if (data.user && (userRole === "PASSENGER" || userRole === "CLIENT")) {
+                try {
+                    const { data: roleRow } = await supabase.from('user_roles').select('role').eq('user_id', data.user.id).single();
+                    if (roleRow?.role) {
+                        userRole = roleRow.role.toUpperCase();
+                    } else {
+                        const { data: profileRow } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+                        if (profileRow?.role) {
+                            userRole = profileRow.role.toUpperCase();
+                        }
+                    }
+                } catch {}
+            }
+
             // Strictly prohibit passengers from logging into the Admin portal
             if (body.portal === "admin" && (userRole === "PASSENGER" || userRole === "CLIENT")) {
                 return NextResponse.json(

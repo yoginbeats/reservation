@@ -162,10 +162,10 @@ export default function AdminLoginPage() {
                         </Link>
                         <div className="h-4 w-[1px] bg-zinc-800" />
                         <Link
-                            href="/login"
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 transition-colors bg-red-950/40 border border-red-800/40 px-3 py-1.5 rounded-lg"
+                            href="/admin/register"
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-200 hover:text-white transition-colors bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg"
                         >
-                            Passenger Portal <ArrowRight className="h-3.5 w-3.5" />
+                            Create Admin Account
                         </Link>
                     </div>
                 </div>
@@ -284,6 +284,7 @@ export default function AdminLoginPage() {
                                     </div>
                                 )}
 
+<<<<<<< HEAD
                                 <div className="space-y-1.5">
                                     <Label htmlFor="adminEmail" className="text-xs text-zinc-300 font-semibold">
                                         Admin Email Address
@@ -363,11 +364,20 @@ export default function AdminLoginPage() {
                                 </p>
                             </div>
 
-                            <div className="pt-2 text-center text-xs text-zinc-400 border-t border-zinc-800/80">
-                                <span>Looking to book a trip or check your tickets? </span>
-                                <Link href="/login" className="font-bold text-red-400 hover:text-red-300 transition-colors hover:underline">
-                                    Go to Passenger Sign In
-                                </Link>
+                            <div className="pt-2 text-center text-xs text-zinc-400 border-t border-zinc-800/80 flex flex-col gap-2.5">
+                                <div className="flex items-center justify-center gap-1.5">
+                                    <span>Need an administrator account? </span>
+                                    <Link href="/admin/register" className="font-bold text-red-400 hover:text-red-300 transition-colors hover:underline flex items-center gap-1">
+                                        <span>Create Admin Account</span>
+                                        <ArrowRight className="h-3.5 w-3.5" />
+                                    </Link>
+                                </div>
+                                <div className="text-[11px] text-zinc-500">
+                                    <span>Looking to book a trip or check your tickets? </span>
+                                    <Link href="/login" className="font-semibold text-zinc-400 hover:text-white transition-colors hover:underline">
+                                        Passenger Portal
+                                    </Link>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

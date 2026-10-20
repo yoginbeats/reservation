@@ -1,4 +1,5 @@
 
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,10 +37,12 @@ export default async function UsersPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Users</h1>
                     <p className="text-muted-foreground">Manage user access and roles.</p>
                 </div>
-                <Button>
-                    <UserCog className="mr-2 h-4 w-4" />
-                    Add User
-                </Button>
+                <Link href="/admin/register">
+                    <Button className="bg-red-600 hover:bg-red-700 font-bold">
+                        <UserCog className="mr-2 h-4 w-4" />
+                        Create Admin Account
+                    </Button>
+                </Link>
             </div>
 
             {/* Filters */}
