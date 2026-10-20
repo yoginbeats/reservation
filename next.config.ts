@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: "standalone",
   // Remove X-Powered-By header to hide Next.js
   poweredByHeader: false,
   // Hide development indicators in the browser

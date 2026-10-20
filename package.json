@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node --max-http-header-size=1048576 node_modules/next/dist/bin/next dev",
     "build": "next build",
+    "bundle:hostinger": "next build && node scripts/package-hostinger.js",
     "start": "node --max-http-header-size=1048576 node_modules/next/dist/bin/next start",
     "lint": "eslint"
   },
