@@ -41,7 +41,7 @@ export default async function TellerDashboardPage() {
         .select('*', { count: 'exact', head: true })
         .eq('booking_source', 'WALK_IN');
 
-    const tellerName = user?.email?.split('@')[0] || "Teller Maria Santos";
+    const tellerName = user?.email?.split('@')[0] || "Teller Staff";
     const terminalName = termObj?.name ? (termObj.name.includes("Terminal") ? termObj.name : `${termObj.name} Central Terminal`) : "Cubao Central Terminal";
     const terminalLocation = termObj?.location || "Superlines Bus Terminal Station";
 
@@ -51,7 +51,7 @@ export default async function TellerDashboardPage() {
             tellerName={tellerName.charAt(0).toUpperCase() + tellerName.slice(1)}
             terminalName={terminalName}
             terminalLocation={terminalLocation}
-            initialWalkInCount={walkInCount || 35}
+            initialWalkInCount={walkInCount ?? 0}
         />
     );
 }

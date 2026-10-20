@@ -49,29 +49,37 @@ export async function GET(req: NextRequest) {
         let walkInRevenue = 0;
         let totalDiscount = 0;
 
+        let seniorCount = 0;
+        let studentCount = 0;
+        let pwdCount = 0;
+
         try {
             const { data: bookingsData } = await supabase
                 .from("bookings")
-                .select("total_price, original_price, discount_amount")
+                .select("total_price, original_price, discount_amount, passenger_type")
                 .eq("booking_source", "WALK_IN");
 
             if (bookingsData && bookingsData.length > 0) {
                 walkInCount = bookingsData.length;
                 bookingsData.forEach(b => {
-                    const net = Number(b.total_price) || 850;
+                    const net = Number(b.total_price) || 0;
                     const disc = Number(b.discount_amount) || 0;
                     walkInRevenue += net;
                     totalDiscount += disc;
+
+                    const type = (b.passenger_type || "").toUpperCase();
+                    if (type.includes("SENIOR")) seniorCount++;
+                    else if (type.includes("STUDENT")) studentCount++;
+                    else if (type.includes("PWD")) pwdCount++;
                 });
             }
         } catch (e) {
             console.warn("Could not query walk-in bookings:", e);
         }
 
-        // If database has fewer records, provide the user's standard 8-hour shift baseline
-        const totalTickets = walkInCount > 0 ? walkInCount : 35;
-        const netCashExpected = walkInRevenue > 0 ? walkInRevenue : 29750;
-        const discountsTotal = totalDiscount > 0 ? totalDiscount : 1190;
+        const totalTickets = walkInCount;
+        const netCashExpected = walkInRevenue;
+        const discountsTotal = totalDiscount;
         const grossSales = netCashExpected + discountsTotal;
 
         const latestRemittance = (globalStore.tellerRemittances || []).find(
@@ -84,15 +92,15 @@ export async function GET(req: NextRequest) {
                 status: latestRemittance ? "CLOSED_REMITTED" : "ACTIVE",
                 terminal_name: terminalName.includes("Terminal") ? terminalName : `${terminalName} Central Terminal`,
                 teller_name: tellerName.charAt(0).toUpperCase() + tellerName.slice(1),
-                counter_number: "Counter 02",
-                shift_time: "08:00 AM - 04:00 PM (8-Hour Shift)",
+                counter_number: "Counter 01",
+                shift_time: "Current Shift",
                 total_tickets: totalTickets,
                 gross_sales: grossSales,
                 total_discounts: discountsTotal,
                 net_cash_expected: netCashExpected,
-                senior_count: 5,
-                student_count: 2,
-                pwd_count: 0,
+                senior_count: seniorCount,
+                student_count: studentCount,
+                pwd_count: pwdCount,
                 last_remittance: latestRemittance || null,
             },
             history: globalStore.tellerRemittances || []

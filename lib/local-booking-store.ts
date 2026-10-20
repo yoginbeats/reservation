@@ -122,127 +122,6 @@ if (!globalForStore.localBookingsCache) {
 }
 
 
-const OCT_30_CUBAO_ID = "oct30-cubao-daet-401";
-const OCT_30_DAET_ID = "oct30-daet-cubao-401";
-const OCT_30_PITX_ID = "oct30-pitx-daet-212";
-const OCT_30_DAET_PITX_ID = "oct30-daet-pitx-212";
-
-function ensureOctober30SeedData(list: CachedBooking[]) {
-    // 1. CUBAO ⇄ DAET (SL-401)
-    if (!list.some(b => b.id === OCT_30_CUBAO_ID)) {
-        list.push({
-            id: OCT_30_CUBAO_ID,
-            created_at: "2026-10-20T08:00:00.000Z",
-            passenger_name: "Juan Dela Cruz",
-            passenger_contact: "09171234567",
-            passenger_email: "juan.delacruz@gmail.com",
-            passenger_type: "REGULAR",
-            seat_number: 12,
-            seat_numbers: [12],
-            seat_count: 1,
-            total_price: 850,
-            original_price: 850,
-            booking_status: "CONFIRMED",
-            payment_status: "PAID",
-            ticket_status: "VALID",
-            payment_method: "GCASH_DIRECT",
-            transaction_ref: "GCASH-982144729110",
-            qr_token: "TKT-20261030-JD401",
-            trip: {
-                origin: "Cubao",
-                destination: "Daet",
-                departure_time: "2026-10-30T20:00:00.000Z",
-                bus_number: "SL-401 (Superlines Aircon)",
-            }
-        });
-    }
-
-    if (!list.some(b => b.id === OCT_30_DAET_ID)) {
-        list.push({
-            id: OCT_30_DAET_ID,
-            created_at: "2026-10-20T08:30:00.000Z",
-            passenger_name: "Elena Magno",
-            passenger_contact: "09987654321",
-            passenger_email: "elena.magno@gmail.com",
-            passenger_type: "REGULAR",
-            seat_number: 15,
-            seat_numbers: [15],
-            seat_count: 1,
-            total_price: 850,
-            original_price: 850,
-            booking_status: "CONFIRMED",
-            payment_status: "PAID",
-            ticket_status: "VALID",
-            payment_method: "GCASH_DIRECT",
-            transaction_ref: "GCASH-982144729155",
-            qr_token: "TKT-20261030-EM401",
-            trip: {
-                origin: "Daet",
-                destination: "Cubao",
-                departure_time: "2026-10-30T20:00:00.000Z",
-                bus_number: "SL-401 (Superlines Aircon)",
-            }
-        });
-    }
-
-    // 2. PITX ⇄ DAET (SL-212)
-    if (!list.some(b => b.id === OCT_30_PITX_ID)) {
-        list.push({
-            id: OCT_30_PITX_ID,
-            created_at: "2026-10-20T08:15:00.000Z",
-            passenger_name: "Ramon Valderama",
-            passenger_contact: "09201112233",
-            passenger_email: "ramon.valderama@yahoo.com",
-            passenger_type: "REGULAR",
-            seat_number: 18,
-            seat_numbers: [18],
-            seat_count: 1,
-            total_price: 850,
-            original_price: 850,
-            booking_status: "CONFIRMED",
-            payment_status: "PAID",
-            ticket_status: "VALID",
-            payment_method: "GCASH_DIRECT",
-            transaction_ref: "GCASH-982144729212",
-            qr_token: "TKT-20261030-RV212",
-            trip: {
-                origin: "PITX",
-                destination: "Daet",
-                departure_time: "2026-10-30T20:30:00.000Z",
-                bus_number: "SL-212 (Executive Express)",
-            }
-        });
-    }
-
-    if (!list.some(b => b.id === OCT_30_DAET_PITX_ID)) {
-        list.push({
-            id: OCT_30_DAET_PITX_ID,
-            created_at: "2026-10-20T08:45:00.000Z",
-            passenger_name: "Teresa Morales",
-            passenger_contact: "09183334455",
-            passenger_email: "teresa.morales@gmail.com",
-            passenger_type: "REGULAR",
-            seat_number: 21,
-            seat_numbers: [21],
-            seat_count: 1,
-            total_price: 850,
-            original_price: 850,
-            booking_status: "CONFIRMED",
-            payment_status: "PAID",
-            ticket_status: "VALID",
-            payment_method: "GCASH_DIRECT",
-            transaction_ref: "GCASH-982144729215",
-            qr_token: "TKT-20261030-TM212",
-            trip: {
-                origin: "Daet",
-                destination: "PITX",
-                departure_time: "2026-10-30T20:30:00.000Z",
-                bus_number: "SL-212 (Executive Express)",
-            }
-        });
-    }
-}
-
 function loadFromFile(): CachedBooking[] {
     try {
         const fs = getFs();
@@ -251,21 +130,19 @@ function loadFromFile(): CachedBooking[] {
             const data = fs.readFileSync(cacheFile, "utf-8");
             const parsed = JSON.parse(data);
             if (Array.isArray(parsed)) {
-                // Filter out any removed terminals (Alabang, Naga, Turbina)
+                // Filter out any removed terminals and legacy dummy passenger seed IDs
                 const excluded = ["alabang", "naga", "turbina"];
                 const filtered = parsed.filter(b => {
+                    if (b.id && (b.id.startsWith("oct30-") || b.id.startsWith("bk-sample-"))) return false;
                     const orig = (b.trip?.origin || "").toLowerCase();
                     const dest = (b.trip?.destination || "").toLowerCase();
                     return !excluded.some(ex => orig.includes(ex) || dest.includes(ex));
                 });
-                ensureOctober30SeedData(filtered);
                 return filtered;
             }
         }
     } catch {}
-    const defaultList: CachedBooking[] = [];
-    ensureOctober30SeedData(defaultList);
-    return defaultList;
+    return [];
 }
 
 function saveToFile(bookings: CachedBooking[]) {

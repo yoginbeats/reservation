@@ -91,28 +91,28 @@ export function TellerDashboardClient({
     const [submittingRemit, setSubmittingRemit] = useState(false);
 
     // Shift Metrics
-    const [walkInCount, setWalkInCount] = useState<number>(initialWalkInCount || 35);
+    const [walkInCount, setWalkInCount] = useState<number>(initialWalkInCount || 0);
     const [shiftData, setShiftData] = useState<any>({
-        total_tickets: walkInCount > 0 ? walkInCount : 35,
-        gross_sales: 30940,
-        total_discounts: 1190,
-        net_cash_expected: 29750,
-        senior_count: 5,
-        student_count: 2,
+        total_tickets: walkInCount > 0 ? walkInCount : 0,
+        gross_sales: 0,
+        total_discounts: 0,
+        net_cash_expected: 0,
+        senior_count: 0,
+        student_count: 0,
         pwd_count: 0,
-        counter_number: "Counter 02",
-        shift_time: "08:00 AM - 04:00 PM (8-Hour Shift)",
+        counter_number: "Counter 01",
+        shift_time: "Current Shift",
     });
 
     // Cash Drawer Denomination Inputs (Shared between X-Reading and Z-Reading)
-    const [thousands, setThousands] = useState<number>(25);
-    const [fiveHundreds, setFiveHundreds] = useState<number>(8);
-    const [twoHundreds, setTwoHundreds] = useState<number>(2);
-    const [hundreds, setHundreds] = useState<number>(3);
-    const [fifties, setFifties] = useState<number>(1);
+    const [thousands, setThousands] = useState<number>(0);
+    const [fiveHundreds, setFiveHundreds] = useState<number>(0);
+    const [twoHundreds, setTwoHundreds] = useState<number>(0);
+    const [hundreds, setHundreds] = useState<number>(0);
+    const [fifties, setFifties] = useState<number>(0);
     const [twenties, setTwenties] = useState<number>(0);
     const [coins, setCoins] = useState<number>(0);
-    const [notes, setNotes] = useState<string>("Counter spot cash drawer reconciliation");
+    const [notes, setNotes] = useState<string>("Counter shift cash reconciliation");
 
     // Computed Cash Drawer
     const totalCounted =
@@ -124,7 +124,7 @@ export function TellerDashboardClient({
         twenties * 20 +
         coins * 1;
 
-    const expectedCash = shiftData.net_cash_expected || 29750;
+    const expectedCash = shiftData.net_cash_expected || 0;
     const variance = totalCounted - expectedCash;
 
     useEffect(() => {
