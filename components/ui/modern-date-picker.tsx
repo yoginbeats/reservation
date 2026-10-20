@@ -16,6 +16,8 @@ interface ModernDatePickerProps {
     onChange: (date: string) => void;
     minDate?: string; // YYYY-MM-DD
     maxDate?: string; // YYYY-MM-DD
+    minYear?: number; // Defaults to 1850
+    maxYear?: number; // Defaults to currentYear + 10
     placeholder?: string;
     disabled?: boolean;
     className?: string;
@@ -48,6 +50,8 @@ export function ModernDatePicker({
     onChange,
     minDate,
     maxDate,
+    minYear = 1850,
+    maxYear,
     placeholder = "Select departure date",
     disabled = false,
     className = "",
@@ -56,6 +60,8 @@ export function ModernDatePicker({
     align = "left",
 }: ModernDatePickerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
+    const yearListRef = useRef<HTMLDivElement>(null);
+    const activeYearRef = useRef<HTMLButtonElement>(null);
     const [isOpen, setIsOpen] = useState(false);
 
     // Initial calendar view year and month
@@ -66,6 +72,16 @@ export function ModernDatePicker({
     const [viewYear, setViewYear] = useState<number>(parsedValue ? parsedValue.year : today.getFullYear());
     const [viewMonth, setViewMonth] = useState<number>(parsedValue ? parsedValue.month : today.getMonth());
     const [isYearPickerOpen, setIsYearPickerOpen] = useState(false);
+    const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+
+    // Auto-scroll year picker container to current viewYear when opened
+    useEffect(() => {
+        if (isYearPickerOpen && yearListRef.current && activeYearRef.current) {
+            const container = yearListRef.current;
+            const target = activeYearRef.current;
+            container.scrollTop = target.offsetTop - container.clientHeight / 2 + target.clientHeight / 2;
+        }
+    }, [isYearPickerOpen]);
 
     // Sync view when external value changes
     useEffect(() => {
@@ -178,9 +194,14 @@ export function ModernDatePicker({
         });
     }, [parsedValue]);
 
-    // Generate year range for quick selector (current year - 2 to + 5)
+    // Generate year range starting at 1850 up to maxYear (default currentYear + 10)
     const currentYear = today.getFullYear();
-    const years = Array.from({ length: 15 }, (_, i) => currentYear - 2 + i);
+    const effectiveMinYear = minYear ?? 1850;
+    const effectiveMaxYear = maxYear ?? currentYear + 10;
+    const years = Array.from(
+        { length: effectiveMaxYear - effectiveMinYear + 1 },
+        (_, i) => effectiveMinYear + i
+    );
 
     return (
         <div ref={containerRef} className={`relative inline-block w-full ${className}`}>
@@ -242,44 +263,97 @@ export function ModernDatePicker({
                 >
                     {/* Header Controls: Month, Year, Arrows */}
                     <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
-                        <div className="relative">
-                            <button
-                                type="button"
-                                onClick={() => setIsYearPickerOpen(!isYearPickerOpen)}
-                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-black text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                            >
-                                <span>
-                                    {MONTH_NAMES[viewMonth]} {viewYear}
-                                </span>
-                                <ChevronDown
-                                    className={`h-3.5 w-3.5 text-zinc-400 transition-transform ${
-                                        isYearPickerOpen ? "rotate-180" : ""
-                                    }`}
-                                />
-                            </button>
+                        <div className="flex items-center gap-1">
+                            {/* Month Selector Dropdown */}
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsMonthPickerOpen(!isMonthPickerOpen);
+                                        setIsYearPickerOpen(false);
+                                    }}
+                                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-black text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                    title="Choose month"
+                                >
+                                    <span>{MONTH_NAMES[viewMonth]}</span>
+                                    <ChevronDown
+                                        className={`h-3 w-3 text-zinc-400 transition-transform ${
+                                            isMonthPickerOpen ? "rotate-180" : ""
+                                        }`}
+                                    />
+                                </button>
 
-                            {/* Quick Year Selector Dropdown */}
-                            {isYearPickerOpen && (
-                                <div className="absolute top-full left-0 mt-1 max-h-48 w-36 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl p-1 z-60 grid grid-cols-2 gap-1 text-xs">
-                                    {years.map((y) => (
-                                        <button
-                                            key={y}
-                                            type="button"
-                                            onClick={() => {
-                                                setViewYear(y);
-                                                setIsYearPickerOpen(false);
-                                            }}
-                                            className={`py-1.5 px-2 rounded-lg font-bold text-center transition-colors ${
-                                                y === viewYear
-                                                    ? "bg-red-600 text-white"
-                                                    : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
-                                            }`}
-                                        >
-                                            {y}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                                {isMonthPickerOpen && (
+                                    <div className="absolute top-full left-0 mt-1 w-44 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl p-1.5 z-60 grid grid-cols-3 gap-1 text-xs">
+                                        {MONTH_NAMES.map((m, idx) => (
+                                            <button
+                                                key={m}
+                                                type="button"
+                                                onClick={() => {
+                                                    setViewMonth(idx);
+                                                    setIsMonthPickerOpen(false);
+                                                }}
+                                                className={`py-1.5 px-1 rounded-lg font-bold text-center text-[11px] truncate transition-colors ${
+                                                    idx === viewMonth
+                                                        ? "bg-red-600 text-white shadow-xs"
+                                                        : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                                                }`}
+                                            >
+                                                {m.slice(0, 3)}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Year Selector Dropdown (Starts at 1850) */}
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsYearPickerOpen(!isYearPickerOpen);
+                                        setIsMonthPickerOpen(false);
+                                    }}
+                                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-black text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                    title="Choose year (starts at 1850)"
+                                >
+                                    <span>{viewYear}</span>
+                                    <ChevronDown
+                                        className={`h-3 w-3 text-zinc-400 transition-transform ${
+                                            isYearPickerOpen ? "rotate-180" : ""
+                                        }`}
+                                    />
+                                </button>
+
+                                {isYearPickerOpen && (
+                                    <div
+                                        ref={yearListRef}
+                                        className="absolute top-full left-0 mt-1 max-h-56 w-44 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl p-1.5 z-60 grid grid-cols-2 gap-1 text-xs"
+                                    >
+                                        {years.map((y) => {
+                                            const isSelectedYear = y === viewYear;
+                                            return (
+                                                <button
+                                                    key={y}
+                                                    ref={isSelectedYear ? activeYearRef : null}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setViewYear(y);
+                                                        setIsYearPickerOpen(false);
+                                                    }}
+                                                    className={`py-1.5 px-2 rounded-lg font-bold text-center transition-colors ${
+                                                        isSelectedYear
+                                                            ? "bg-red-600 text-white shadow-xs"
+                                                            : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                                                    }`}
+                                                >
+                                                    {y}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Navigation Arrows */}
