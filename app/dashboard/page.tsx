@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Ticket, Clock, ArrowRight, User, Phone, MapPin, Calendar, ShieldCheck, Edit, AlertCircle, LayoutDashboard, Bus } from "lucide-react";
 import { createClient, getUserWithRoleAndTerminal } from "@/lib/supabase/server";
+import { FacebookProfileCard } from "@/components/facebook-profile-card";
 
 export default async function ClientDashboard() {
     const supabase = await createClient();
@@ -35,6 +36,7 @@ export default async function ClientDashboard() {
     const birthdate = profile?.birthdate || meta.birthdate || null;
     const age = profile?.age ?? meta.age ?? null;
     const address = profile?.address || meta.address || null;
+    const avatarUrl = profile?.avatar_url || meta.avatar_url || meta.picture || null;
     const isProfileComplete = profile?.profile_completed || (Boolean(phoneNumber) && Boolean(address));
 
     // Fetch upcoming reservations
@@ -141,69 +143,22 @@ export default async function ClientDashboard() {
                 </div>
             )}
 
-            {/* Client Profile Details Card */}
-            <Card className="border-2 shadow-sm">
-                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b bg-zinc-50/50 dark:bg-zinc-900/50 pb-4">
-                    <div className="flex items-center gap-2">
-                        <ShieldCheck className="h-5 w-5 text-red-600" />
-                        <div>
-                            <CardTitle className="text-lg font-bold">My Passenger Account Details</CardTitle>
-                            <CardDescription className="text-xs">
-                                Verified details used for your bus tickets and passenger manifests
-                            </CardDescription>
-                        </div>
-                    </div>
-                    <Button variant="outline" size="sm" asChild className="gap-1.5 self-start sm:self-auto font-semibold">
-                        <Link href="/complete-profile">
-                            <Edit className="h-3.5 w-3.5" />
-                            <span>Edit Profile</span>
-                        </Link>
-                    </Button>
-                </CardHeader>
-                <CardContent className="pt-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 text-sm">
-                        <div className="space-y-1">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Full Name</p>
-                            <p className="font-bold text-base text-foreground">{fullName}</p>
-                            {(firstName || lastName) && (
-                                <p className="text-xs text-muted-foreground">
-                                    {firstName} {middleName ? `${middleName} ` : ""}{lastName}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="space-y-1">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email Address</p>
-                            <p className="font-semibold text-foreground">{user.email}</p>
-                            <span className="inline-block text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
-                                Verified Account
-                            </span>
-                        </div>
-
-                        <div className="space-y-1">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mobile Phone</p>
-                            <p className="font-semibold text-foreground">{phoneNumber || "Not provided yet"}</p>
-                            <p className="text-xs text-muted-foreground">For ticket & SMS alerts</p>
-                        </div>
-
-                        <div className="space-y-1">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Age & Birthdate</p>
-                            <p className="font-semibold text-foreground">
-                                {age ? `${age} years old` : "Age not set"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                                {birthdate ? new Date(birthdate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : "Birthdate not set"}
-                            </p>
-                        </div>
-
-                        <div className="space-y-1 sm:col-span-2">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Residential / Travel Address</p>
-                            <p className="font-semibold text-foreground">{address || "Not provided yet"}</p>
-                            <p className="text-xs text-muted-foreground">Registered home terminal / destination</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Facebook-style Passenger Profile Card with Profile Picture Only */}
+            <FacebookProfileCard
+                userId={user.id}
+                fullName={fullName}
+                firstName={firstName}
+                middleName={middleName}
+                lastName={lastName}
+                email={user.email}
+                phoneNumber={phoneNumber}
+                birthdate={birthdate}
+                age={age}
+                address={address}
+                initialAvatarUrl={avatarUrl}
+                isProfileComplete={Boolean(isProfileComplete)}
+                role={role}
+            />
 
             {/* Quick Actions */}
             <div className="grid gap-4 md:grid-cols-3">

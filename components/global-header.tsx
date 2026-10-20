@@ -103,7 +103,15 @@ export function GlobalHeader() {
                                 className="hidden md:flex items-center gap-1.5 text-xs font-bold text-zinc-700 hover:text-red-600 border border-zinc-200 px-3 py-1.5 sm:py-2 rounded-full hover:border-zinc-300 transition-colors max-w-[140px] truncate"
                                 title={user.email}
                             >
-                                <User className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+                                {user.user_metadata?.avatar_url || user.user_metadata?.picture ? (
+                                    <img
+                                        src={user.user_metadata.avatar_url || user.user_metadata.picture}
+                                        alt={username}
+                                        className="h-4 w-4 rounded-full object-cover shrink-0"
+                                    />
+                                ) : (
+                                    <User className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+                                )}
                                 <span className="truncate">{username}</span>
                             </Link>
 
@@ -148,8 +156,16 @@ export function GlobalHeader() {
                 <div className="lg:hidden border-t border-zinc-200 bg-white/98 backdrop-blur-lg px-4 pt-3 pb-5 space-y-3 shadow-xl animate-in slide-in-from-top-2 duration-200">
                     {user && (
                         <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-zinc-50 border border-zinc-100 text-xs">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-600 font-bold">
-                                {username.charAt(0).toUpperCase()}
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-600 font-bold overflow-hidden shrink-0">
+                                {user.user_metadata?.avatar_url || user.user_metadata?.picture ? (
+                                    <img
+                                        src={user.user_metadata.avatar_url || user.user_metadata.picture}
+                                        alt={username}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    username.charAt(0).toUpperCase()
+                                )}
                             </div>
                             <div className="flex-1 truncate">
                                 <p className="font-bold text-zinc-900 truncate">{username}</p>
