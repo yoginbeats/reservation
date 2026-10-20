@@ -57,88 +57,88 @@ export default async function AdminDashboard() {
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-                <p className="text-muted-foreground">
+                <h1 className="text-3xl font-black tracking-tight text-zinc-900">Admin Dashboard</h1>
+                <p className="text-zinc-500 text-sm">
                     Welcome back! Here&apos;s an overview of your system.
                 </p>
             </div>
 
             {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
+                <Card className="bg-white border-zinc-200 shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Reservations</CardTitle>
-                        <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium text-zinc-600">Total Reservations</CardTitle>
+                        <CalendarCheck className="h-4 w-4 text-zinc-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{reservationCount || 0}</div>
-                        <p className="text-xs text-muted-foreground">Lifetime bookings</p>
+                        <div className="text-2xl font-bold text-zinc-900">{reservationCount || 0}</div>
+                        <p className="text-xs text-zinc-500">Lifetime bookings</p>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="bg-white border-zinc-200 shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Issued Tickets</CardTitle>
-                        <Ticket className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium text-zinc-600">Issued Tickets</CardTitle>
+                        <Ticket className="h-4 w-4 text-zinc-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{ticketCount || 0}</div>
-                        <p className="text-xs text-muted-foreground">Valid tickets generated</p>
+                        <div className="text-2xl font-bold text-zinc-900">{ticketCount || 0}</div>
+                        <p className="text-xs text-zinc-500">Valid tickets generated</p>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="bg-white border-zinc-200 shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium text-zinc-600">Total Users</CardTitle>
+                        <Users className="h-4 w-4 text-zinc-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{userCount || 0}</div>
-                        <p className="text-xs text-muted-foreground">Registered accounts</p>
+                        <div className="text-2xl font-bold text-zinc-900">{userCount || 0}</div>
+                        <p className="text-xs text-zinc-500">Registered accounts</p>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="bg-white border-zinc-200 shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium text-zinc-600">Revenue</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-zinc-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
+                        <div className="text-2xl font-bold text-zinc-900">
                             {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(revenue)}
                         </div>
-                        <p className="text-xs text-muted-foreground">Total collected</p>
+                        <p className="text-xs text-zinc-500">Total collected</p>
                     </CardContent>
                 </Card>
             </div>
 
             {/* Recent Activity */}
-            <Card>
+            <Card className="bg-white border-zinc-200 shadow-sm">
                 <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
-                    <CardDescription>Latest reservations and ticket activity.</CardDescription>
+                    <CardTitle className="text-zinc-900">Recent Activity</CardTitle>
+                    <CardDescription className="text-zinc-500">Latest reservations and ticket activity.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
                         {recentReservations && recentReservations.length > 0 ? (
                             recentReservations.map((res: RecentReservation) => (
-                                <div key={res.id} className="flex items-center gap-4 rounded-lg border p-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+                                <div key={res.id} className="flex items-center gap-4 rounded-lg border border-zinc-200 p-4 bg-zinc-50/50">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
                                         <CalendarCheck className="h-5 w-5 text-blue-600" />
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-sm font-medium">Reservation #{res.id.slice(0, 8)}</p>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-sm font-medium text-zinc-900">Reservation #{res.id.slice(0, 8)}</p>
+                                        <p className="text-xs text-zinc-500">
                                             By {res.customers?.full_name || 'Unknown'} • {new Date(res.created_at).toLocaleDateString()}
                                         </p>
                                     </div>
                                     <span className={`rounded-full px-2 py-1 text-xs font-medium ${res.reservation_status === 'confirmed'
-                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-yellow-100 text-yellow-700'
                                         }`}>
                                         {res.reservation_status}
                                     </span>
                                 </div>
                             ))
                         ) : (
-                            <div className="py-4 text-center text-sm text-muted-foreground">
+                            <div className="py-8 text-center text-sm text-zinc-500">
                                 No recent activity found.
                             </div>
                         )}
