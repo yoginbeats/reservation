@@ -73,6 +73,8 @@ export function TellerDashboardClient({
     const [selectedTicketForPrint, setSelectedTicketForPrint] = useState<any | null>(null);
     const [selectedTicketForRebook, setSelectedTicketForRebook] = useState<any | null>(null);
     const [newSeatInput, setNewSeatInput] = useState<number>(1);
+    const [supervisorCode, setSupervisorCode] = useState<string>("");
+    const [rebookError, setRebookError] = useState<string | null>(null);
     const [rebookLoading, setRebookLoading] = useState(false);
 
     const [selectedTicketForVoid, setSelectedTicketForVoid] = useState<any | null>(null);
@@ -200,7 +202,13 @@ export function TellerDashboardClient({
         e.preventDefault();
         if (!selectedTicketForRebook || !newSeatInput) return;
 
+        if (!supervisorCode.trim()) {
+            setRebookError("Head Supervisor Authorization Code is required to perform rebooking.");
+            return;
+        }
+
         setRebookLoading(true);
+        setRebookError(null);
         try {
             const res = await fetch("/api/teller/tickets", {
                 method: "POST",
@@ -210,21 +218,24 @@ export function TellerDashboardClient({
                     token: selectedTicketForRebook.qr_token,
                     booking_id: selectedTicketForRebook.booking_id || selectedTicketForRebook.id,
                     new_seat_number: Number(newSeatInput),
+                    supervisor_code: supervisorCode.trim().toUpperCase(),
                 }),
             });
             const data = await res.json();
             if (res.ok) {
-                alert(`Seat successfully rebooked to #${newSeatInput}!`);
+                alert(`Seat successfully rebooked to #${newSeatInput}! Authorized by Head Supervisor.`);
                 setSelectedTicketForRebook(null);
+                setSupervisorCode("");
+                setRebookError(null);
                 fetchIssuedTickets();
                 if (lookupPerformed && lookupQuery) {
                     handleSearchLookup({ preventDefault: () => {} } as any);
                 }
             } else {
-                alert(data.error || "Failed to rebook seat.");
+                setRebookError(data.error || "Failed to rebook seat.");
             }
         } catch (err: any) {
-            alert("Error during rebooking: " + err.message);
+            setRebookError("Error during rebooking: " + err.message);
         } finally {
             setRebookLoading(false);
         }
@@ -806,6 +817,8 @@ export function TellerDashboardClient({
                                                             onClick={() => {
                                                                 setSelectedTicketForRebook(t);
                                                                 setNewSeatInput(t.seat_number);
+                                                                setSupervisorCode("");
+                                                                setRebookError(null);
                                                             }}
                                                             className="text-xs font-bold"
                                                         >
@@ -1201,23 +1214,60 @@ export function TellerDashboardClient({
                                 </div>
                             </div>
 
+                            {/* 🔒 Head Supervisor Authorization Security Override Section */}
+                            <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/10 p-3.5 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs font-black uppercase text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                                        <ShieldAlert className="h-4 w-4 text-amber-600" />
+                                        Head Supervisor Authorization Code *
+                                    </Label>
+                                    <span className="text-[9px] font-mono bg-amber-600/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded font-black border border-amber-500/30">
+                                        SUPERVISOR OVERRIDE
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-muted-foreground">
+                                    Counter Security Policy: Over-the-counter rebooking requires on-duty Head Supervisor authorization to prevent unauthorized seat swapping.
+                                </p>
+                                <Input
+                                    type="password"
+                                    required
+                                    placeholder="Enter Supervisor PIN / Code (e.g. SUP8888)"
+                                    value={supervisorCode}
+                                    onChange={(e) => {
+                                        setSupervisorCode(e.target.value.toUpperCase());
+                                        setRebookError(null);
+                                    }}
+                                    className="bg-background text-sm font-mono tracking-widest font-black uppercase border-amber-500/50"
+                                />
+                                {rebookError && (
+                                    <div className="flex items-center gap-1.5 text-xs text-red-600 font-bold bg-red-50 dark:bg-red-950/40 p-2.5 rounded-lg border border-red-200 dark:border-red-800">
+                                        <AlertCircle className="h-4 w-4 shrink-0" />
+                                        <span>{rebookError}</span>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="flex items-center justify-end gap-2 pt-2 border-t">
                                 <Button
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => setSelectedTicketForRebook(null)}
+                                    onClick={() => {
+                                        setSelectedTicketForRebook(null);
+                                        setSupervisorCode("");
+                                        setRebookError(null);
+                                    }}
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
                                     size="sm"
-                                    disabled={rebookLoading}
+                                    disabled={rebookLoading || !supervisorCode.trim()}
                                     className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
                                 >
                                     {rebookLoading ? <RefreshCw className="mr-1.5 h-4 w-4 animate-spin" /> : <Check className="mr-1.5 h-4 w-4" />}
-                                    Confirm Re-seat to #{newSeatInput}
+                                    Authorize & Re-seat to #{newSeatInput}
                                 </Button>
                             </div>
                         </form>

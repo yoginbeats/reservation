@@ -410,16 +410,38 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        const { action, token, booking_id, trip_id, new_seat_number, reason, x_reading_data } = body || {};
+        const { action, token, booking_id, trip_id, new_seat_number, reason, x_reading_data, supervisor_code } = body || {};
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
         // =========================================================================
-        // 1. REBOOK / CHANGE SEAT OVER THE COUNTER
+        // 1. REBOOK / CHANGE SEAT OVER THE COUNTER (REQUIRES SUPERVISOR CODE)
         // =========================================================================
         if (action === "REBOOK_SEAT") {
             if ((!token && !booking_id) || !new_seat_number) {
                 return NextResponse.json({ error: "Missing token/booking_id or new_seat_number parameter." }, { status: 400 });
+            }
+
+            // 🔒 Mandatory Head Supervisor Override Code Check
+            const cleanSupCode = supervisor_code ? String(supervisor_code).trim().toUpperCase() : "";
+            const envPin = process.env.SUPERVISOR_OVERRIDE_PIN?.trim().toUpperCase();
+
+            // Recognized authorized supervisor PINs
+            const validSupervisorCodes = [
+                "SUP8888",
+                "SUP-2026",
+                "SUPER2026",
+                "SUPERLINES",
+                "ADMIN123",
+                "7788",
+                ...(envPin ? [envPin] : []),
+            ];
+
+            if (!cleanSupCode || !validSupervisorCodes.includes(cleanSupCode)) {
+                return NextResponse.json({
+                    error: "Supervisor authorization failed. Invalid or missing Head Supervisor Override Code (e.g., SUP8888).",
+                    requires_supervisor_code: true
+                }, { status: 403 });
             }
 
             const newSeat = Number(new_seat_number);
