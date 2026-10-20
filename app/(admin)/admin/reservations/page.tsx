@@ -25,7 +25,9 @@ import {
     FileText,
     ArrowLeftRight,
     Link as LinkIcon,
+    Plus,
 } from "lucide-react";
+import { AdminNewReservationDialog } from "@/components/admin-new-reservation-dialog";
 
 export default function AdminReservationsPage() {
     const [bookings, setBookings] = useState<any[]>([]);
@@ -42,6 +44,16 @@ export default function AdminReservationsPage() {
         pending_count: 0,
         confirmed_count: 0,
     });
+    const [openNewBooking, setOpenNewBooking] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get("action") === "new") {
+                setOpenNewBooking(true);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         fetchBookings();
@@ -242,35 +254,46 @@ export default function AdminReservationsPage() {
                     </p>
                 </div>
 
-                {/* Dual Mode Switcher for Presentations */}
-                <div className="flex items-center gap-2 rounded-xl border bg-card p-1.5 shadow-sm">
-                    <span className="text-xs font-semibold px-2 text-muted-foreground">Mode:</span>
-                    <button
+                {/* Actions & Dual Mode Switcher for Presentations */}
+                <div className="flex flex-wrap items-center gap-3">
+                    <Button
                         type="button"
-                        onClick={() => handleToggleMode("AUTO")}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                            verificationMode === "AUTO"
-                                ? "bg-blue-600 text-white shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
-                        }`}
-                        title="Tickets are automatically approved upon GCash reference submission"
+                        onClick={() => setOpenNewBooking(true)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm flex items-center gap-2"
                     >
-                        <Zap className="h-3.5 w-3.5" />
-                        Auto-Approve (Instant)
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handleToggleMode("MANUAL")}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                            verificationMode === "MANUAL"
-                                ? "bg-amber-600 text-white shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
-                        }`}
-                        title="Cashier must click Approve before ticket becomes valid"
-                    >
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                        Cashier Audit (Manual)
-                    </button>
+                        <Plus className="h-4 w-4" />
+                        New Reservation
+                    </Button>
+
+                    <div className="flex items-center gap-2 rounded-xl border bg-card p-1.5 shadow-sm">
+                        <span className="text-xs font-semibold px-2 text-muted-foreground">Mode:</span>
+                        <button
+                            type="button"
+                            onClick={() => handleToggleMode("AUTO")}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                verificationMode === "AUTO"
+                                    ? "bg-blue-600 text-white shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground"
+                            }`}
+                            title="Tickets are automatically approved upon GCash reference submission"
+                        >
+                            <Zap className="h-3.5 w-3.5" />
+                            Auto-Approve (Instant)
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleToggleMode("MANUAL")}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                verificationMode === "MANUAL"
+                                    ? "bg-amber-600 text-white shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground"
+                            }`}
+                            title="Cashier must click Approve before ticket becomes valid"
+                        >
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            Cashier Audit (Manual)
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1071,6 +1094,13 @@ export default function AdminReservationsPage() {
                     </div>
                 </div>
             )}
+
+            {/* New Reservation & Multi-Seat Direct Booking Modal */}
+            <AdminNewReservationDialog
+                isOpen={openNewBooking}
+                onClose={() => setOpenNewBooking(false)}
+                onSuccess={fetchBookings}
+            />
         </div>
     );
 }

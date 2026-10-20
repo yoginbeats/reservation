@@ -196,16 +196,18 @@ export async function POST(req: NextRequest) {
                 console.warn("Direct booking insert notice:", err);
             }
 
-            // 3. Mark seat in trip_seats if available
+            // 3. Mark all selected seats in trip_seats
             try {
-                await supabase
-                    .from("trip_seats")
-                    .upsert({
-                        trip_id: tripId,
-                        seat_number: seatNumber,
-                        is_available: false,
-                        booked_by_booking_id: bookingId,
-                    }, { onConflict: "trip_id,seat_number" });
+                for (const sNum of seatsToCheck) {
+                    await supabase
+                        .from("trip_seats")
+                        .upsert({
+                            trip_id: tripId,
+                            seat_number: sNum,
+                            is_available: false,
+                            booked_by_booking_id: bookingId,
+                        }, { onConflict: "trip_id,seat_number" });
+                }
             } catch {}
 
             // 4. Create Payment record
@@ -244,31 +246,36 @@ export async function POST(req: NextRequest) {
                 }
             } catch {}
 
-            // 5. Create Ticket record
+            // 5. Create Ticket record for each selected seat
             try {
-                if (!isUsingReservations) {
-                    const { error: tktErr } = await supabase
-                        .from("tickets")
-                        .insert({
-                            booking_id: bookingId,
-                            qr_token: qrToken,
-                            ticket_status: ticketStatus,
-                        });
-                    if (tktErr) {
+                for (let i = 0; i < seatsToCheck.length; i++) {
+                    const sNum = seatsToCheck[i];
+                    const tToken = i === 0 ? qrToken : `TKT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+                    if (!isUsingReservations) {
+                        const { error: tktErr } = await supabase
+                            .from("tickets")
+                            .insert({
+                                booking_id: bookingId,
+                                qr_token: tToken,
+                                ticket_status: ticketStatus,
+                                seat_number: sNum,
+                            });
+                        if (tktErr) {
+                            await supabase
+                                .from("tickets")
+                                .insert({
+                                    reservation_id: bookingId,
+                                    qr_code: tToken,
+                                });
+                        }
+                    } else {
                         await supabase
                             .from("tickets")
                             .insert({
                                 reservation_id: bookingId,
-                                qr_code: qrToken,
+                                qr_code: tToken,
                             });
                     }
-                } else {
-                    await supabase
-                        .from("tickets")
-                        .insert({
-                            reservation_id: bookingId,
-                            qr_code: qrToken,
-                        });
                 }
             } catch {}
         }

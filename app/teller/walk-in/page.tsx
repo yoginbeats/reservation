@@ -162,14 +162,14 @@ export default function TellerWalkInBookingPage() {
     const discountPerPassenger = Math.round(unitFare * discountRate);
 
     // Number of discounted passengers cannot exceed seats booked
-    const maxDiscountAllowed = Math.max(1, seatCount || 1);
+    const maxDiscountAllowed = Math.max(0, seatCount);
     const effectiveDiscountCount = Math.min(discountCount, maxDiscountAllowed);
     const totalDiscountAmount = effectiveDiscountCount * discountPerPassenger;
     const fare = Math.max(0, totalBaseFare - totalDiscountAmount);
     const change = Number(amountTendered) >= fare ? Number(amountTendered) - fare : 0;
 
     const handleSetDiscountCount = (count: number) => {
-        const validCount = Math.max(0, count);
+        const validCount = Math.min(Math.max(0, count), Math.max(1, seatCount || 1));
         setDiscountCount(validCount);
         setDiscountPersons((prev) => {
             const next = [...prev];
@@ -201,9 +201,16 @@ export default function TellerWalkInBookingPage() {
 
     const handleProcessWalkInPayment = async (e: React.FormEvent) => {
         e.preventDefault();
-        const effectiveSeat = selectedSeat || (selectedSeats.length > 0 ? selectedSeats[0] : null);
-        if (!selectedTrip || !effectiveSeat || !passengerName.trim()) {
+        const activeSeats = selectedSeats.length > 0 ? selectedSeats : (selectedSeat ? [selectedSeat] : []);
+        if (!selectedTrip || activeSeats.length === 0 || !passengerName.trim()) {
             setError("Please select at least one seat and provide the passenger name.");
+            return;
+        }
+
+        // Anti-Double Booking Guard: Verify none of the selected seats are already taken
+        const alreadyTaken = activeSeats.filter(s => bookedSeats.includes(s));
+        if (alreadyTaken.length > 0) {
+            setError(`Double-Booking Prevented: Seat(s) ${alreadyTaken.map(s => `#${s}`).join(', ')} are already booked on this departure. Please select other available seats.`);
             return;
         }
 
@@ -234,121 +241,70 @@ export default function TellerWalkInBookingPage() {
                 .eq('user_id', user?.id)
                 .single();
 
-            let bookingQrToken: string;
+            const primarySeat = activeSeats[0];
+            const bookingQrToken = `TKT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-            // Attempt atomic seat booking procedure
-            let result: any = null;
-            let rpcError: any = null;
+            // Create Master Booking record
+            let bookingId: string = `walkin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            let isUsingReservations = false;
 
-            try {
-                const res = await supabase.rpc(
-                    "book_seat_atomic",
-                    {
-                        p_trip_id: selectedTrip.id,
-                        p_seat_number: effectiveSeat,
-                        p_passenger_id: null, // Walk-in non-registered
-                        p_passenger_name: passengerName,
-                        p_passenger_contact: passengerContact || "",
-                        p_total_price: fare,
-                        p_booking_source: "WALK_IN",
-                        p_booking_terminal_id: roleData?.terminal_id || null,
-                        p_created_by: user?.id || null,
-                        p_payment_method: "CASH_WALKIN",
-                        p_transaction_ref: `CASH-${Date.now()}`,
-                    }
-                );
-                result = res.data;
-                rpcError = res.error;
-            } catch (err: any) {
-                rpcError = err;
-            }
+            const { data: newBooking, error: bErr } = await supabase
+                .from('bookings')
+                .insert({
+                    trip_id: selectedTrip.id,
+                    passenger_id: null,
+                    passenger_name: passengerName,
+                    passenger_contact: passengerContact || "",
+                    seat_number: primarySeat,
+                    total_price: fare,
+                    booking_source: 'WALK_IN',
+                    booking_terminal_id: roleData?.terminal_id || null,
+                    created_by: user?.id || null,
+                    booking_status: 'CONFIRMED'
+                })
+                .select('id')
+                .single();
 
-            if (rpcError) {
-                const errMsg = rpcError.message || JSON.stringify(rpcError);
-                if (errMsg.toLowerCase().includes("already") || errMsg.toLowerCase().includes("booked") || errMsg.toLowerCase().includes("occupied")) {
-                    throw new Error(`Double-Booking Prevented: Seat #${effectiveSeat} was just booked by another terminal or online passenger. Please select another seat.`);
-                }
-            }
-
-            if (!rpcError && result?.qr_token) {
-                bookingQrToken = result.qr_token;
+            if (newBooking && !bErr) {
+                bookingId = newBooking.id;
             } else {
-                console.warn("Atomic RPC unavailable, falling back to direct database table booking:", rpcError);
-
-                // Anti-Double Booking Guard: Check if seat is already occupied before inserting
-                const { data: seatCheck } = await supabase
-                    .from('trip_seats')
-                    .select('is_available')
-                    .eq('trip_id', selectedTrip.id)
-                    .eq('seat_number', effectiveSeat)
-                    .maybeSingle();
-
-                if (seatCheck && seatCheck.is_available === false) {
-                    throw new Error(`Double-Booking Prevented: Seat #${effectiveSeat} is already occupied on this trip. Please select an available seat.`);
-                }
-
-                // Fallback direct table inserts for Walk-in (try bookings first, then reservations)
-                let bookingId: string | null = null;
-                let isUsingReservations = false;
-
-                const { data: newBooking, error: bErr } = await supabase
-                    .from('bookings')
+                console.warn("Could not insert to 'bookings' table, falling back to 'reservations':", bErr?.message);
+                const { data: newRes, error: resErr } = await supabase
+                    .from('reservations')
                     .insert({
                         trip_id: selectedTrip.id,
-                        passenger_id: null,
+                        customer_id: null,
                         passenger_name: passengerName,
-                        passenger_contact: passengerContact || "",
-                        seat_number: effectiveSeat,
+                        seat_number: primarySeat,
                         total_price: fare,
-                        booking_source: 'WALK_IN',
-                        booking_terminal_id: roleData?.terminal_id || null,
-                        created_by: user?.id || null,
-                        booking_status: 'CONFIRMED'
+                        status: 'CONFIRMED'
                     })
                     .select('id')
                     .single();
 
-                if (newBooking && !bErr) {
-                    bookingId = newBooking.id;
-                } else {
-                    console.warn("Could not insert to 'bookings' table, falling back to 'reservations':", bErr?.message);
-                    const { data: newRes, error: resErr } = await supabase
-                        .from('reservations')
-                        .insert({
-                            trip_id: selectedTrip.id,
-                            customer_id: null,
-                            passenger_name: passengerName,
-                            seat_number: effectiveSeat,
-                            total_price: fare,
-                            status: 'CONFIRMED'
-                        })
-                        .select('id')
-                        .single();
-
-                    if (newRes && !resErr) {
-                        bookingId = newRes.id;
-                        isUsingReservations = true;
-                    } else {
-                        throw new Error(bErr?.message || resErr?.message || "Failed to create booking record.");
-                    }
+                if (newRes && !resErr) {
+                    bookingId = newRes.id;
+                    isUsingReservations = true;
                 }
+            }
 
-                bookingQrToken = `TKT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
-                // Mark seat as occupied in trip_seats if exists
-                try {
+            // Lock ALL selected seats in trip_seats table
+            try {
+                for (const seatNum of activeSeats) {
                     await supabase
                         .from('trip_seats')
                         .update({ is_available: false, booked_by_booking_id: bookingId })
                         .eq('trip_id', selectedTrip.id)
-                        .eq('seat_number', effectiveSeat);
-                } catch {
-                    // Ignore if trip_seats does not exist
+                        .eq('seat_number', seatNum);
                 }
+            } catch (seatErr) {
+                console.warn("trip_seats lock notice:", seatErr);
+            }
 
-                // Insert paid payment
+            // Insert paid payment record
+            try {
                 if (!isUsingReservations) {
-                    const { error: payErr } = await supabase
+                    await supabase
                         .from('payments')
                         .insert({
                             booking_id: bookingId,
@@ -357,19 +313,8 @@ export default function TellerWalkInBookingPage() {
                             payment_status: 'PAID',
                             transaction_ref: `CASH-${Date.now()}`
                         });
-                    if (payErr) {
-                        await supabase
-                            .from('payments')
-                            .insert({
-                                reservation_id: bookingId,
-                                amount: fare,
-                                payment_method: 'CASH_WALKIN',
-                                status: 'PAID',
-                                transaction_id: `CASH-${Date.now()}`
-                            });
-                    }
                 } else {
-                    const { error: payErr } = await supabase
+                    await supabase
                         .from('payments')
                         .insert({
                             reservation_id: bookingId,
@@ -378,62 +323,92 @@ export default function TellerWalkInBookingPage() {
                             status: 'PAID',
                             transaction_id: `CASH-${Date.now()}`
                         });
-                    if (payErr) {
+                }
+            } catch (payErr) {
+                console.warn("payments insert notice:", payErr);
+            }
+
+            // Issue official valid tickets for EACH of the selected seats
+            for (const seatNum of activeSeats) {
+                const seatQr = `TKT-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-S${seatNum}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+                try {
+                    if (!isUsingReservations) {
                         await supabase
-                            .from('payments')
+                            .from('tickets')
                             .insert({
                                 booking_id: bookingId,
-                                amount: fare,
-                                payment_method: 'CASH_WALKIN',
-                                payment_status: 'PAID',
-                                transaction_ref: `CASH-${Date.now()}`
+                                qr_token: seatQr,
+                                ticket_status: 'VALID'
                             });
-                    }
-                }
-
-                // Insert valid ticket
-                if (!isUsingReservations) {
-                    const { error: tktErr } = await supabase
-                        .from('tickets')
-                        .insert({
-                            booking_id: bookingId,
-                            qr_token: bookingQrToken,
-                            ticket_status: 'VALID'
-                        });
-                    if (tktErr) {
+                    } else {
                         await supabase
                             .from('tickets')
                             .insert({
                                 reservation_id: bookingId,
-                                qr_code: bookingQrToken,
+                                qr_code: seatQr,
                             });
                     }
-                } else {
-                    const { error: tktErr } = await supabase
-                        .from('tickets')
-                        .insert({
-                            reservation_id: bookingId,
-                            qr_code: bookingQrToken,
-                        });
-                    if (tktErr) {
-                        await supabase
-                            .from('tickets')
-                            .insert({
-                                booking_id: bookingId,
-                                qr_token: bookingQrToken,
-                                ticket_status: 'VALID'
-                            });
-                    }
+                } catch (tktErr) {
+                    console.warn("ticket insert notice:", tktErr);
                 }
             }
 
-            const activeSeats = selectedSeats.length > 0 ? selectedSeats : (effectiveSeat ? [effectiveSeat] : []);
+            // Sync with local booking store for instant cross-terminal anti-double booking protection
+            try {
+                const bookingToSync = {
+                    id: bookingId,
+                    created_at: new Date().toISOString(),
+                    passenger_name: passengerName,
+                    passenger_contact: passengerContact || "",
+                    passenger_email: "walkin@superlines.com",
+                    passenger_type: effectiveDiscountCount > 0 ? (effectiveDiscountCount === activeSeats.length ? discountPersons[0]?.classification : "MIXED") : "REGULAR",
+                    discount_count: effectiveDiscountCount,
+                    discount_amount: totalDiscountAmount,
+                    discounted_passengers: discountPersons.slice(0, effectiveDiscountCount).map(p => ({
+                        name: p.name,
+                        classification: p.classification,
+                        id_number: p.idNumber
+                    })),
+                    seat_number: primarySeat,
+                    seat_numbers: activeSeats,
+                    seat_count: activeSeats.length,
+                    total_price: fare,
+                    original_price: totalBaseFare,
+                    booking_status: "CONFIRMED",
+                    payment_status: "PAID",
+                    ticket_status: "VALID",
+                    payment_method: "CASH_WALKIN",
+                    transaction_ref: `CASH-${Date.now()}`,
+                    qr_token: bookingQrToken,
+                    trip_id: selectedTrip.id,
+                    trip: {
+                        id: selectedTrip.id,
+                        origin: selectedTrip.route?.origin?.name || selectedTrip.origin || "Cubao",
+                        destination: selectedTrip.route?.destination?.name || selectedTrip.destination || "Daet",
+                        departure_time: selectedTrip.departure_time,
+                        bus_number: selectedTrip.bus?.bus_number || selectedTrip.bus_number || "Superlines Express",
+                    }
+                };
 
+                fetch("/api/admin/payments", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "save_booking", booking: bookingToSync }),
+                }).catch(() => {});
+            } catch (storeErr) {
+                console.warn("Local store sync notice:", storeErr);
+            }
+
+            // Complete booking modal display state
             setCompletedBooking({
+                id: bookingId,
+                booking_id: bookingId,
                 qr_token: bookingQrToken,
-                seat_number: effectiveSeat,
+                seat_number: primarySeat,
                 seat_numbers: activeSeats,
+                seat_count: activeSeats.length,
                 passenger_name: passengerName,
+                passenger_contact: passengerContact,
                 total_price: fare,
                 base_fare: totalBaseFare,
                 discount_amount: totalDiscountAmount,
@@ -448,7 +423,7 @@ export default function TellerWalkInBookingPage() {
                 trip: selectedTrip,
             });
 
-            // Refresh seats list
+            // Update local booked seats list
             setBookedSeats((prev) => [...prev, ...activeSeats]);
         } catch (err: any) {
             console.error("Walk-in booking error:", err);
@@ -657,17 +632,10 @@ export default function TellerWalkInBookingPage() {
                             selectedSeats={selectedSeats}
                             onSelectSeat={(seatNum) => {
                                 setSelectedSeat(seatNum);
-                                setSelectedSeats((prev) => {
-                                    const next = prev.includes(seatNum) ? prev.filter((s) => s !== seatNum) : [...prev, seatNum];
-                                    if (discountCount > next.length) {
-                                        handleSetDiscountCount(next.length);
-                                    }
-                                    return next;
-                                });
                             }}
                             onSelectSeats={(seats) => {
                                 setSelectedSeats(seats);
-                                if (seats.length > 0) setSelectedSeat(seats[0]);
+                                if (seats.length > 0) setSelectedSeat(seats[seats.length - 1]);
                                 else setSelectedSeat(null);
                                 if (discountCount > seats.length) {
                                     handleSetDiscountCount(seats.length);

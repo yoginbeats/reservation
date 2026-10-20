@@ -776,12 +776,14 @@ function BookTripContent() {
                         selectedSeats={selectedSeats}
                         onSelectSeat={(seatNum) => {
                             setSelectedSeat(seatNum);
-                            if (selectedSeats.length === 0) setSelectedSeats([seatNum]);
                         }}
                         onSelectSeats={(seats) => {
                             setSelectedSeats(seats);
-                            if (seats.length > 0) setSelectedSeat(seats[0]);
+                            if (seats.length > 0) setSelectedSeat(seats[seats.length - 1]);
                             else setSelectedSeat(null);
+                            if (discountCount > seats.length) {
+                                handleSetDiscountCount(seats.length);
+                            }
                         }}
                     />
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, MapPin, Bus, Route, Calendar, Users, Ticket, BarChart3, ShieldCheck, Settings, Megaphone, CalendarCheck } from "lucide-react";
+import { LayoutDashboard, MapPin, Bus, Route, Calendar, Users, Ticket, BarChart3, ShieldCheck, Settings, Megaphone, CalendarCheck, Zap } from "lucide-react";
 import { AdminLogoutButton } from "@/components/admin-logout-button";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
@@ -118,6 +118,13 @@ export default async function AdminLayout({
                         >
                             <Ticket className="h-4 w-4 text-amber-600" />
                             Tickets
+                        </Link>
+                        <Link
+                            href="/teller/walk-in"
+                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800 text-emerald-700 dark:text-emerald-400 font-semibold"
+                        >
+                            <Zap className="h-4 w-4 text-emerald-600" />
+                            Counter Walk-In POS
                         </Link>
                         <Link
                             href="/admin/users"

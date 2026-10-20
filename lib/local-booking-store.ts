@@ -1,8 +1,34 @@
 // Resilient In-Memory & File-backed Store for GCash Bookings & Verifications
 // Ensures presentation never fails even if database RLS or network delays occur
 
-import fs from "fs";
-import path from "path";
+let fsModule: any = null;
+let pathModule: any = null;
+
+function getFs() {
+    if (!fsModule && typeof window === "undefined") {
+        try {
+            fsModule = eval("require")("fs");
+        } catch {}
+    }
+    return fsModule;
+}
+
+function getPath() {
+    if (!pathModule && typeof window === "undefined") {
+        try {
+            pathModule = eval("require")("path");
+        } catch {}
+    }
+    return pathModule;
+}
+
+function getCacheFilePath(): string {
+    const p = getPath();
+    if (p && typeof process !== "undefined" && process.cwd) {
+        return p.join(process.cwd(), ".local_bookings.json");
+    }
+    return ".local_bookings.json";
+}
 
 export interface DiscountedPassengerInfo {
     name: string;
@@ -95,7 +121,6 @@ if (!globalForStore.localBookingsCache) {
     globalForStore.localBookingsCache = [];
 }
 
-const CACHE_FILE = path.join(process.cwd(), ".local_bookings.json");
 
 const OCT_30_CUBAO_ID = "oct30-cubao-daet-401";
 const OCT_30_DAET_ID = "oct30-daet-cubao-401";
@@ -220,8 +245,10 @@ function ensureOctober30SeedData(list: CachedBooking[]) {
 
 function loadFromFile(): CachedBooking[] {
     try {
-        if (fs.existsSync(CACHE_FILE)) {
-            const data = fs.readFileSync(CACHE_FILE, "utf-8");
+        const fs = getFs();
+        const cacheFile = getCacheFilePath();
+        if (fs && fs.existsSync(cacheFile)) {
+            const data = fs.readFileSync(cacheFile, "utf-8");
             const parsed = JSON.parse(data);
             if (Array.isArray(parsed)) {
                 // Filter out any removed terminals (Alabang, Naga, Turbina)
@@ -243,7 +270,11 @@ function loadFromFile(): CachedBooking[] {
 
 function saveToFile(bookings: CachedBooking[]) {
     try {
-        fs.writeFileSync(CACHE_FILE, JSON.stringify(bookings.slice(0, 100), null, 2), "utf-8");
+        const fs = getFs();
+        const cacheFile = getCacheFilePath();
+        if (fs) {
+            fs.writeFileSync(cacheFile, JSON.stringify(bookings.slice(0, 100), null, 2), "utf-8");
+        }
     } catch {}
 }
 

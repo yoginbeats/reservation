@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getVerificationMode, setVerificationMode } from "@/lib/payment-settings";
-import { getLocalBookings, updateLocalBookingStatus } from "@/lib/local-booking-store";
+import { getLocalBookings, updateLocalBookingStatus, saveLocalBooking } from "@/lib/local-booking-store";
 
 export async function GET(req: NextRequest) {
     try {
@@ -191,6 +191,14 @@ export async function POST(req: NextRequest) {
                 success: true,
                 message: `Verification mode switched to ${mode}`,
                 verification_mode: getVerificationMode(),
+            });
+        }
+
+        if (action === "save_booking" && body.booking) {
+            saveLocalBooking(body.booking);
+            return NextResponse.json({
+                success: true,
+                message: "Booking synced to store.",
             });
         }
 

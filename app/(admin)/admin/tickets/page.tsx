@@ -1,17 +1,23 @@
+"use client";
+
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Ticket, Search, Filter, Plus } from "lucide-react";
+import { AdminNewReservationDialog } from "@/components/admin-new-reservation-dialog";
 
 export default function TicketsPage() {
+    const [openNewTicket, setOpenNewTicket] = useState(false);
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Tickets</h1>
-                    <p className="text-muted-foreground">Issue and validate event tickets seamlessly.</p>
+                    <p className="text-muted-foreground">Issue, reserve multiple seats, and validate Superlines tickets seamlessly.</p>
                 </div>
-                <Button>
+                <Button onClick={() => setOpenNewTicket(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
                     <Plus className="mr-2 h-4 w-4" />
                     New Ticket
                 </Button>
@@ -60,6 +66,12 @@ export default function TicketsPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Multi-Seat & Statutory Discount Reservation Modal */}
+            <AdminNewReservationDialog
+                isOpen={openNewTicket}
+                onClose={() => setOpenNewTicket(false)}
+            />
         </div>
     );
 }
