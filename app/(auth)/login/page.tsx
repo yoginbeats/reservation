@@ -386,19 +386,6 @@ export default function LoginPage() {
                             Create an account
                         </Link>
                     </div>
-
-                    {/* SEPARATION LINK TO ADMIN PORTAL */}
-                    <div className="mt-4 pt-4 border-t border-zinc-800 text-center">
-                        <Link
-                            href="/admin/login"
-                            className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors group"
-                        >
-                            <span>Superlines Personnel or Administrator?</span>
-                            <span className="font-bold text-red-400 group-hover:underline flex items-center">
-                                Access Admin Portal <ArrowRight className="ml-1 h-3 w-3" />
-                            </span>
-                        </Link>
-                    </div>
                 </CardContent>
             </Card>
         </div>

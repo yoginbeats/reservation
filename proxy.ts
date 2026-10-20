@@ -100,6 +100,10 @@ export default async function proxy(request: NextRequest) {
 
     // Protect /admin routes - require ADMIN role
     if (url.pathname.startsWith('/admin')) {
+        // Passengers and non-admin users must NEVER be able to open the admin portal or admin login
+        if (user && role !== 'ADMIN') {
+            return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
+        }
         if (url.pathname === '/admin/login') {
             if (user && role === 'ADMIN') {
                 return NextResponse.redirect(new URL('/admin', request.url))

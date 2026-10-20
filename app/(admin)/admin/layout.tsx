@@ -2,12 +2,40 @@ import Link from "next/link";
 import Image from "next/image";
 import { LayoutDashboard, MapPin, Bus, Route, Calendar, Users, Ticket, BarChart3, ShieldCheck, Settings, Megaphone, CalendarCheck } from "lucide-react";
 import { AdminLogoutButton } from "@/components/admin-logout-button";
+import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-export default function AdminLayout({
+export default async function AdminLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("superlines_auth_session")?.value;
+    const roleCookie = cookieStore.get("superlines_user_role")?.value;
+
+    let role = roleCookie;
+    if (sessionCookie) {
+        try {
+            const parsed = JSON.parse(sessionCookie);
+            role = parsed.role || role;
+        } catch {}
+    }
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user && !sessionCookie) {
+        redirect("/admin/login");
+    }
+
+    const effectiveRole = (role || user?.user_metadata?.role || "PASSENGER").toUpperCase();
+    if (effectiveRole !== "ADMIN") {
+        // Passengers and non-admin users must NEVER be able to open the admin portal
+        redirect("/dashboard");
+    }
+
     return (
         <div className="flex min-h-[calc(100vh-64px)]">
             {/* Sidebar */}

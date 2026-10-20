@@ -148,24 +148,13 @@ export function GlobalHeader() {
                             </button>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                            <Link
-                                href="/admin/login"
-                                className="hidden md:inline-flex items-center gap-1 text-[11px] font-bold text-zinc-500 hover:text-zinc-900 px-3 py-1.5 rounded-full hover:bg-zinc-100 transition-colors"
-                                title="Staff & Admin Portal"
-                            >
-                                <ShieldCheck className="h-3.5 w-3.5 text-zinc-400" />
-                                <span>Staff Portal</span>
-                            </Link>
-
-                            <Link
-                                href="/login"
-                                className="rounded-full bg-red-600 px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md flex items-center gap-1.5 sm:gap-2"
-                            >
-                                <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
-                                <span>Sign In</span>
-                            </Link>
-                        </div>
+                        <Link
+                            href="/login"
+                            className="rounded-full bg-red-600 px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md flex items-center gap-1.5 sm:gap-2"
+                        >
+                            <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                            <span>Sign In</span>
+                        </Link>
                     )}
 
                     {/* Mobile Hamburger Toggle Button */}
@@ -239,25 +228,14 @@ export function GlobalHeader() {
                                 <span>Logout</span>
                             </button>
                         ) : (
-                            <div className="space-y-2">
-                                <Link
-                                    href="/login"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-600 text-white hover:bg-red-700 py-2.5 text-xs font-bold shadow transition-colors"
-                                >
-                                    <User className="h-4 w-4" />
-                                    <span>Passenger Sign In</span>
-                                </Link>
-
-                                <Link
-                                    href="/admin/login"
-                                    onClick={() => setMobileMenuOpen(false)}
-                                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 py-2.5 text-xs font-bold transition-colors border border-zinc-200"
-                                >
-                                    <ShieldCheck className="h-4 w-4 text-zinc-500" />
-                                    <span>Staff & Admin Portal</span>
-                                </Link>
-                            </div>
+                            <Link
+                                href="/login"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-600 text-white hover:bg-red-700 py-2.5 text-xs font-bold shadow transition-colors"
+                            >
+                                <User className="h-4 w-4" />
+                                <span>Sign In</span>
+                            </Link>
                         )}
                     </div>
                 </div>

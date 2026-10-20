@@ -105,7 +105,16 @@ export async function POST(req: NextRequest) {
                 );
             }
 
-            const userRole = data.user?.user_metadata?.role || "PASSENGER";
+            const userRole = (data.user?.user_metadata?.role || "PASSENGER").toUpperCase();
+            
+            // Strictly prohibit passengers from logging into the Admin portal
+            if (body.portal === "admin" && (userRole === "PASSENGER" || userRole === "CLIENT")) {
+                return NextResponse.json(
+                    { success: false, error: "Access Denied: Passengers are strictly prohibited from accessing the Admin Portal." },
+                    { status: 403 }
+                );
+            }
+
             let redirectUrl = "/dashboard";
             if (userRole === "ADMIN") redirectUrl = "/admin";
             else if (userRole === "TELLER") redirectUrl = "/teller/walk-in";

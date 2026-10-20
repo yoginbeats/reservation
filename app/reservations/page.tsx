@@ -27,7 +27,7 @@ export default async function ReservationsPage() {
     }
 
     // 2. RBAC Redirection
-    if (role === 'admin') {
+    if (role?.toLowerCase() === 'admin') {
         redirect("/admin/reservations");
     }
 
