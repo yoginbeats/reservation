@@ -1,4 +1,4 @@
-// Official Superlines Transportation Co., Inc. (Atimonan Quezon)
+// Official Superlines Transportation Co., Inc.
 // Seating Arrangement & Bus Classification Layouts
 
 export type SuperlinesBusType = "REGULAR_AIRCON" | "SUPER_DELUXE" | "FIRST_CLASS";
@@ -25,6 +25,10 @@ export interface BusClassification {
     hasCR: boolean;
     hasStairs: boolean;
     assignedBuses: string[];
+    officialTitle: string;
+    seaterLabel: string;
+    busNotes?: string;
+    seatColor: "red" | "blue";
     rows: BusRowConfig[];
 }
 
@@ -43,6 +47,10 @@ export const REGULAR_AIRCON_LAYOUT: BusClassification = {
     hasCR: false,
     hasStairs: false,
     assignedBuses: ["101", "102", "103", "104", "105"],
+    officialTitle: "Seating Arrangement – REGULAR AIRCON",
+    seaterLabel: "( 49 Seater )",
+    busNotes: "Standard Regular Aircon Fleet",
+    seatColor: "red",
     rows: [
         { rowNumber: 1,  leftSeats: [{ type: "seat", seatNumber: 1 }, { type: "seat", seatNumber: 2 }], rightSeats: [{ type: "seat", seatNumber: 3 }, { type: "seat", seatNumber: 4 }] },
         { rowNumber: 2,  leftSeats: [{ type: "seat", seatNumber: 5 }, { type: "seat", seatNumber: 6 }], rightSeats: [{ type: "seat", seatNumber: 7 }, { type: "seat", seatNumber: 8 }] },
@@ -81,6 +89,10 @@ export const SUPER_DELUXE_LAYOUT: BusClassification = {
     hasCR: true,
     hasStairs: true,
     assignedBuses: ["311", "316", "319"],
+    officialTitle: "Seating Arrangement – SUPER DELUXE",
+    seaterLabel: "( 43 Seater )",
+    busNotes: "Bus # 311 & 316 & 319",
+    seatColor: "red",
     rows: [
         { rowNumber: 1,  leftSeats: [{ type: "seat", seatNumber: 1 }, { type: "seat", seatNumber: 2 }], rightSeats: [{ type: "seat", seatNumber: 3 }, { type: "seat", seatNumber: 4 }] },
         { rowNumber: 2,  leftSeats: [{ type: "seat", seatNumber: 5 }, { type: "seat", seatNumber: 6 }], rightSeats: [{ type: "stairs", label: "STAIRS" }] },
@@ -118,6 +130,10 @@ export const FIRST_CLASS_LAYOUT: BusClassification = {
     hasCR: true,
     hasStairs: true,
     assignedBuses: ["330", "331", "336"],
+    officialTitle: "Seating Arrangement – FIRST CLASS",
+    seaterLabel: "( 41 Seater )",
+    busNotes: "Bus # 330 & 331 & 336",
+    seatColor: "blue",
     rows: [
         { rowNumber: 1,  leftSeats: [{ type: "seat", seatNumber: 1 }, { type: "seat", seatNumber: 2 }], rightSeats: [{ type: "seat", seatNumber: 3 }, { type: "seat", seatNumber: 4 }] },
         { rowNumber: 2,  leftSeats: [{ type: "seat", seatNumber: 5 }, { type: "seat", seatNumber: 6 }], rightSeats: [{ type: "seat", seatNumber: 7 }, { type: "seat", seatNumber: 8 }] },

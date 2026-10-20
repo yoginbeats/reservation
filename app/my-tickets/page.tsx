@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDatePH, formatTimePH, formatDateTimePH } from "@/lib/date-utils";
+import { SeatPicker } from "@/components/seat-picker";
 
 interface UserTicket {
     id: string;
@@ -1119,57 +1120,16 @@ function TicketsContent() {
                                             </span>
                                         </label>
 
-                                        {/* Seat Map Key */}
-                                        <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
-                                            <span className="flex items-center gap-1">
-                                                <span className="h-3 w-3 rounded bg-white dark:bg-zinc-800 border" /> Available
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <span className="h-3 w-3 rounded bg-blue-600 text-white" /> Selected
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <span className="h-3 w-3 rounded bg-zinc-300 dark:bg-zinc-700" /> Booked
-                                            </span>
-                                        </div>
-
-                                        {/* Bus Seat Grid */}
-                                        <div className="p-4 rounded-xl border bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center">
-                                            {/* Driver Cab */}
-                                            <div className="w-full max-w-xs flex justify-between items-center text-[10px] font-bold text-muted-foreground border-b pb-2 mb-3">
-                                                <span>[FRONT / ENTRANCE]</span>
-                                                <span className="px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800">DRIVER CAB</span>
-                                            </div>
-
-                                            {/* 45 Seats Layout */}
-                                            <div className="grid grid-cols-5 gap-2 max-w-xs w-full text-center">
-                                                {Array.from({ length: 45 }, (_, i) => i + 1).map((seat) => {
-                                                    const isOccupied = selectedTripForRebook.occupied_seats?.includes(seat);
-                                                    const isCurrentSeat = seat === selectedTicketForRebooking.booking?.seat_number;
-                                                    const isSelected = selectedSeatForRebook === seat;
-
-                                                    // Middle aisle in 5-column grid (col 3 is aisle for rows 1 to 10)
-                                                    return (
-                                                        <button
-                                                            key={seat}
-                                                            type="button"
-                                                            disabled={isOccupied}
-                                                            onClick={() => setSelectedSeatForRebook(seat)}
-                                                            className={`h-9 rounded-lg font-mono text-xs font-bold transition-all flex items-center justify-center ${
-                                                                isSelected
-                                                                    ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-400 scale-105"
-                                                                    : isOccupied
-                                                                    ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed"
-                                                                    : isCurrentSeat
-                                                                    ? "border-2 border-amber-500 bg-amber-50 text-amber-900"
-                                                                    : "bg-white dark:bg-zinc-900 border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
-                                                            }`}
-                                                            title={isOccupied ? `Seat ${seat} is occupied` : `Seat ${seat}`}
-                                                        >
-                                                            {seat < 10 ? `0${seat}` : seat}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
+                                        {/* Authentic Superlines Seating Arrangement */}
+                                        <div className="max-h-[380px] overflow-y-auto rounded-xl border border-border p-1">
+                                            <SeatPicker
+                                                bookedSeats={selectedTripForRebook.occupied_seats || []}
+                                                selectedSeat={selectedSeatForRebook}
+                                                onSelectSeat={(seatNum) => setSelectedSeatForRebook(seatNum)}
+                                                busType={selectedTripForRebook.bus_type || "REGULAR AIRCON"}
+                                                busNumber={selectedTripForRebook.bus_number}
+                                                allowClassificationSwitch={true}
+                                            />
                                         </div>
                                     </div>
                                 )}

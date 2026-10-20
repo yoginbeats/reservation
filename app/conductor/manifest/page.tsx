@@ -21,9 +21,18 @@ import {
     AlertCircle,
     Edit,
     X,
-    Info
+    Info,
+    Bath,
+    DoorOpen,
+    Armchair
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { 
+    SUPERLINES_BUS_CLASSIFICATIONS, 
+    getBusClassification, 
+    BusClassification,
+    SeatGridCell 
+} from "@/lib/constants/bus-layouts";
 
 interface ManifestPassenger {
     id: string;
@@ -59,7 +68,13 @@ function ConductorManifestContent() {
     const [tripSearch, setTripSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<"ALL" | "BOARDED" | "PENDING" | "DISCOUNTED">("ALL");
     const [selectedSeatPreview, setSelectedSeatPreview] = useState<ManifestPassenger | null>(null);
+    const [inspectedSeatNumber, setInspectedSeatNumber] = useState<number | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    // Official Superlines Manifest Layout State
+    const [manifestLayout, setManifestLayout] = useState<BusClassification>(() =>
+        getBusClassification(selectedTrip?.bus?.bus_type, selectedTrip?.bus?.bus_number)
+    );
 
     // Dynamic Bus Unit Reassignment State
     const [showBusModal, setShowBusModal] = useState(false);
@@ -80,6 +95,9 @@ function ConductorManifestContent() {
     useEffect(() => {
         if (selectedTrip) {
             fetchManifest(selectedTrip.id);
+            setManifestLayout(getBusClassification(selectedTrip?.bus?.bus_type, selectedTrip?.bus?.bus_number));
+            setSelectedSeatPreview(null);
+            setInspectedSeatNumber(null);
         }
     }, [selectedTrip]);
 
@@ -255,7 +273,7 @@ function ConductorManifestContent() {
         }
     };
 
-    const totalSeats = selectedTrip?.bus?.seat_capacity || selectedTrip?.seat_capacity || 49;
+    const totalSeats = manifestLayout?.capacity || selectedTrip?.bus?.seat_capacity || selectedTrip?.seat_capacity || 49;
     const boardedCount = bookings.filter(b => b.ticket_status === 'USED').length;
     const bookedCount = bookings.length;
     const pendingCount = bookedCount - boardedCount;
@@ -669,142 +687,324 @@ function ConductorManifestContent() {
                         </div>
                     </div>
 
-                    {/* Interactive Bus Grid Map */}
-                    <Card className="border-zinc-800 bg-zinc-950 text-white print:hidden">
+                    {/* ========================================================================= */}
+                    {/* OFFICIAL SUPERLINES MANIFEST BOARD (MATCHING PHYSICAL LAMINATED SHEETS)   */}
+                    {/* ========================================================================= */}
+                    <Card className="border-2 border-zinc-800 bg-zinc-950 text-white">
                         <CardHeader className="pb-3 border-b border-zinc-800/80">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
                                     <CardTitle className="text-base font-bold flex items-center gap-2">
-                                        <Bus className="h-4 w-4 text-red-500" />
-                                        {totalSeats}-Seat Interactive Bus Boarding Grid
+                                        <Bus className="h-5 w-5 text-red-500" />
+                                        Official Superlines Bus Boarding Manifest & Seating Arrangement
                                     </CardTitle>
                                     <CardDescription className="text-xs text-zinc-400">
-                                        Tap any seat to view passenger details, 20% discount verification, or confirm check-in.
+                                        Official bus seating arrangement. Tap any seat to inspect passenger booking, 20% discount ID verification, or confirm boarding check-in.
                                     </CardDescription>
                                 </div>
-                                <div className="flex items-center gap-3 text-[11px] font-semibold">
-                                    <span className="flex items-center gap-1.5">
-                                        <span className="h-3 w-3 rounded bg-emerald-500" /> Boarded ({boardedCount})
-                                    </span>
-                                    <span className="flex items-center gap-1.5">
-                                        <span className="h-3 w-3 rounded bg-amber-500" /> Pending ({pendingCount})
-                                    </span>
-                                    <span className="flex items-center gap-1.5">
-                                        <span className="h-3 w-3 rounded bg-zinc-800 border border-zinc-700" /> Empty ({availableCount})
-                                    </span>
+
+                                {/* Bus Model Switcher */}
+                                <div className="flex flex-wrap items-center gap-1.5 bg-zinc-900/80 p-1 rounded-xl border border-zinc-800">
+                                    {SUPERLINES_BUS_CLASSIFICATIONS.map((c) => (
+                                        <button
+                                            key={c.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setManifestLayout(c);
+                                                setSelectedSeatPreview(null);
+                                                setInspectedSeatNumber(null);
+                                            }}
+                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border ${
+                                                manifestLayout.id === c.id
+                                                    ? "bg-red-600 text-white border-red-600 shadow-sm"
+                                                    : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white"
+                                            }`}
+                                        >
+                                            {c.capacity} Seater ({c.name})
+                                        </button>
+                                    ))}
                                 </div>
+                            </div>
+
+                            {/* Status Legend */}
+                            <div className="flex flex-wrap items-center gap-3 pt-2 text-[11px] font-semibold text-zinc-300">
+                                <span className="flex items-center gap-1.5">
+                                    <span className="h-3 w-3 rounded bg-emerald-600 border border-emerald-500" /> Boarded ({boardedCount})
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                    <span className="h-3 w-3 rounded bg-amber-500 border border-amber-400 text-zinc-950" /> Paid / Pending ({pendingCount})
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                    <span className={`h-3 w-3 rounded ${manifestLayout.seatColor === 'red' ? 'bg-[#E05D5D]' : 'bg-[#5B9BD5]'} border border-zinc-600`} /> Free ({availableCount})
+                                </span>
+                                {manifestLayout.hasCR && (
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="h-3 w-3 rounded bg-[#4A7BB0] border border-[#3A6B9E]" /> Comfort Room
+                                    </span>
+                                )}
+                                {manifestLayout.hasStairs && (
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="h-3 w-3 rounded bg-[#70B0E0] border border-[#5A9AC8]" /> Stairs
+                                    </span>
+                                )}
                             </div>
                         </CardHeader>
                         <CardContent className="p-4 sm:p-6">
-                            <div className="max-w-xl mx-auto rounded-2xl border-2 border-zinc-800 bg-zinc-900/60 p-4 space-y-4">
-                                {/* Driver / Front of Bus Indicator */}
-                                <div className="flex items-center justify-between border-b border-zinc-800 pb-2 text-xs font-mono text-zinc-400">
-                                    <span className="bg-zinc-800 px-2.5 py-1 rounded font-bold">🚍 FRONT (Driver)</span>
-                                    <span className="text-[11px]">DOOR / ENTRANCE ➔</span>
+                            {/* Physical Laminated Sheet Container */}
+                            <div className="mx-auto max-w-lg rounded-2xl border-2 border-zinc-400/80 bg-[#FAFAFA] dark:bg-zinc-900 p-3 sm:p-5 shadow-xl text-zinc-950 dark:text-zinc-50 space-y-3.5">
+                                {/* Official Header */}
+                                <div className="text-center space-y-0.5 border-b border-zinc-300 dark:border-zinc-700 pb-3">
+                                    <h2 className="text-sm sm:text-base font-black tracking-wider text-[#1A365D] dark:text-sky-300 uppercase font-sans">
+                                        SUPERLINES TRANSPORTATION CO., INC.
+                                    </h2>
+                                    <div className="pt-1">
+                                        <p className="text-xs sm:text-sm font-black text-red-600 dark:text-red-400 uppercase tracking-wide">
+                                            {manifestLayout.officialTitle}
+                                        </p>
+                                        <p className="text-[11px] font-black text-zinc-700 dark:text-zinc-300 font-mono">
+                                            {manifestLayout.seaterLabel}
+                                        </p>
+                                    </div>
+                                    {manifestLayout.busNotes && (
+                                        <p className="text-[10px] font-mono font-bold text-zinc-500 pt-0.5">
+                                            {manifestLayout.busNotes}
+                                        </p>
+                                    )}
                                 </div>
 
-                                {/* Dynamic Seats Grid */}
-                                <div className="grid grid-cols-5 gap-2 text-xs font-mono">
-                                    {Array.from({ length: totalSeats }).map((_, i) => {
-                                        const seatNum = i + 1;
-                                        const passenger = bookings.find(b => b.seat_number === seatNum);
-                                        const isBoarded = passenger?.ticket_status === 'USED';
-                                        const isBooked = Boolean(passenger);
-                                        const isSelected = selectedSeatPreview?.seat_number === seatNum;
+                                {/* Column Headers: DRIVER'S SEAT | AISLE | CONDUCTOR SEAT */}
+                                <div className="grid grid-cols-12 gap-1 items-end text-center">
+                                    <div className="col-span-5 rounded-t-md bg-[#70B0E0] text-zinc-950 font-black text-[11px] sm:text-xs uppercase py-1.5 shadow-sm border border-[#5A9AC8]">
+                                        DRIVER&apos;S SEAT
+                                    </div>
+                                    <div className="col-span-2 text-[10px] font-black uppercase text-red-600 dark:text-red-400 py-1 font-mono">
+                                        {/* Aisle Spacer */}
+                                    </div>
+                                    <div className="col-span-5 rounded-t-md bg-[#70B0E0] text-zinc-950 font-black text-[11px] sm:text-xs uppercase py-1.5 shadow-sm border border-[#5A9AC8]">
+                                        CONDUCTOR SEAT
+                                    </div>
+                                </div>
 
-                                        // Column 3 is the aisle in 2x2 layout, except last row which has 5 seats
-                                        const isAisle = (i % 4 === 2) && seatNum < 41;
+                                {/* Official Rows Grid */}
+                                <div className="space-y-1 sm:space-y-1.5 bg-white dark:bg-zinc-950/70 p-2 sm:p-2.5 rounded-xl border border-zinc-300 dark:border-zinc-800 shadow-inner">
+                                    {(() => {
+                                        const totalRows = manifestLayout.rows.length;
+                                        const aisleLetters = ["A", "I", "S", "L", "E"];
+                                        const startRowIdx = Math.max(1, Math.floor((totalRows - aisleLetters.length) / 2));
 
-                                        return (
-                                            <button
-                                                key={seatNum}
-                                                type="button"
-                                                onClick={() => {
-                                                    if (passenger) setSelectedSeatPreview(passenger);
-                                                }}
-                                                className={`h-11 rounded-xl flex flex-col items-center justify-center font-bold transition-all relative border ${
-                                                    isBoarded
-                                                        ? "bg-emerald-600 text-white border-emerald-500 shadow-sm hover:bg-emerald-500"
-                                                        : isBooked
-                                                        ? "bg-amber-500 text-zinc-950 border-amber-400 shadow-sm hover:bg-amber-400"
-                                                        : "bg-zinc-800/80 text-zinc-500 border-zinc-700 hover:border-zinc-500"
-                                                } ${isSelected ? "ring-2 ring-white ring-offset-2 ring-offset-zinc-950 scale-105" : ""}`}
-                                            >
-                                                <span className="text-[11px]">#{seatNum < 10 ? `0${seatNum}` : seatNum}</span>
-                                                {isBoarded ? (
-                                                    <span className="text-[8px] font-black uppercase">BOARDED</span>
-                                                ) : isBooked ? (
-                                                    <span className="text-[8px] font-black uppercase">PAID</span>
-                                                ) : (
-                                                    <span className="text-[8px] font-normal opacity-60">FREE</span>
-                                                )}
-                                                {passenger?.is_discounted && (
-                                                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-purple-600 rounded-full border border-white text-[7px] text-white flex items-center justify-center font-black">
-                                                        %
+                                        const renderCell = (cell: SeatGridCell, isBackRow = false) => {
+                                            if (!cell || cell.type === "empty") {
+                                                return <div className="h-10 w-11 sm:h-11 sm:w-12" />;
+                                            }
+
+                                            if (cell.type === "cr") {
+                                                return (
+                                                    <div
+                                                        className="flex h-10 w-[94px] sm:h-11 sm:w-[102px] items-center justify-center rounded-md bg-[#4A7BB0] text-white font-black text-[10px] sm:text-[11px] shadow-sm gap-1 border border-[#3A6B9E] select-none"
+                                                        title="Comfort Room (Restroom)"
+                                                    >
+                                                        <Bath className="h-3.5 w-3.5 shrink-0" />
+                                                        <span className="tracking-tighter">COMFORT ROOM</span>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (cell.type === "stairs") {
+                                                return (
+                                                    <div
+                                                        className="flex h-10 w-[94px] sm:h-11 sm:w-[102px] items-center justify-center rounded-md bg-[#70B0E0] text-zinc-950 font-black text-[10px] sm:text-[11px] shadow-sm gap-1 border border-[#5A9AC8] select-none"
+                                                        title="Exit / Entrance Stairs"
+                                                    >
+                                                        <DoorOpen className="h-3.5 w-3.5 shrink-0" />
+                                                        <span className="tracking-wider">STAIRS</span>
+                                                    </div>
+                                                );
+                                            }
+
+                                            const seatNum = cell.seatNumber!;
+                                            const passenger = bookings.find(b => b.seat_number === seatNum);
+                                            const isBoarded = passenger?.ticket_status === 'USED';
+                                            const isBooked = Boolean(passenger);
+                                            const isSelected = selectedSeatPreview?.seat_number === seatNum || inspectedSeatNumber === seatNum;
+                                            const isRedTheme = manifestLayout.seatColor === "red";
+
+                                            const freeBg = isRedTheme
+                                                ? "bg-[#E05D5D] hover:bg-[#D44A4A] text-white border-[#C94545]"
+                                                : "bg-[#5B9BD5] hover:bg-[#4A8EC6] text-white border-[#457EB3]";
+
+                                            return (
+                                                <button
+                                                    key={seatNum}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setInspectedSeatNumber(seatNum);
+                                                        setSelectedSeatPreview(passenger || null);
+                                                    }}
+                                                    className={`relative flex h-10 w-11 sm:h-11 sm:w-12 flex-col items-center justify-center rounded-md border font-mono transition-all ${
+                                                        isBoarded
+                                                            ? "bg-emerald-600 text-white border-emerald-500 shadow-md hover:bg-emerald-500"
+                                                            : isBooked
+                                                            ? "bg-amber-500 text-zinc-950 border-amber-400 shadow-md hover:bg-amber-400"
+                                                            : `${freeBg} shadow-sm hover:scale-105 active:scale-95`
+                                                    } ${isSelected ? "ring-4 ring-sky-500 scale-105 z-20 shadow-xl" : ""} ${isBackRow ? "flex-1 max-w-[52px]" : ""}`}
+                                                    title={`Seat #${seatNum} — ${isBoarded ? 'BOARDED' : isBooked ? `PAID (${passenger?.passenger_name})` : 'FREE'}`}
+                                                >
+                                                    <span className="text-[12px] sm:text-[13px] font-black leading-tight">
+                                                        {seatNum}
                                                     </span>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
+                                                    <span className="text-[7.5px] sm:text-[8px] font-black uppercase tracking-tight">
+                                                        {isBoarded ? "BOARDED" : isBooked ? "PAID" : "FREE"}
+                                                    </span>
+
+                                                    {/* 20% Discount Badge */}
+                                                    {(passenger?.is_discounted || (passenger?.discounted_passengers && passenger.discounted_passengers.length > 0)) && (
+                                                        <span
+                                                            className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-purple-600 rounded-full border border-white text-[7.5px] text-white flex items-center justify-center font-black shadow"
+                                                            title="20% Statutory Discount Verified"
+                                                        >
+                                                            %
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            );
+                                        };
+
+                                        return manifestLayout.rows.map((row, rowIdx) => {
+                                            const isBackRow = Boolean(row.aisleSeat);
+                                            const aisleLetterIdx = rowIdx - startRowIdx;
+                                            const aisleLetter = (!isBackRow && aisleLetterIdx >= 0 && aisleLetterIdx < aisleLetters.length)
+                                                ? aisleLetters[aisleLetterIdx]
+                                                : null;
+
+                                            return (
+                                                <div key={row.rowNumber} className="grid grid-cols-12 items-center gap-1">
+                                                    {/* Left Side (Driver Side - 2 Seats) */}
+                                                    <div className="col-span-5 flex justify-end gap-1 sm:gap-1.5">
+                                                        {row.leftSeats.map((cell, idx) => (
+                                                            <div key={idx} className="shrink-0">
+                                                                {renderCell(cell, isBackRow)}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Center Aisle (Or Middle Back Seat) */}
+                                                    <div className="col-span-2 flex items-center justify-center">
+                                                        {row.aisleSeat ? (
+                                                            renderCell(row.aisleSeat, true)
+                                                        ) : (
+                                                            <div className="flex h-10 w-full items-center justify-center">
+                                                                <span className="text-xs sm:text-sm font-black font-serif text-red-600 dark:text-red-400 select-none">
+                                                                    {aisleLetter || "•"}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Right Side (Conductor Side - 2 Seats / CR / Stairs) */}
+                                                    <div className="col-span-5 flex justify-start gap-1 sm:gap-1.5">
+                                                        {row.rightSeats.map((cell, idx) => (
+                                                            <div key={idx} className="shrink-0">
+                                                                {renderCell(cell, isBackRow)}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        });
+                                    })()}
                                 </div>
                             </div>
 
                             {/* Selected Seat Quick Inspection Card */}
-                            {selectedSeatPreview && (
+                            {(selectedSeatPreview || inspectedSeatNumber !== null) && (
                                 <div className="mt-4 p-4 rounded-xl border-2 border-zinc-700 bg-zinc-900 text-xs space-y-3">
-                                    <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-mono text-xl font-black text-emerald-400">
-                                                Seat #{selectedSeatPreview.seat_number < 10 ? `0${selectedSeatPreview.seat_number}` : selectedSeatPreview.seat_number}
-                                            </span>
-                                            <span className="text-zinc-300 font-bold text-sm">
-                                                {selectedSeatPreview.passenger_name}
-                                            </span>
-                                        </div>
-                                        <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
-                                            selectedSeatPreview.ticket_status === 'USED'
-                                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                                                : 'bg-amber-950 text-amber-300 border border-amber-800'
-                                        }`}>
-                                            {selectedSeatPreview.ticket_status === 'USED' ? '✓ BOARDED' : 'AWAITING BOARDING'}
-                                        </span>
-                                    </div>
-
-                                    {/* Discount Info if present */}
-                                    {(selectedSeatPreview.is_discounted || (selectedSeatPreview.discounted_passengers && selectedSeatPreview.discounted_passengers.length > 0)) && (
-                                        <div className="bg-purple-950/40 p-2.5 rounded-lg border border-purple-800 text-purple-200 text-xs space-y-1">
-                                            <div className="font-bold flex items-center justify-between text-purple-300">
-                                                <span>20% Statutory Discount Beneficiary</span>
-                                                <span className="bg-purple-600 text-white text-[10px] px-1.5 py-0.2 rounded font-black">20% OFF</span>
+                                    {selectedSeatPreview ? (
+                                        <>
+                                            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono text-xl font-black text-emerald-400">
+                                                        Seat #{selectedSeatPreview.seat_number < 10 ? `0${selectedSeatPreview.seat_number}` : selectedSeatPreview.seat_number}
+                                                    </span>
+                                                    <span className="text-zinc-200 font-bold text-sm">
+                                                        {selectedSeatPreview.passenger_name}
+                                                    </span>
+                                                </div>
+                                                <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
+                                                    selectedSeatPreview.ticket_status === 'USED'
+                                                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                                        : 'bg-amber-950 text-amber-300 border border-amber-800'
+                                                }`}>
+                                                    {selectedSeatPreview.ticket_status === 'USED' ? '✓ BOARDED' : 'AWAITING BOARDING'}
+                                                </span>
                                             </div>
-                                            {selectedSeatPreview.discounted_passengers && selectedSeatPreview.discounted_passengers.length > 0 ? (
-                                                selectedSeatPreview.discounted_passengers.map((p, idx) => (
-                                                    <p key={idx} className="font-mono text-[11px]">
-                                                        {p.name} ({p.classification}) • ID: {p.id_number}
-                                                    </p>
-                                                ))
-                                            ) : (
-                                                <p className="font-mono text-[11px]">
-                                                    {selectedSeatPreview.passenger_type} • ID: {selectedSeatPreview.discount_id || "Verified"}
-                                                </p>
+
+                                            {/* Booking metadata */}
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-zinc-400">
+                                                <div>
+                                                    <span className="text-zinc-500 block text-[10px]">Contact Phone</span>
+                                                    <span className="text-zinc-300 font-mono">{selectedSeatPreview.passenger_contact || "N/A"}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-zinc-500 block text-[10px]">Issuance Channel</span>
+                                                    <span className="text-zinc-300 font-semibold">{selectedSeatPreview.booking_source || "Counter / Online"}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-zinc-500 block text-[10px]">Payment Status</span>
+                                                    <span className="text-emerald-400 font-bold">{selectedSeatPreview.payment_status || "PAID"}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Discount Info if present */}
+                                            {(selectedSeatPreview.is_discounted || (selectedSeatPreview.discounted_passengers && selectedSeatPreview.discounted_passengers.length > 0)) && (
+                                                <div className="bg-purple-950/40 p-2.5 rounded-lg border border-purple-800 text-purple-200 text-xs space-y-1">
+                                                    <div className="font-bold flex items-center justify-between text-purple-300">
+                                                        <span>20% Statutory Discount Beneficiary</span>
+                                                        <span className="bg-purple-600 text-white text-[10px] px-1.5 py-0.2 rounded font-black">20% OFF</span>
+                                                    </div>
+                                                    {selectedSeatPreview.discounted_passengers && selectedSeatPreview.discounted_passengers.length > 0 ? (
+                                                        selectedSeatPreview.discounted_passengers.map((p, idx) => (
+                                                            <p key={idx} className="font-mono text-[11px]">
+                                                                {p.name} ({p.classification}) • ID: {p.id_number}
+                                                            </p>
+                                                        ))
+                                                    ) : (
+                                                        <p className="font-mono text-[11px]">
+                                                            {selectedSeatPreview.passenger_type} • ID: {selectedSeatPreview.discount_id || "Verified"}
+                                                        </p>
+                                                    )}
+                                                </div>
                                             )}
+
+                                            <div className="flex items-center justify-between pt-1">
+                                                <span className="font-mono text-zinc-400 text-[11px]">Token: {selectedSeatPreview.qr_token || "Pending"}</span>
+                                                {selectedSeatPreview.ticket_status !== 'USED' && (
+                                                    <Button
+                                                        size="sm"
+                                                        className="bg-emerald-600 hover:bg-emerald-700 font-bold text-xs"
+                                                        onClick={() => handleMarkBoarded(selectedSeatPreview.qr_token, selectedSeatPreview.seat_number)}
+                                                        disabled={actionLoading === selectedSeatPreview.qr_token}
+                                                    >
+                                                        <Check className="h-3.5 w-3.5 mr-1" />
+                                                        Mark as Boarded
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-lg font-black text-zinc-300">
+                                                    Seat #{inspectedSeatNumber! < 10 ? `0${inspectedSeatNumber}` : inspectedSeatNumber}
+                                                </span>
+                                                <span className="text-zinc-400 font-semibold text-xs">
+                                                    Vacant / Available for Walk-in Passenger
+                                                </span>
+                                            </div>
+                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                                UNBOOKED
+                                            </span>
                                         </div>
                                     )}
-
-                                    <div className="flex items-center justify-between pt-1">
-                                        <span className="font-mono text-zinc-400 text-[11px]">Token: {selectedSeatPreview.qr_token || "Pending"}</span>
-                                        {selectedSeatPreview.ticket_status !== 'USED' && (
-                                            <Button
-                                                size="sm"
-                                                className="bg-emerald-600 hover:bg-emerald-700 font-bold text-xs"
-                                                onClick={() => handleMarkBoarded(selectedSeatPreview.qr_token, selectedSeatPreview.seat_number)}
-                                                disabled={actionLoading === selectedSeatPreview.qr_token}
-                                            >
-                                                <Check className="h-3.5 w-3.5 mr-1" />
-                                                Mark as Boarded
-                                            </Button>
-                                        )}
-                                    </div>
                                 </div>
                             )}
                         </CardContent>

@@ -35,6 +35,7 @@ import {
     Percent,
     AlertTriangle
 } from "lucide-react";
+import { SeatPicker } from "@/components/seat-picker";
 
 interface TellerDashboardClientProps {
     initialTrips: any[];
@@ -1215,26 +1216,20 @@ export function TellerDashboardClient({
 
                         <form onSubmit={handleConfirmRebook} className="space-y-4">
                             <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-foreground">Select New Seat Number (1 - 45)</Label>
-                                <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto p-2 border rounded-xl bg-muted/30">
-                                    {Array.from({ length: 45 }).map((_, i) => {
-                                        const s = i + 1;
-                                        const isSelected = newSeatInput === s;
-                                        return (
-                                            <button
-                                                key={s}
-                                                type="button"
-                                                onClick={() => setNewSeatInput(s)}
-                                                className={`h-9 rounded-lg font-mono font-bold text-xs border transition-all ${
-                                                    isSelected
-                                                        ? "bg-blue-600 text-white border-blue-600 shadow"
-                                                        : "bg-background text-foreground hover:bg-muted border-border"
-                                                }`}
-                                            >
-                                                #{s < 10 ? `0${s}` : s}
-                                            </button>
-                                        );
-                                    })}
+                                <Label className="text-xs font-bold text-foreground">Select New Seat Number</Label>
+                                <div className="max-h-[380px] overflow-y-auto rounded-xl border border-border p-1">
+                                    <SeatPicker
+                                        bookedSeats={selectedTicketForRebook.seat_number ? [selectedTicketForRebook.seat_number] : []}
+                                        selectedSeat={newSeatInput}
+                                        onSelectSeat={(seatNum) => setNewSeatInput(seatNum)}
+                                        busType={selectedTicketForRebook.trip?.bus?.bus_type || selectedTicketForRebook.bus_type || "REGULAR AIRCON"}
+                                        busNumber={selectedTicketForRebook.trip?.bus?.bus_number || selectedTicketForRebook.bus_number}
+                                        allowClassificationSwitch={true}
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between text-xs font-mono font-bold pt-1">
+                                    <span>Selected New Seat:</span>
+                                    <span className="text-blue-600 dark:text-blue-400 text-sm">#{newSeatInput < 10 ? `0${newSeatInput}` : newSeatInput}</span>
                                 </div>
                             </div>
 
