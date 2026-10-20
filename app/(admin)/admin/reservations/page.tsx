@@ -126,9 +126,9 @@ export default function AdminReservationsPage() {
         return true;
     });
 
-    const [terminalFilter, setTerminalFilter] = useState<"ALL" | "CUBAO" | "DAET" | "BOUND_ONLY">("ALL");
+    const [terminalFilter, setTerminalFilter] = useState<string>("ALL");
 
-    // Group filtered bookings by Bus Unit & Schedule (Cross-Terminal Binding)
+    // Group filtered bookings by Bus Unit & Schedule (Cross-Terminal Binding for all terminals)
     const scheduleGroups = (() => {
         const map = new Map<string, {
             groupKey: string;
@@ -136,12 +136,17 @@ export default function AdminReservationsPage() {
             departureDateStr: string;
             departureTimeDisplay: string;
             rawDate: Date;
-            cubaoLegBookings: any[];
-            daetLegBookings: any[];
+            leg1Origin: string;
+            leg1Destination: string;
+            leg2Origin: string;
+            leg2Destination: string;
+            leg1Bookings: any[];
+            leg2Bookings: any[];
             otherBookings: any[];
             totalRevenue: number;
             totalPassengers: number;
             isDualTerminalBound: boolean;
+            terminalsList: string[];
         }>();
 
         for (const b of filteredBookings) {
@@ -150,9 +155,12 @@ export default function AdminReservationsPage() {
             const timeKey = depTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
             const busNum = b.trip?.bus_number || "Superlines Express";
             
-            // Clean bus identifier (e.g. SL-401 or Bus 101 or Superlines Express)
+            // Clean bus identifier (e.g. SL-401 or SL-212 or SL-308 or SL-520)
             const busCore = busNum.split(" ")[0].trim();
             const groupKey = `${busCore}__${dateKey}`;
+
+            const origin = b.trip?.origin || "Cubao";
+            const dest = b.trip?.destination || "Daet";
 
             if (!map.has(groupKey)) {
                 map.set(groupKey, {
@@ -161,12 +169,17 @@ export default function AdminReservationsPage() {
                     departureDateStr: dateKey,
                     departureTimeDisplay: timeKey,
                     rawDate: depTime,
-                    cubaoLegBookings: [],
-                    daetLegBookings: [],
+                    leg1Origin: origin,
+                    leg1Destination: dest,
+                    leg2Origin: dest,
+                    leg2Destination: origin,
+                    leg1Bookings: [],
+                    leg2Bookings: [],
                     otherBookings: [],
                     totalRevenue: 0,
                     totalPassengers: 0,
                     isDualTerminalBound: false,
+                    terminalsList: [],
                 });
             }
 
@@ -175,28 +188,36 @@ export default function AdminReservationsPage() {
             grp.totalRevenue += fare;
             grp.totalPassengers += b.seat_count || (b.seat_numbers?.length) || 1;
 
-            const origin = (b.trip?.origin || "").toLowerCase();
-            const dest = (b.trip?.destination || "").toLowerCase();
+            if (!grp.terminalsList.includes(origin)) grp.terminalsList.push(origin);
+            if (!grp.terminalsList.includes(dest)) grp.terminalsList.push(dest);
 
-            if (origin.includes("cubao") || (dest.includes("daet") && !origin.includes("daet"))) {
-                grp.cubaoLegBookings.push(b);
-            } else if (origin.includes("daet") || dest.includes("cubao")) {
-                grp.daetLegBookings.push(b);
+            const bOrig = origin.toLowerCase();
+            const bDest = dest.toLowerCase();
+            const gL1Orig = grp.leg1Origin.toLowerCase();
+            const gL2Orig = grp.leg2Origin.toLowerCase();
+
+            if (bOrig === gL1Orig || (bDest === grp.leg1Destination.toLowerCase() && bOrig !== gL2Orig)) {
+                grp.leg1Bookings.push(b);
+            } else if (bOrig === gL2Orig || bDest === grp.leg2Destination.toLowerCase()) {
+                grp.leg2Bookings.push(b);
             } else {
                 grp.otherBookings.push(b);
             }
 
-            grp.isDualTerminalBound = grp.cubaoLegBookings.length > 0 && grp.daetLegBookings.length > 0;
+            grp.isDualTerminalBound = grp.leg1Bookings.length > 0 && grp.leg2Bookings.length > 0;
         }
 
         let result = Array.from(map.values()).sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
 
-        if (terminalFilter === "CUBAO") {
-            result = result.filter(g => g.cubaoLegBookings.length > 0);
-        } else if (terminalFilter === "DAET") {
-            result = result.filter(g => g.daetLegBookings.length > 0);
-        } else if (terminalFilter === "BOUND_ONLY") {
+        if (terminalFilter === "BOUND_ONLY") {
             result = result.filter(g => g.isDualTerminalBound);
+        } else if (terminalFilter !== "ALL") {
+            const filterLow = terminalFilter.toLowerCase();
+            result = result.filter(g => 
+                g.terminalsList.some(t => t.toLowerCase() === filterLow) ||
+                g.leg1Origin.toLowerCase() === filterLow ||
+                g.leg2Origin.toLowerCase() === filterLow
+            );
         }
 
         return result;
@@ -253,7 +274,7 @@ export default function AdminReservationsPage() {
                 </div>
             </div>
 
-            {/* Quick Stats Grid */}
+            {/* Quick Stats Grid with Anti-Double Booking Indicator */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-4">
                 <Card className="border-l-4 border-l-emerald-500 shadow-sm">
                     <CardHeader className="pb-2">
@@ -296,14 +317,14 @@ export default function AdminReservationsPage() {
 
                 <Card className="border-l-4 border-l-purple-500 shadow-sm">
                     <CardHeader className="pb-2">
-                        <CardDescription className="text-xs uppercase font-bold tracking-wider">Bound Bus Rotations</CardDescription>
+                        <CardDescription className="text-xs uppercase font-bold tracking-wider">Bound Fleet Rotations</CardDescription>
                         <CardTitle className="text-2xl font-black text-purple-600 flex items-center gap-2">
                             {dualBoundCount}
                             <ArrowLeftRight className="h-4 w-4 text-purple-500" />
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="text-xs text-muted-foreground">
-                        Cubao ⇄ Daet cross-bound fleet
+                    <CardContent className="text-xs text-muted-foreground flex items-center gap-1 text-emerald-600 font-semibold">
+                        <ShieldCheck className="h-3 w-3" /> Anti-Double Booking Guard Active
                     </CardContent>
                 </Card>
             </div>
@@ -315,7 +336,7 @@ export default function AdminReservationsPage() {
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
-                            placeholder="Search by Passenger, GCash Ref #, Seat Number, Bus Body #..."
+                            placeholder="Search by Passenger, GCash Ref #, Seat Number, Terminal, Bus Body #..."
                             className="pl-9 bg-card"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -391,10 +412,10 @@ export default function AdminReservationsPage() {
                     </div>
                 </div>
 
-                {/* Terminal Route Filter Tabs */}
+                {/* Multi-Terminal Route Filter Tabs */}
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                     <span className="text-xs font-bold text-muted-foreground flex items-center gap-1 mr-1">
-                        <Filter className="h-3.5 w-3.5" /> Filter Route:
+                        <Filter className="h-3.5 w-3.5" /> Terminals:
                     </span>
                     <button
                         type="button"
@@ -405,32 +426,23 @@ export default function AdminReservationsPage() {
                                 : "bg-muted/60 text-muted-foreground hover:bg-muted"
                         }`}
                     >
-                        All Routes
+                        All Terminals
                     </button>
-                    <button
-                        type="button"
-                        onClick={() => setTerminalFilter("CUBAO")}
-                        className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors flex items-center gap-1 ${
-                            terminalFilter === "CUBAO"
-                                ? "bg-emerald-600 text-white"
-                                : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100"
-                        }`}
-                    >
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                        Cubao ➔ Daet Only
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setTerminalFilter("DAET")}
-                        className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors flex items-center gap-1 ${
-                            terminalFilter === "DAET"
-                                ? "bg-blue-600 text-white"
-                                : "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100"
-                        }`}
-                    >
-                        <span className="h-2 w-2 rounded-full bg-blue-500" />
-                        Daet ➔ Cubao Only
-                    </button>
+                    {["Cubao", "Daet", "PITX", "Alabang", "Naga"].map((term) => (
+                        <button
+                            key={term}
+                            type="button"
+                            onClick={() => setTerminalFilter(term)}
+                            className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                                terminalFilter.toLowerCase() === term.toLowerCase()
+                                    ? "bg-blue-600 text-white shadow-sm"
+                                    : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                            }`}
+                        >
+                            <span className="h-2 w-2 rounded-full bg-blue-500" />
+                            {term} Terminal
+                        </button>
+                    ))}
                     <button
                         type="button"
                         onClick={() => setTerminalFilter("BOUND_ONLY")}
@@ -441,8 +453,12 @@ export default function AdminReservationsPage() {
                         }`}
                     >
                         <ArrowLeftRight className="h-3.5 w-3.5" />
-                        🔗 Dual-Terminal Bound Rotations ({dualBoundCount})
+                        🔗 Dual-Terminal Bound ({dualBoundCount})
                     </button>
+                    <span className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        Anti-Double Booking Guard: Active across all terminals
+                    </span>
                 </div>
             </div>
 
@@ -455,7 +471,7 @@ export default function AdminReservationsPage() {
                         <Card className="p-16 text-center text-muted-foreground space-y-3">
                             <Bus className="h-10 w-10 mx-auto text-muted-foreground/60" />
                             <p className="font-semibold text-base">No bus schedules found matching your filter criteria.</p>
-                            <p className="text-xs">Try selecting &quot;All Routes&quot; or clearing your search term.</p>
+                            <p className="text-xs">Try selecting &quot;All Terminals&quot; or clearing your search term.</p>
                         </Card>
                     ) : (
                         scheduleGroups.map((grp) => {
@@ -486,16 +502,16 @@ export default function AdminReservationsPage() {
                                                     {grp.isDualTerminalBound ? (
                                                         <span className="flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-400 shadow-sm animate-pulse">
                                                             <ArrowLeftRight className="h-3.5 w-3.5" />
-                                                            Cross-Terminal Bound (Cubao ⇄ Daet Active)
+                                                            Cross-Terminal Bound ({grp.leg1Origin} ⇄ {grp.leg2Origin} Active)
                                                         </span>
                                                     ) : (
                                                         <span className="px-2.5 py-0.5 rounded text-xs text-muted-foreground bg-muted font-medium">
-                                                            Single Direction Leg
+                                                            Active Terminal Route ({grp.leg1Origin} ➔ {grp.leg1Destination})
                                                         </span>
                                                     )}
                                                 </div>
                                                 <p className="text-xs text-muted-foreground">
-                                                    Unified rotation manifest binding bookings made from Cubao and Daet terminals under this physical bus departure.
+                                                    Unified rotation manifest binding bookings made across {grp.terminalsList.join(", ")} terminals under this physical bus departure.
                                                 </p>
                                             </div>
 
@@ -530,32 +546,32 @@ export default function AdminReservationsPage() {
                                         </div>
                                     </CardHeader>
 
-                                    {/* Dual Side-by-Side Roster: Cubao Leg (Left) & Daet Leg (Right) */}
+                                    {/* Dual Side-by-Side Roster: Leg 1 (Left) & Leg 2 Turnaround (Right) */}
                                     <CardContent className="p-4 grid gap-4 lg:grid-cols-2">
                                         {/* ===================================================== */}
-                                        {/* LEFT COLUMN: CUBAO TERMINAL ➔ DAET (OUTBOUND)         */}
+                                        {/* LEFT COLUMN: LEG 1 (OUTBOUND)                         */}
                                         {/* ===================================================== */}
                                         <div className="rounded-xl border-2 border-emerald-500/30 overflow-hidden bg-card">
                                             <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 border-b flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                                                     <span className="font-extrabold text-xs text-emerald-900 dark:text-emerald-200 uppercase tracking-wider">
-                                                        Origin: Cubao Terminal ➔ Daet
+                                                        Origin: {grp.leg1Origin} Terminal ➔ {grp.leg1Destination}
                                                     </span>
                                                 </div>
                                                 <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-emerald-900 px-2 py-0.5 rounded-md border border-emerald-300">
-                                                    {grp.cubaoLegBookings.length} Passenger(s)
+                                                    {grp.leg1Bookings.length} Passenger(s)
                                                 </span>
                                             </div>
 
                                             <div className="p-3">
-                                                {grp.cubaoLegBookings.length === 0 ? (
+                                                {grp.leg1Bookings.length === 0 ? (
                                                     <div className="py-8 text-center text-xs text-muted-foreground italic">
-                                                        No bookings originating from Cubao terminal yet. Ready for counter & online bookings.
+                                                        No bookings originating from {grp.leg1Origin} terminal yet. Ready for {grp.leg1Origin} counter & online bookings.
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-2">
-                                                        {grp.cubaoLegBookings.map((b) => {
+                                                        {grp.leg1Bookings.map((b) => {
                                                             const isPaid = b.payment_status === "PAID" || b.booking_status === "CONFIRMED";
                                                             const isPending = b.payment_status === "PENDING_VERIFICATION" || b.booking_status === "PENDING_VERIFICATION";
                                                             const cleanRef = b.transaction_ref?.replace("GCASH-", "") || "N/A";
@@ -629,29 +645,29 @@ export default function AdminReservationsPage() {
                                         </div>
 
                                         {/* ===================================================== */}
-                                        {/* RIGHT COLUMN: DAET TERMINAL ➔ CUBAO (RETURN/BOUND)     */}
+                                        {/* RIGHT COLUMN: LEG 2 (RETURN TURNAROUND)               */}
                                         {/* ===================================================== */}
                                         <div className="rounded-xl border-2 border-blue-500/30 overflow-hidden bg-card">
                                             <div className="p-3 bg-blue-50/70 dark:bg-blue-950/40 border-b flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
                                                     <span className="font-extrabold text-xs text-blue-900 dark:text-blue-200 uppercase tracking-wider">
-                                                        Origin: Daet Terminal ➔ Cubao
+                                                        Origin: {grp.leg2Origin} Terminal ➔ {grp.leg2Destination}
                                                     </span>
                                                 </div>
                                                 <span className="font-mono text-xs font-bold text-blue-700 dark:text-blue-300 bg-white dark:bg-blue-900 px-2 py-0.5 rounded-md border border-blue-300">
-                                                    {grp.daetLegBookings.length} Passenger(s)
+                                                    {grp.leg2Bookings.length} Passenger(s)
                                                 </span>
                                             </div>
 
                                             <div className="p-3">
-                                                {grp.daetLegBookings.length === 0 ? (
+                                                {grp.leg2Bookings.length === 0 ? (
                                                     <div className="py-8 text-center text-xs text-muted-foreground italic">
-                                                        No bookings originating from Daet terminal yet. Ready for Daet counter & online bookings.
+                                                        No bookings originating from {grp.leg2Origin} terminal yet. Ready for {grp.leg2Origin} counter & online bookings.
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-2">
-                                                        {grp.daetLegBookings.map((b) => {
+                                                        {grp.leg2Bookings.map((b) => {
                                                             const isPaid = b.payment_status === "PAID" || b.booking_status === "CONFIRMED";
                                                             const isPending = b.payment_status === "PENDING_VERIFICATION" || b.booking_status === "PENDING_VERIFICATION";
                                                             const cleanRef = b.transaction_ref?.replace("GCASH-", "") || "N/A";

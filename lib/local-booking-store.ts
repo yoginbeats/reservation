@@ -97,10 +97,16 @@ const CACHE_FILE = path.join(process.cwd(), ".local_bookings.json");
 
 const OCT_30_CUBAO_ID = "oct30-cubao-daet-401";
 const OCT_30_DAET_ID = "oct30-daet-cubao-401";
+const OCT_30_PITX_ID = "oct30-pitx-daet-212";
+const OCT_30_DAET_PITX_ID = "oct30-daet-pitx-212";
+const OCT_30_ALABANG_ID = "oct30-alabang-daet-308";
+const OCT_30_DAET_ALABANG_ID = "oct30-daet-alabang-308";
+const OCT_30_CUBAO_NAGA_ID = "oct30-cubao-naga-520";
+const OCT_30_NAGA_CUBAO_ID = "oct30-naga-cubao-520";
 
 function ensureOctober30SeedData(list: CachedBooking[]) {
-    const hasCubao = list.some(b => b.id === OCT_30_CUBAO_ID || (b.passenger_name === "Juan Dela Cruz" && b.trip?.origin === "Cubao"));
-    if (!hasCubao) {
+    // 1. CUBAO ⇄ DAET (SL-401)
+    if (!list.some(b => b.id === OCT_30_CUBAO_ID)) {
         list.push({
             id: OCT_30_CUBAO_ID,
             created_at: "2026-10-20T08:00:00.000Z",
@@ -128,8 +134,7 @@ function ensureOctober30SeedData(list: CachedBooking[]) {
         });
     }
 
-    const hasDaet = list.some(b => b.id === OCT_30_DAET_ID || (b.passenger_name === "Elena Magno" && b.trip?.origin === "Daet"));
-    if (!hasDaet) {
+    if (!list.some(b => b.id === OCT_30_DAET_ID)) {
         list.push({
             id: OCT_30_DAET_ID,
             created_at: "2026-10-20T08:30:00.000Z",
@@ -153,6 +158,177 @@ function ensureOctober30SeedData(list: CachedBooking[]) {
                 destination: "Cubao",
                 departure_time: "2026-10-30T20:00:00.000Z",
                 bus_number: "SL-401 (Superlines Aircon)",
+            }
+        });
+    }
+
+    // 2. PITX ⇄ DAET (SL-212)
+    if (!list.some(b => b.id === OCT_30_PITX_ID)) {
+        list.push({
+            id: OCT_30_PITX_ID,
+            created_at: "2026-10-20T08:15:00.000Z",
+            passenger_name: "Ramon Valderama",
+            passenger_contact: "09201112233",
+            passenger_email: "ramon.valderama@yahoo.com",
+            passenger_type: "REGULAR",
+            seat_number: 18,
+            seat_numbers: [18],
+            seat_count: 1,
+            total_price: 850,
+            original_price: 850,
+            booking_status: "CONFIRMED",
+            payment_status: "PAID",
+            ticket_status: "VALID",
+            payment_method: "GCASH_DIRECT",
+            transaction_ref: "GCASH-982144729212",
+            qr_token: "TKT-20261030-RV212",
+            trip: {
+                origin: "PITX",
+                destination: "Daet",
+                departure_time: "2026-10-30T20:30:00.000Z",
+                bus_number: "SL-212 (Executive Express)",
+            }
+        });
+    }
+
+    if (!list.some(b => b.id === OCT_30_DAET_PITX_ID)) {
+        list.push({
+            id: OCT_30_DAET_PITX_ID,
+            created_at: "2026-10-20T08:45:00.000Z",
+            passenger_name: "Teresa Morales",
+            passenger_contact: "09183334455",
+            passenger_email: "teresa.morales@gmail.com",
+            passenger_type: "REGULAR",
+            seat_number: 21,
+            seat_numbers: [21],
+            seat_count: 1,
+            total_price: 850,
+            original_price: 850,
+            booking_status: "CONFIRMED",
+            payment_status: "PAID",
+            ticket_status: "VALID",
+            payment_method: "GCASH_DIRECT",
+            transaction_ref: "GCASH-982144729215",
+            qr_token: "TKT-20261030-TM212",
+            trip: {
+                origin: "Daet",
+                destination: "PITX",
+                departure_time: "2026-10-30T20:30:00.000Z",
+                bus_number: "SL-212 (Executive Express)",
+            }
+        });
+    }
+
+    // 3. ALABANG ⇄ DAET (SL-308)
+    if (!list.some(b => b.id === OCT_30_ALABANG_ID)) {
+        list.push({
+            id: OCT_30_ALABANG_ID,
+            created_at: "2026-10-20T09:00:00.000Z",
+            passenger_name: "Mateo Garcia",
+            passenger_contact: "09159998877",
+            passenger_email: "mateo.garcia@outlook.com",
+            passenger_type: "REGULAR",
+            seat_number: 7,
+            seat_numbers: [7],
+            seat_count: 1,
+            total_price: 850,
+            original_price: 850,
+            booking_status: "CONFIRMED",
+            payment_status: "PAID",
+            ticket_status: "VALID",
+            payment_method: "GCASH_DIRECT",
+            transaction_ref: "GCASH-982144729308",
+            qr_token: "TKT-20261030-MG308",
+            trip: {
+                origin: "Alabang",
+                destination: "Daet",
+                departure_time: "2026-10-30T21:00:00.000Z",
+                bus_number: "SL-308 (Superlines De Luxe)",
+            }
+        });
+    }
+
+    if (!list.some(b => b.id === OCT_30_DAET_ALABANG_ID)) {
+        list.push({
+            id: OCT_30_DAET_ALABANG_ID,
+            created_at: "2026-10-20T09:15:00.000Z",
+            passenger_name: "Clara Bautista",
+            passenger_contact: "09275556677",
+            passenger_email: "clara.bautista@gmail.com",
+            passenger_type: "REGULAR",
+            seat_number: 9,
+            seat_numbers: [9],
+            seat_count: 1,
+            total_price: 850,
+            original_price: 850,
+            booking_status: "CONFIRMED",
+            payment_status: "PAID",
+            ticket_status: "VALID",
+            payment_method: "GCASH_DIRECT",
+            transaction_ref: "GCASH-982144729310",
+            qr_token: "TKT-20261030-CB308",
+            trip: {
+                origin: "Daet",
+                destination: "Alabang",
+                departure_time: "2026-10-30T21:00:00.000Z",
+                bus_number: "SL-308 (Superlines De Luxe)",
+            }
+        });
+    }
+
+    // 4. CUBAO ⇄ NAGA (SL-520)
+    if (!list.some(b => b.id === OCT_30_CUBAO_NAGA_ID)) {
+        list.push({
+            id: OCT_30_CUBAO_NAGA_ID,
+            created_at: "2026-10-20T09:20:00.000Z",
+            passenger_name: "Gabriel Santos",
+            passenger_contact: "09334445566",
+            passenger_email: "gabriel.santos@gmail.com",
+            passenger_type: "REGULAR",
+            seat_number: 5,
+            seat_numbers: [5],
+            seat_count: 1,
+            total_price: 950,
+            original_price: 950,
+            booking_status: "CONFIRMED",
+            payment_status: "PAID",
+            ticket_status: "VALID",
+            payment_method: "GCASH_DIRECT",
+            transaction_ref: "GCASH-982144729520",
+            qr_token: "TKT-20261030-GS520",
+            trip: {
+                origin: "Cubao",
+                destination: "Naga",
+                departure_time: "2026-10-30T21:15:00.000Z",
+                bus_number: "SL-520 (Premier Sleeper)",
+            }
+        });
+    }
+
+    if (!list.some(b => b.id === OCT_30_NAGA_CUBAO_ID)) {
+        list.push({
+            id: OCT_30_NAGA_CUBAO_ID,
+            created_at: "2026-10-20T09:40:00.000Z",
+            passenger_name: "Patricia Reyes",
+            passenger_contact: "09458889900",
+            passenger_email: "patricia.reyes@gmail.com",
+            passenger_type: "REGULAR",
+            seat_number: 8,
+            seat_numbers: [8],
+            seat_count: 1,
+            total_price: 950,
+            original_price: 950,
+            booking_status: "CONFIRMED",
+            payment_status: "PAID",
+            ticket_status: "VALID",
+            payment_method: "GCASH_DIRECT",
+            transaction_ref: "GCASH-982144729525",
+            qr_token: "TKT-20261030-PR520",
+            trip: {
+                origin: "Naga",
+                destination: "Cubao",
+                departure_time: "2026-10-30T21:15:00.000Z",
+                bus_number: "SL-520 (Premier Sleeper)",
             }
         });
     }
@@ -472,6 +648,94 @@ export function updateLocalRefundStatus(
         saveToFile(list);
     }
     return target;
+}
+
+export function checkSeatOccupiedAcrossTerminals(
+    seatNumber: number,
+    busNumber?: string,
+    departureTime?: string,
+    tripId?: string
+): { isOccupied: boolean; conflictInfo?: { passengerName: string; terminal: string; busNumber: string } } {
+    const list = getLocalBookings();
+    const cleanBus = (busNumber || "").split(" ")[0].trim().toLowerCase();
+
+    for (const b of list) {
+        if (b.booking_status === "CANCELLED" || b.ticket_status === "CANCELLED") continue;
+
+        const hasSeat = b.seat_number === seatNumber || (b.seat_numbers && b.seat_numbers.includes(seatNumber));
+        if (!hasSeat) continue;
+
+        const bTripId = b.trip_id || b.trip?.id;
+        const matchesTripId = tripId && bTripId ? tripId === bTripId : false;
+
+        const bBus = (b.trip?.bus_number || "").split(" ")[0].trim().toLowerCase();
+        const sameBus = !cleanBus || !bBus || cleanBus === bBus || cleanBus.includes(bBus) || bBus.includes(cleanBus);
+
+        let sameTime = false;
+        if (departureTime && b.trip?.departure_time) {
+            const bTime = new Date(b.trip.departure_time).getTime();
+            const tTime = new Date(departureTime).getTime();
+            // Within 6 hours is considered the same schedule departure leg
+            if (Math.abs(bTime - tTime) <= 6 * 3600 * 1000) {
+                sameTime = true;
+            }
+        } else {
+            sameTime = true;
+        }
+
+        if (matchesTripId || (sameBus && sameTime)) {
+            return {
+                isOccupied: true,
+                conflictInfo: {
+                    passengerName: b.passenger_name,
+                    terminal: b.trip?.origin || "Counter/Online",
+                    busNumber: b.trip?.bus_number || "Superlines Express",
+                }
+            };
+        }
+    }
+
+    return { isOccupied: false };
+}
+
+export function getOccupiedSeatsForSchedule(
+    busNumber?: string,
+    departureTime?: string,
+    tripId?: string
+): number[] {
+    const list = getLocalBookings();
+    const cleanBus = (busNumber || "").split(" ")[0].trim().toLowerCase();
+    const seats = new Set<number>();
+
+    for (const b of list) {
+        if (b.booking_status === "CANCELLED" || b.ticket_status === "CANCELLED") continue;
+
+        const bTripId = b.trip_id || b.trip?.id;
+        const matchesTripId = tripId && bTripId ? tripId === bTripId : false;
+
+        const bBus = (b.trip?.bus_number || "").split(" ")[0].trim().toLowerCase();
+        const sameBus = !cleanBus || !bBus || cleanBus === bBus || cleanBus.includes(bBus) || bBus.includes(cleanBus);
+
+        let sameTime = false;
+        if (departureTime && b.trip?.departure_time) {
+            const bTime = new Date(b.trip.departure_time).getTime();
+            const tTime = new Date(departureTime).getTime();
+            if (Math.abs(bTime - tTime) <= 6 * 3600 * 1000) {
+                sameTime = true;
+            }
+        } else {
+            sameTime = true;
+        }
+
+        if (matchesTripId || (sameBus && sameTime)) {
+            if (b.seat_number) seats.add(b.seat_number);
+            if (b.seat_numbers && Array.isArray(b.seat_numbers)) {
+                b.seat_numbers.forEach(s => seats.add(s));
+            }
+        }
+    }
+
+    return Array.from(seats);
 }
 
 

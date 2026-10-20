@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getVerificationMode } from "@/lib/payment-settings";
-import { saveLocalBooking } from "@/lib/local-booking-store";
+import { saveLocalBooking, checkSeatOccupiedAcrossTerminals } from "@/lib/local-booking-store";
 
 export async function POST(req: NextRequest) {
     let body: any;
@@ -45,6 +45,28 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // =========================================================================
+        // ANTI-DOUBLE BOOKING GUARD: VERIFY SEAT IS NOT TAKEN ACROSS ALL TERMINALS
+        // =========================================================================
+        const seatsToCheck = seatNumbers && seatNumbers.length > 0 ? seatNumbers : [Number(effectiveSeatNumber)];
+        const busNumber = body.trip?.bus_number;
+        const departureTime = body.trip?.departure_time;
+
+        for (const sNum of seatsToCheck) {
+            // A. Check local multi-terminal cache
+            const localCheck = checkSeatOccupiedAcrossTerminals(sNum, busNumber, departureTime, tripId);
+            if (localCheck.isOccupied) {
+                const conf = localCheck.conflictInfo;
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: `Anti-Double Booking Alert: Seat #${sNum} has already been booked at ${conf?.terminal || "another"} terminal by ${conf?.passengerName || "another passenger"}. Please select an open seat.`
+                    },
+                    { status: 409 }
+                );
+            }
+        }
+
         const mode = getVerificationMode();
         const isAuto = mode === "AUTO";
         const bookingStatus = isAuto ? "CONFIRMED" : "PENDING_VERIFICATION";
@@ -52,6 +74,47 @@ export async function POST(req: NextRequest) {
         const ticketStatus = isAuto ? "VALID" : "PENDING_VERIFICATION";
 
         const supabase = await createClient();
+
+        // B. Check Supabase database seats directly
+        for (const sNum of seatsToCheck) {
+            try {
+                const { data: seatRow } = await supabase
+                    .from("trip_seats")
+                    .select("is_available")
+                    .eq("trip_id", tripId)
+                    .eq("seat_number", sNum)
+                    .maybeSingle();
+
+                if (seatRow && seatRow.is_available === false) {
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: `Anti-Double Booking Alert: Seat #${sNum} has already been reserved. Please pick another seat.`
+                        },
+                        { status: 409 }
+                    );
+                }
+
+                const { data: bRow } = await supabase
+                    .from("bookings")
+                    .select("id, booking_source")
+                    .eq("trip_id", tripId)
+                    .eq("seat_number", sNum)
+                    .neq("booking_status", "CANCELLED")
+                    .maybeSingle();
+
+                if (bRow) {
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            error: `Anti-Double Booking Alert: Seat #${sNum} was already booked via ${bRow.booking_source || "counter terminal"}. Please select another seat.`
+                        },
+                        { status: 409 }
+                    );
+                }
+            } catch {}
+        }
+
         const { data: { user } } = await supabase.auth.getUser();
 
         let bookingId: string = crypto.randomUUID();

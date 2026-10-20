@@ -143,19 +143,40 @@ function BookTripContent() {
         setDiscountPersons([]);
         setLoading(true);
 
-        // Fetch booked seats for this trip from trip_seats table
-        const { data: seatsData } = await supabase
-            .from('trip_seats')
-            .select('seat_number, is_available')
-            .eq('trip_id', trip.id)
-            .eq('is_available', false);
+        const busNum = trip.bus?.bus_number || trip.bus_number || "";
+        const depTime = trip.departure_time || "";
 
-        if (seatsData) {
-            setBookedSeats(seatsData.map(s => s.seat_number));
+        try {
+            // Fetch from cross-terminal anti-double booking API
+            const res = await fetch(`/api/trips/seats?tripId=${encodeURIComponent(trip.id)}&busNumber=${encodeURIComponent(busNum)}&departureTime=${encodeURIComponent(depTime)}`);
+            const data = await res.json();
+            if (data?.success && Array.isArray(data.occupied_seats)) {
+                setBookedSeats(data.occupied_seats);
+            } else {
+                const { data: seatsData } = await supabase
+                    .from('trip_seats')
+                    .select('seat_number, is_available')
+                    .eq('trip_id', trip.id)
+                    .eq('is_available', false);
+
+                if (seatsData) {
+                    setBookedSeats(seatsData.map(s => s.seat_number));
+                }
+            }
+        } catch {
+            const { data: seatsData } = await supabase
+                .from('trip_seats')
+                .select('seat_number, is_available')
+                .eq('trip_id', trip.id)
+                .eq('is_available', false);
+
+            if (seatsData) {
+                setBookedSeats(seatsData.map(s => s.seat_number));
+            }
+        } finally {
+            setLoading(false);
+            setStep(2);
         }
-
-        setLoading(false);
-        setStep(2);
     };
 
     const handleCopy = (text: string, label: string) => {

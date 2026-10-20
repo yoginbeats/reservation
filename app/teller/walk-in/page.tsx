@@ -96,17 +96,40 @@ export default function TellerWalkInBookingPage() {
         setError(null);
         setLoading(true);
 
-        const { data: seatsData } = await supabase
-            .from('trip_seats')
-            .select('seat_number, is_available')
-            .eq('trip_id', trip.id)
-            .eq('is_available', false);
+        const busNum = trip.bus?.bus_number || trip.bus_number || "";
+        const depTime = trip.departure_time || "";
 
-        if (seatsData) {
-            setBookedSeats(seatsData.map(s => s.seat_number));
+        try {
+            // 1. Fetch from live cross-terminal anti-double booking API
+            const res = await fetch(`/api/trips/seats?tripId=${encodeURIComponent(trip.id)}&busNumber=${encodeURIComponent(busNum)}&departureTime=${encodeURIComponent(depTime)}`);
+            const data = await res.json();
+            if (data?.success && Array.isArray(data.occupied_seats)) {
+                setBookedSeats(data.occupied_seats);
+            } else {
+                // Fallback to direct supabase query
+                const { data: seatsData } = await supabase
+                    .from('trip_seats')
+                    .select('seat_number, is_available')
+                    .eq('trip_id', trip.id)
+                    .eq('is_available', false);
+
+                if (seatsData) {
+                    setBookedSeats(seatsData.map(s => s.seat_number));
+                }
+            }
+        } catch {
+            const { data: seatsData } = await supabase
+                .from('trip_seats')
+                .select('seat_number, is_available')
+                .eq('trip_id', trip.id)
+                .eq('is_available', false);
+
+            if (seatsData) {
+                setBookedSeats(seatsData.map(s => s.seat_number));
+            }
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     };
 
     // Multi-seat and Automatic Statutory 20% Discount Calculations
@@ -218,10 +241,29 @@ export default function TellerWalkInBookingPage() {
                 rpcError = err;
             }
 
+            if (rpcError) {
+                const errMsg = rpcError.message || JSON.stringify(rpcError);
+                if (errMsg.toLowerCase().includes("already") || errMsg.toLowerCase().includes("booked") || errMsg.toLowerCase().includes("occupied")) {
+                    throw new Error(`Double-Booking Prevented: Seat #${effectiveSeat} was just booked by another terminal or online passenger. Please select another seat.`);
+                }
+            }
+
             if (!rpcError && result?.qr_token) {
                 bookingQrToken = result.qr_token;
             } else {
                 console.warn("Atomic RPC unavailable, falling back to direct database table booking:", rpcError);
+
+                // Anti-Double Booking Guard: Check if seat is already occupied before inserting
+                const { data: seatCheck } = await supabase
+                    .from('trip_seats')
+                    .select('is_available')
+                    .eq('trip_id', selectedTrip.id)
+                    .eq('seat_number', effectiveSeat)
+                    .maybeSingle();
+
+                if (seatCheck && seatCheck.is_available === false) {
+                    throw new Error(`Double-Booking Prevented: Seat #${effectiveSeat} is already occupied on this trip. Please select an available seat.`);
+                }
 
                 // Fallback direct table inserts for Walk-in (try bookings first, then reservations)
                 let bookingId: string | null = null;
