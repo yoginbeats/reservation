@@ -22,6 +22,7 @@ function CompleteProfileContent() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const [user, setUser] = useState<any>(null);
+    const [isExistingProfile, setIsExistingProfile] = useState(false);
 
     // Form fields
     const [firstName, setFirstName] = useState("");
@@ -63,6 +64,9 @@ function CompleteProfileContent() {
                 .maybeSingle();
 
             if (profile) {
+                if (profile.profile_completed || profile.first_name) {
+                    setIsExistingProfile(true);
+                }
                 setFirstName(profile.first_name || googleGivenName || metaFullName.split(" ")[0] || "");
                 setMiddleName(profile.middle_name || "");
                 setLastName(profile.last_name || googleFamilyName || metaFullName.split(" ").slice(1).join(" ") || "");
@@ -165,32 +169,47 @@ function CompleteProfileContent() {
             }
 
             // 2. Upsert comprehensive profile record in database
+            const profilePayload = {
+                id: user.id,
+                email: user.email,
+                first_name: firstName.trim(),
+                middle_name: middleName.trim(),
+                last_name: lastName.trim(),
+                full_name: fullName,
+                birthdate: birthdate ? birthdate : null,
+                age: parsedAge !== null && !isNaN(parsedAge) ? parsedAge : null,
+                phone_number: phoneNumber.trim(),
+                address: address.trim(),
+                profile_completed: true,
+                updated_at: new Date().toISOString(),
+            };
+
             const { error: profileError } = await supabase
                 .from("profiles")
-                .upsert({
-                    id: user.id,
-                    email: user.email,
-                    first_name: firstName.trim(),
-                    middle_name: middleName.trim(),
-                    last_name: lastName.trim(),
-                    full_name: fullName,
-                    birthdate: birthdate,
-                    age: parsedAge,
-                    phone_number: phoneNumber.trim(),
-                    address: address.trim(),
-                    profile_completed: true,
-                    updated_at: new Date().toISOString(),
-                });
+                .upsert(profilePayload);
 
             if (profileError) {
-                console.warn("DB profile upsert warning:", profileError);
+                console.error("DB profile upsert error:", profileError);
+                throw new Error(profileError.message || "Failed to save profile record to database.");
             }
 
-            // 3. Ensure PASSENGER role
-            await supabase.from("user_roles").upsert({
-                user_id: user.id,
-                role: "PASSENGER",
-            });
+            // 3. Ensure role exists safely (do not overwrite existing roles like ADMIN or TELLER)
+            try {
+                const { data: existingRole } = await supabase
+                    .from("user_roles")
+                    .select("role")
+                    .eq("user_id", user.id)
+                    .maybeSingle();
+
+                if (!existingRole) {
+                    await supabase.from("user_roles").insert({
+                        user_id: user.id,
+                        role: "PASSENGER",
+                    });
+                }
+            } catch (roleErr) {
+                console.warn("User role assignment non-fatal notice:", roleErr);
+            }
 
             // 4. Send Welcome Confirmation Email
             try {
@@ -242,9 +261,13 @@ function CompleteProfileContent() {
                             S
                         </div>
                     </div>
-                    <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Complete Your Passenger Profile</h1>
+                    <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
+                        {isExistingProfile ? "Edit Passenger Profile" : "Complete Your Passenger Profile"}
+                    </h1>
                     <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-                        Please provide your full passenger information for ticket verification and bus manifest compliance.
+                        {isExistingProfile
+                            ? "Update your personal details, contact information, and address for your official passenger account."
+                            : "Please provide your full passenger information for ticket verification and bus manifest compliance."}
                     </p>
                 </div>
 
@@ -252,10 +275,10 @@ function CompleteProfileContent() {
                     <CardHeader className="bg-red-50/60 dark:bg-red-950/20 border-b pb-4">
                         <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-bold text-sm">
                             <ShieldCheck className="h-5 w-5" />
-                            <span>Official Passenger Verification</span>
+                            <span>{isExistingProfile ? "Passenger Account Verification" : "Official Passenger Verification"}</span>
                         </div>
                         <CardDescription className="text-xs">
-                            Your account ({email}) is connected. Complete the required details below.
+                            Your account ({email}) is connected. {isExistingProfile ? "You can review and edit your passenger details below." : "Complete the required details below."}
                         </CardDescription>
                     </CardHeader>
 
@@ -471,9 +494,13 @@ function CompleteProfileContent() {
                             <Button
                                 type="submit"
                                 disabled={submitting}
-                                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-11"
+                                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-11 shadow-md hover:shadow-lg transition-all"
                             >
-                                {submitting ? "Saving Profile & Setting Up Account..." : "Save Profile & Finish Setup"}
+                                {submitting
+                                    ? "Saving Profile Changes..."
+                                    : isExistingProfile
+                                    ? "Save Changes & Update Account"
+                                    : "Save Profile & Finish Setup"}
                             </Button>
                         </CardFooter>
                     </form>

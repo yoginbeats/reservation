@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
     Camera,
     Edit,
@@ -15,10 +15,16 @@ import {
     User,
     Sparkles,
     Check,
-    Upload
+    Upload,
+    X,
+    AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
+import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 
 interface FacebookProfileCardProps {
     userId: string;
@@ -39,23 +45,61 @@ interface FacebookProfileCardProps {
 export function FacebookProfileCard({
     userId,
     fullName,
-    firstName,
-    middleName,
-    lastName,
-    email,
-    phoneNumber,
-    birthdate,
-    age,
-    address,
+    firstName = "",
+    middleName = "",
+    lastName = "",
+    email = "",
+    phoneNumber = null,
+    birthdate = null,
+    age = null,
+    address = null,
     initialAvatarUrl,
     isProfileComplete,
     role
 }: FacebookProfileCardProps) {
+    const router = useRouter();
+    const supabase = createClient();
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Avatar state
     const [avatarUrl, setAvatarUrl] = useState<string | null>(initialAvatarUrl || null);
     const [uploading, setUploading] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState(false);
-    const supabase = createClient();
+
+    // Live display state (instantly reflects edits without page reload)
+    const [currentFirstName, setCurrentFirstName] = useState(firstName || "");
+    const [currentMiddleName, setCurrentMiddleName] = useState(middleName || "");
+    const [currentLastName, setCurrentLastName] = useState(lastName || "");
+    const [currentFullName, setCurrentFullName] = useState(fullName || "");
+    const [currentPhoneNumber, setCurrentPhoneNumber] = useState(phoneNumber || "");
+    const [currentBirthdate, setCurrentBirthdate] = useState(birthdate || "");
+    const [currentAge, setCurrentAge] = useState<string | number>(age ? String(age) : "");
+    const [currentAddress, setCurrentAddress] = useState(address || "");
+
+    // Edit Profile Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editFirstName, setEditFirstName] = useState(firstName || "");
+    const [editMiddleName, setEditMiddleName] = useState(middleName || "");
+    const [editLastName, setEditLastName] = useState(lastName || "");
+    const [editPhoneNumber, setEditPhoneNumber] = useState(phoneNumber || "");
+    const [editBirthdate, setEditBirthdate] = useState(birthdate || "");
+    const [editAge, setEditAge] = useState<string>(age ? String(age) : "");
+    const [editAddress, setEditAddress] = useState(address || "");
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
+    const [saveSuccess, setSaveSuccess] = useState(false);
+
+    // Sync state when props change
+    useEffect(() => {
+        setCurrentFirstName(firstName || "");
+        setCurrentMiddleName(middleName || "");
+        setCurrentLastName(lastName || "");
+        setCurrentFullName(fullName || "");
+        setCurrentPhoneNumber(phoneNumber || "");
+        setCurrentBirthdate(birthdate || "");
+        setCurrentAge(age ? String(age) : "");
+        setCurrentAddress(address || "");
+    }, [firstName, middleName, lastName, fullName, phoneNumber, birthdate, age, address]);
 
     // Check localStorage on mount and sanitize any legacy bloated auth user_metadata
     useEffect(() => {
@@ -66,7 +110,6 @@ export function FacebookProfileCard({
             }
         }
 
-        // Clean up legacy bloated avatar_url from Auth JWT cookies if it exists
         const sanitizeAuthCookies = async () => {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
@@ -120,7 +163,6 @@ export function FacebookProfileCard({
             if (!ctx) return;
             ctx.drawImage(img, 0, 0, width, height);
 
-            // Export as lightweight compressed JPEG (under 12KB)
             const compressedBase64 = canvas.toDataURL("image/jpeg", 0.82);
 
             setAvatarUrl(compressedBase64);
@@ -143,7 +185,6 @@ export function FacebookProfileCard({
                     updated_at: new Date().toISOString()
                 });
 
-                // Ensure auth user_metadata does NOT have base64 to prevent HTTP 431
                 await supabase.auth.updateUser({
                     data: { avatar_url: null }
                 });
@@ -157,9 +198,121 @@ export function FacebookProfileCard({
         };
     };
 
+    // Auto calculate age when birthdate changes in modal
+    const handleBirthdateChange = (newDateStr: string) => {
+        setEditBirthdate(newDateStr);
+        if (newDateStr) {
+            const birth = new Date(newDateStr);
+            const today = new Date();
+            let calculatedAge = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                calculatedAge--;
+            }
+            if (calculatedAge >= 0) {
+                setEditAge(String(calculatedAge));
+            }
+        }
+    };
+
+    const handleOpenEditModal = () => {
+        setEditFirstName(currentFirstName);
+        setEditMiddleName(currentMiddleName);
+        setEditLastName(currentLastName);
+        setEditPhoneNumber(currentPhoneNumber);
+        setEditBirthdate(currentBirthdate);
+        setEditAge(currentAge ? String(currentAge) : "");
+        setEditAddress(currentAddress);
+        setSaveError(null);
+        setSaveSuccess(false);
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaveError(null);
+
+        if (!editFirstName.trim() || !editLastName.trim()) {
+            setSaveError("First Name and Last Name are required.");
+            return;
+        }
+        if (!editPhoneNumber.trim()) {
+            setSaveError("Please provide your phone number or email address.");
+            return;
+        }
+        if (!editAddress.trim()) {
+            setSaveError("Complete home / travel address is required for passenger manifests.");
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const newFullName = `${editFirstName.trim()} ${editMiddleName.trim() ? editMiddleName.trim() + " " : ""}${editLastName.trim()}`;
+            const parsedAge = editAge ? parseInt(editAge, 10) : null;
+
+            // 1. Update user metadata in Supabase Auth
+            await supabase.auth.updateUser({
+                data: {
+                    first_name: editFirstName.trim(),
+                    middle_name: editMiddleName.trim(),
+                    last_name: editLastName.trim(),
+                    full_name: newFullName,
+                    birthdate: editBirthdate || null,
+                    age: parsedAge,
+                    phone_number: editPhoneNumber.trim(),
+                    address: editAddress.trim(),
+                    profile_completed: true,
+                }
+            });
+
+            // 2. Upsert comprehensive profile record in database
+            const { error: dbError } = await supabase.from("profiles").upsert({
+                id: userId,
+                email: email,
+                first_name: editFirstName.trim(),
+                middle_name: editMiddleName.trim(),
+                last_name: editLastName.trim(),
+                full_name: newFullName,
+                birthdate: editBirthdate ? editBirthdate : null,
+                age: parsedAge !== null && !isNaN(parsedAge) ? parsedAge : null,
+                phone_number: editPhoneNumber.trim(),
+                address: editAddress.trim(),
+                profile_completed: true,
+                updated_at: new Date().toISOString(),
+            });
+
+            if (dbError) {
+                console.error("Profile upsert error:", dbError);
+                throw new Error(dbError.message || "Failed to update profile record in database.");
+            }
+
+            // 3. Immediately update local state for real-time reactivity
+            setCurrentFirstName(editFirstName.trim());
+            setCurrentMiddleName(editMiddleName.trim());
+            setCurrentLastName(editLastName.trim());
+            setCurrentFullName(newFullName);
+            setCurrentPhoneNumber(editPhoneNumber.trim());
+            setCurrentBirthdate(editBirthdate);
+            setCurrentAge(parsedAge ? String(parsedAge) : "");
+            setCurrentAddress(editAddress.trim());
+
+            setSaveSuccess(true);
+            setTimeout(() => {
+                setIsEditModalOpen(false);
+                setSaveSuccess(false);
+                router.refresh();
+            }, 900);
+        } catch (err: any) {
+            console.error("Save profile error:", err);
+            setSaveError(err.message || "Failed to save profile changes.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     // Calculate user initials for fallback avatar
-    const initials = fullName
-        ? fullName
+    const initials = currentFullName
+        ? currentFullName
               .split(" ")
               .filter(Boolean)
               .slice(0, 2)
@@ -180,7 +333,7 @@ export function FacebookProfileCard({
                                 {avatarUrl ? (
                                     <img
                                         src={avatarUrl}
-                                        alt={fullName}
+                                        alt={currentFullName}
                                         className="h-full w-full object-cover rounded-full"
                                     />
                                 ) : (
@@ -224,7 +377,7 @@ export function FacebookProfileCard({
                         <div className="space-y-2 pt-1">
                             <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
                                 <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                                    {fullName}
+                                    {currentFullName}
                                 </h2>
 
                                 {/* Facebook Blue Verified Checkmark Badge */}
@@ -273,14 +426,13 @@ export function FacebookProfileCard({
                     {/* Right: Facebook-style Edit Profile Action Button */}
                     <div className="shrink-0 self-center sm:self-start">
                         <Button
-                            asChild
+                            type="button"
+                            onClick={handleOpenEditModal}
                             variant="outline"
                             className="h-10 px-5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-bold text-sm shadow-xs transition-all active:scale-95"
                         >
-                            <Link href="/complete-profile" className="flex items-center gap-2">
-                                <Edit className="h-4 w-4 text-zinc-600 dark:text-zinc-300" />
-                                <span>Edit Profile</span>
-                            </Link>
+                            <Edit className="h-4 w-4 text-zinc-600 dark:text-zinc-300 mr-2" />
+                            <span>Edit Profile</span>
                         </Button>
                     </div>
                 </div>
@@ -313,11 +465,11 @@ export function FacebookProfileCard({
                                     Full Name
                                 </p>
                                 <p className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">
-                                    {fullName}
+                                    {currentFullName}
                                 </p>
-                                {(firstName || lastName) && (
+                                {(currentFirstName || currentLastName) && (
                                     <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
-                                        {firstName} {middleName ? `${middleName} ` : ""}{lastName}
+                                        {currentFirstName} {currentMiddleName ? `${currentMiddleName} ` : ""}{currentLastName}
                                     </p>
                                 )}
                             </div>
@@ -343,18 +495,18 @@ export function FacebookProfileCard({
 
                         {/* 3. Mobile Phone / Contact */}
                         <div className="flex items-start gap-3 p-3 rounded-xl bg-zinc-50/80 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800/80">
-                            <div className={`h-9 w-9 rounded-full ${phoneNumber?.includes("@") ? "bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400" : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400"} flex items-center justify-center shrink-0`}>
-                                {phoneNumber?.includes("@") ? <Mail className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
+                            <div className={`h-9 w-9 rounded-full ${currentPhoneNumber?.includes("@") ? "bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400" : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400"} flex items-center justify-center shrink-0`}>
+                                {currentPhoneNumber?.includes("@") ? <Mail className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                                    {phoneNumber?.includes("@") ? "Contact Phone / Email" : "Mobile Phone"}
+                                    {currentPhoneNumber?.includes("@") ? "Contact Phone / Email" : "Mobile Phone"}
                                 </p>
                                 <p className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">
-                                    {phoneNumber || "Not provided yet"}
+                                    {currentPhoneNumber || "Not provided yet"}
                                 </p>
                                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                    {phoneNumber?.includes("@") ? "For booking updates & tickets" : "For ticket & SMS alerts"}
+                                    {currentPhoneNumber?.includes("@") ? "For booking updates & tickets" : "For ticket & SMS alerts"}
                                 </p>
                             </div>
                         </div>
@@ -369,11 +521,11 @@ export function FacebookProfileCard({
                                     Age & Birthdate
                                 </p>
                                 <p className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                                    {age ? `${age} years old` : "Age not set"}
+                                    {currentAge ? `${currentAge} years old` : "Age not set"}
                                 </p>
                                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                    {birthdate
-                                        ? new Date(birthdate).toLocaleDateString(undefined, {
+                                    {currentBirthdate
+                                        ? new Date(currentBirthdate).toLocaleDateString(undefined, {
                                               year: "numeric",
                                               month: "long",
                                               day: "numeric",
@@ -393,7 +545,7 @@ export function FacebookProfileCard({
                                     Residential / Travel Address
                                 </p>
                                 <p className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">
-                                    {address || "Not provided yet"}
+                                    {currentAddress || "Not provided yet"}
                                 </p>
                                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
                                     Registered home terminal / destination
@@ -403,6 +555,199 @@ export function FacebookProfileCard({
                     </div>
                 </div>
             </div>
+
+            {/* Edit Profile Modal Dialog */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+                    <div 
+                        className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6"
+                        role="dialog"
+                        aria-modal="true"
+                    >
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800">
+                            <div>
+                                <h3 className="text-lg font-black text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                                    <Edit className="h-5 w-5 text-red-600" />
+                                    Edit Passenger Profile
+                                </h3>
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                    Update your details used for bus tickets and passenger manifests
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsEditModalOpen(false)}
+                                className="rounded-full p-1.5 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        {saveError && (
+                            <div className="mt-4 flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 p-3 text-xs text-red-600 dark:text-red-400">
+                                <AlertCircle className="h-4 w-4 shrink-0" />
+                                <span>{saveError}</span>
+                            </div>
+                        )}
+
+                        {saveSuccess && (
+                            <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 p-3 text-xs text-emerald-700 dark:text-emerald-300">
+                                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                                <span>Profile updated successfully! Refreshing details...</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSaveProfile} className="mt-5 space-y-4">
+                            {/* 1. Personal Information */}
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-black uppercase tracking-wider text-zinc-400">
+                                    1. Personal Information
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div className="space-y-1">
+                                        <Label htmlFor="modal_first_name" className="text-xs font-bold">First Name *</Label>
+                                        <Input
+                                            id="modal_first_name"
+                                            required
+                                            value={editFirstName}
+                                            onChange={(e) => setEditFirstName(e.target.value)}
+                                            placeholder="Eugene"
+                                            className="h-9 text-xs font-semibold"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="modal_middle_name" className="text-xs font-bold">Middle Name</Label>
+                                        <Input
+                                            id="modal_middle_name"
+                                            value={editMiddleName}
+                                            onChange={(e) => setEditMiddleName(e.target.value)}
+                                            placeholder="San Andres"
+                                            className="h-9 text-xs font-semibold"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="modal_last_name" className="text-xs font-bold">Last Name *</Label>
+                                        <Input
+                                            id="modal_last_name"
+                                            required
+                                            value={editLastName}
+                                            onChange={(e) => setEditLastName(e.target.value)}
+                                            placeholder="Rasco"
+                                            className="h-9 text-xs font-semibold"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                    <div className="space-y-1">
+                                        <Label htmlFor="modal_birthdate" className="text-xs font-bold">Date of Birth *</Label>
+                                        <ModernDatePicker
+                                            id="modal_birthdate"
+                                            value={editBirthdate}
+                                            onChange={handleBirthdateChange}
+                                            minYear={1850}
+                                            maxDate={new Date().toISOString().split("T")[0]}
+                                            placeholder="Select date of birth"
+                                            showShortcuts={false}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="modal_age" className="text-xs font-bold">Age (Auto-calculated)</Label>
+                                        <Input
+                                            id="modal_age"
+                                            type="number"
+                                            value={editAge}
+                                            onChange={(e) => setEditAge(e.target.value)}
+                                            placeholder="22"
+                                            className="h-9 text-xs font-semibold"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 2. Contact & Address */}
+                            <div className="space-y-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-xs font-black uppercase tracking-wider text-zinc-400">
+                                        2. Contact & Residential Address
+                                    </h4>
+                                    {email && editPhoneNumber !== email && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setEditPhoneNumber(email)}
+                                            className="text-[10px] font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 px-2 py-0.5 rounded transition-colors"
+                                        >
+                                            Use {email}
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="modal_phone" className="text-xs font-bold">Phone Number or Email Address *</Label>
+                                    <div className="relative">
+                                        {editPhoneNumber.includes("@") ? (
+                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-600 transition-colors" />
+                                        ) : (
+                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 transition-colors" />
+                                        )}
+                                        <Input
+                                            id="modal_phone"
+                                            required
+                                            type="text"
+                                            value={editPhoneNumber}
+                                            onChange={(e) => setEditPhoneNumber(e.target.value)}
+                                            placeholder="0917 123 4567 or yourname@gmail.com"
+                                            className="pl-9 h-9 text-xs font-semibold"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <Label htmlFor="modal_address" className="text-xs font-bold">Complete Home / Travel Address *</Label>
+                                    <Textarea
+                                        id="modal_address"
+                                        required
+                                        rows={2}
+                                        value={editAddress}
+                                        onChange={(e) => setEditAddress(e.target.value)}
+                                        placeholder="House / Unit No., Street, Barangay, Municipality, Province"
+                                        className="text-xs font-medium"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Modal Footer Actions */}
+                            <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                                <Link
+                                    href="/complete-profile"
+                                    className="text-[11px] font-bold text-zinc-500 hover:text-red-600 underline"
+                                >
+                                    Open Full Page Editor &rarr;
+                                </Link>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setIsEditModalOpen(false)}
+                                        className="text-xs font-bold"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        size="sm"
+                                        disabled={saving}
+                                        className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4"
+                                    >
+                                        {saving ? "Saving..." : "Save Changes"}
+                                    </Button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
