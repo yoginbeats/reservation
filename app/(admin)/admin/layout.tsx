@@ -41,18 +41,18 @@ export default async function AdminLayout({
             {/* Sidebar */}
             <aside className="w-64 border-r border-zinc-200 bg-white shrink-0 sticky top-0 h-screen overflow-y-auto z-30">
                 <div className="flex h-full flex-col">
-                    <div className="flex-1 space-y-1 p-4">
-                        <Link href="/admin" className="flex items-center gap-2.5 px-2 mb-4 group">
+                    <div className="flex-1 space-y-1 p-4 pt-6 sm:pt-8">
+                        <Link href="/admin" className="flex items-center gap-2.5 px-2 mb-6 group h-9">
                             <Image
                                 src="/superlines_emblem_transparent.png"
                                 alt="Superlines Emblem"
-                                width={32}
-                                height={26}
-                                className="h-7 w-auto object-contain transition-transform group-hover:scale-105"
+                                width={36}
+                                height={30}
+                                className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
                             />
-                            <div>
+                            <div className="flex flex-col justify-center">
                                 <span className="text-sm font-black uppercase tracking-tight text-red-600 block leading-tight">Superlines</span>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Admin Portal</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block leading-tight">Admin Portal</span>
                             </div>
                         </Link>
                         <Link

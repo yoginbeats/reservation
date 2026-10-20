@@ -57,8 +57,8 @@ export default async function AdminDashboard() {
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-3xl font-black tracking-tight text-zinc-900">Admin Dashboard</h1>
-                <p className="text-zinc-500 text-sm">
+                <h1 className="text-3xl font-black tracking-tight text-zinc-900 h-9 leading-9 flex items-center">Admin Dashboard</h1>
+                <p className="text-zinc-500 text-sm mt-1">
                     Welcome back! Here&apos;s an overview of your system.
                 </p>
             </div>
