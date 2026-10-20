@@ -757,18 +757,42 @@ export function TellerDashboardClient({
                                                 <span className="font-black text-foreground">{t.qr_token}</span>
                                                 <span
                                                     className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                                        isCancelled
+                                                        t.refund_info
+                                                            ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                                                            : isCancelled
                                                             ? "bg-red-500/20 text-red-600 border border-red-500/30"
                                                             : isUsed
                                                             ? "bg-emerald-500/20 text-emerald-600 border border-emerald-500/30"
                                                             : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
                                                     }`}
                                                 >
-                                                    {isCancelled ? "VOIDED / CANCELLED" : isUsed ? "✓ BOARDED" : "VALID FOR BOARDING"}
+                                                    {t.refund_info
+                                                        ? "GCASH REFUND PENDING"
+                                                        : isCancelled
+                                                        ? "VOIDED / CANCELLED"
+                                                        : isUsed
+                                                        ? "✓ BOARDED"
+                                                        : "VALID FOR BOARDING"}
                                                 </span>
                                             </div>
                                         </CardHeader>
                                         <CardContent className="p-4 space-y-3">
+                                            {t.refund_info && (
+                                                <div className="p-2.5 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/40 text-[11px] text-amber-900 dark:text-amber-200 space-y-1 font-mono">
+                                                    <p className="font-bold flex items-center justify-between">
+                                                        <span>💸 Online GCash Refund Claim:</span>
+                                                        <span className="text-blue-600">{t.refund_info.refund_ref}</span>
+                                                    </p>
+                                                    <p>GCash Mobile: <strong>{t.refund_info.gcash_mobile_number}</strong> ({t.refund_info.gcash_account_name})</p>
+                                                    <p className="text-[10px] text-muted-foreground">Turnaround: 3 Business Days to 1 Week (Awaiting settlement).</p>
+                                                </div>
+                                            )}
+
+                                            {t.rebooking_info && (
+                                                <div className="p-2 rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 text-[11px] text-blue-900 dark:text-blue-200 font-mono">
+                                                    🔄 <strong>Rebooked:</strong> {t.rebooking_info.is_within_3_days ? "20% Late Deduction (₱" + t.rebooking_info.deduction_amount + ".00) applied from previous transaction" : "0% Free Rebooking applied"}
+                                                </div>
+                                            )}
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <p className="text-[10px] text-muted-foreground uppercase font-bold">Passenger Name</p>

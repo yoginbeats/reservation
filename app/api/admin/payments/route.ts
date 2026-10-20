@@ -127,9 +127,17 @@ export async function GET(req: NextRequest) {
         }
 
         // 3. Merge from local store for bulletproof presentation sync
+        // 3. Merge from local store for bulletproof presentation sync
         const localList = getLocalBookings();
         for (const lb of localList) {
-            if (!seenIds.has(lb.id)) {
+            const existing = combinedList.find(c => c.id === lb.id || (c.qr_token && c.qr_token === lb.qr_token));
+            if (existing) {
+                if (lb.refund_info) {
+                    existing.refund_info = lb.refund_info;
+                    existing.payment_status = "REFUND_PENDING";
+                }
+                if (lb.rebooking_info) existing.rebooking_info = lb.rebooking_info;
+            } else if (!seenIds.has(lb.id)) {
                 seenIds.add(lb.id);
                 combinedList.push(lb);
             }
@@ -148,6 +156,7 @@ export async function GET(req: NextRequest) {
                     .reduce((sum, b) => sum + (b.total_price || 0), 0),
                 pending_count: combinedList.filter(b => b.payment_status === "PENDING_VERIFICATION" || b.booking_status === "PENDING_VERIFICATION").length,
                 confirmed_count: combinedList.filter(b => b.payment_status === "PAID" || b.booking_status === "CONFIRMED").length,
+                refund_pending_count: combinedList.filter(b => b.payment_status === "REFUND_PENDING" || Boolean(b.refund_info)).length,
             }
         });
     } catch (err: any) {
