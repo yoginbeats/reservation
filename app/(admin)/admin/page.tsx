@@ -72,7 +72,7 @@ export default async function AdminDashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-zinc-900">{reservationCount || 0}</div>
-                        <p className="text-xs text-zinc-500">Lifetime bookings</p>
+                        <p className="text-xs text-zinc-500">Reserved bookings</p>
                     </CardContent>
                 </Card>
                 <Card className="bg-white border-zinc-200 shadow-sm">
