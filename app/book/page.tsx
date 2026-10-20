@@ -506,7 +506,7 @@ function BookTripContent() {
     };
 
     return (
-        <div className="container mx-auto max-w-4xl py-8 space-y-8">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
             {/* Step Progress Header */}
             <div className="flex items-center justify-between border-b pb-4">
                 <div>

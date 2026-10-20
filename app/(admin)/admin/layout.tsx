@@ -37,9 +37,9 @@ export default async function AdminLayout({
     }
 
     return (
-        <div className="flex min-h-[calc(100vh-64px)]">
+        <div className="flex min-h-screen w-full bg-zinc-950 text-zinc-100">
             {/* Sidebar */}
-            <aside className="w-64 border-r bg-zinc-50 dark:bg-zinc-900">
+            <aside className="w-64 border-r border-zinc-800 bg-zinc-950/95 shrink-0 sticky top-0 h-screen overflow-y-auto z-30">
                 <div className="flex h-full flex-col">
                     <div className="flex-1 space-y-1 p-4">
                         <Link href="/admin" className="flex items-center gap-2.5 px-2 mb-4 group">
@@ -154,7 +154,7 @@ export default async function AdminLayout({
                 </div>
             </aside>
             {/* Main Content */}
-            <div className="flex-1 p-8">{children}</div>
+            <main className="flex-1 min-w-0 p-6 sm:p-8 max-w-full overflow-x-hidden">{children}</main>
         </div>
     );
 }

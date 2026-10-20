@@ -549,7 +549,7 @@ function TicketsContent() {
     };
 
     return (
-        <div className="container mx-auto max-w-5xl py-8 space-y-6">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight">My Digital Tickets</h1>

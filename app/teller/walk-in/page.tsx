@@ -471,7 +471,7 @@ export default function TellerWalkInBookingPage() {
     };
 
     return (
-        <div className="container mx-auto max-w-5xl space-y-6">
+        <div className="w-full max-w-7xl mx-auto space-y-6">
             <div className="flex items-center justify-between border-b pb-4">
                 <div>
                     <h1 className="text-3xl font-black tracking-tight">Terminal Walk-in Reservation</h1>

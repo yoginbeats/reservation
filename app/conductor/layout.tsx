@@ -22,7 +22,7 @@ export default async function ConductorLayout({
         <div className="min-h-screen bg-zinc-900 text-zinc-100">
             {/* Conductor Header */}
             <header className="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur shadow-sm">
-                <div className="container mx-auto flex h-16 items-center justify-between px-4">
+                <div className="w-full max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
                     <Link href="/conductor" className="flex items-center gap-2.5 group">
                         <Image
                             src="/superlines_emblem_transparent.png"
@@ -57,7 +57,7 @@ export default async function ConductorLayout({
                 </div>
             </header>
 
-            <main className="container mx-auto p-4 sm:p-6">{children}</main>
+            <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">{children}</main>
         </div>
     );
 }
