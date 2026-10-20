@@ -16,6 +16,7 @@ import {
     ArrowRight
 } from "lucide-react";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
+import { getTodayPH } from "@/lib/date-utils";
 
 export default function Home() {
     const router = useRouter();
@@ -23,13 +24,26 @@ export default function Home() {
     const [serviceClass, setServiceClass] = useState<"REGULAR AIRCON" | "SUPER DELUXE" | "FIRST CLASS">("REGULAR AIRCON");
     const [origin, setOrigin] = useState("Cubao");
     const [destination, setDestination] = useState("Daet");
-    const [departureDate, setDepartureDate] = useState("");
+    const [departureDate, setDepartureDate] = useState(() => getTodayPH());
     const [returnDate, setReturnDate] = useState("");
     const [passengers, setPassengers] = useState("1");
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        router.push(`/book?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`);
+        const effectiveDate = departureDate || getTodayPH();
+        const params = new URLSearchParams({
+            origin,
+            destination,
+            date: effectiveDate,
+            departureDate: effectiveDate,
+            tripType,
+            serviceClass,
+            passengers,
+        });
+        if (returnDate && tripType === "round-trip") {
+            params.set("returnDate", returnDate);
+        }
+        router.push(`/book?${params.toString()}`);
     };
 
     return (
@@ -209,7 +223,7 @@ export default function Home() {
                                             <ModernDatePicker
                                                 value={departureDate}
                                                 onChange={(val) => setDepartureDate(val)}
-                                                minDate={new Date().toISOString().split("T")[0]}
+                                                minDate={getTodayPH()}
                                                 placeholder="Pick departure"
                                                 className="w-full"
                                             />
@@ -223,7 +237,7 @@ export default function Home() {
                                             <ModernDatePicker
                                                 value={returnDate}
                                                 onChange={(val) => setReturnDate(val)}
-                                                minDate={departureDate || new Date().toISOString().split("T")[0]}
+                                                minDate={departureDate || getTodayPH()}
                                                 disabled={tripType === "one-way"}
                                                 placeholder={tripType === "one-way" ? "One-way only" : "Pick return"}
                                                 className="w-full"
@@ -291,7 +305,7 @@ export default function Home() {
                             </div>
                             <h4 className="font-bold text-lg text-white">Cubao ➔ Daet</h4>
                             <p className="text-xs text-zinc-400">Daily Morning & Evening Departure</p>
-                            <Link href="/book?origin=Cubao&destination=Daet" className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
+                            <Link href={`/book?origin=Cubao&destination=Daet&date=${getTodayPH()}`} className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
                                 Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
                             </Link>
                         </div>
@@ -303,7 +317,7 @@ export default function Home() {
                             </div>
                             <h4 className="font-bold text-lg text-white">PITX ➔ Daet</h4>
                             <p className="text-xs text-zinc-400">Direct Express via South Luzon Expressway</p>
-                            <Link href="/book?origin=PITX&destination=Daet" className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
+                            <Link href={`/book?origin=PITX&destination=Daet&date=${getTodayPH()}`} className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
                                 Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
                             </Link>
                         </div>
@@ -315,7 +329,7 @@ export default function Home() {
                             </div>
                             <h4 className="font-bold text-lg text-white">Daet ➔ Cubao</h4>
                             <p className="text-xs text-zinc-400">Scheduled Daily Return Trips</p>
-                            <Link href="/book?origin=Daet&destination=Cubao" className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
+                            <Link href={`/book?origin=Daet&destination=Cubao&date=${getTodayPH()}`} className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
                                 Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
                             </Link>
                         </div>

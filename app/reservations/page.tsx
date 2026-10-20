@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, MapPin, Clock, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { formatDatePH, formatTimePH } from "@/lib/date-utils";
 
 export default async function ReservationsPage() {
     const supabase = await createClient();
@@ -72,9 +73,8 @@ export default async function ReservationsPage() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {trips && trips.length > 0 ? (
                     trips.map((trip: any) => {
-                        const tripDate = new Date(trip.departure_time);
-                        const dateStr = tripDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-                        const timeStr = tripDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const dateStr = formatDatePH(trip.departure_time);
+                        const timeStr = formatTimePH(trip.departure_time);
 
                         return (
                             <Card key={trip.id} className="flex flex-col border transition-all hover:shadow-md">

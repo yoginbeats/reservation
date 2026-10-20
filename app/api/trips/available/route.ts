@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getLocalBookings } from "@/lib/local-booking-store";
+import { getTodayPH, buildDepartureIsoPH, isSameDatePH } from "@/lib/date-utils";
 
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
-        const originQuery = searchParams.get("origin") || "";
-        const destQuery = searchParams.get("destination") || "";
+        const originQuery = (searchParams.get("origin") || "").trim();
+        const destQuery = (searchParams.get("destination") || "").trim();
+        const dateQuery = (searchParams.get("date") || searchParams.get("departureDate") || "").trim() || getTodayPH();
+        const serviceClassQuery = (searchParams.get("serviceClass") || "").trim().toUpperCase();
 
         const supabase = await createClient();
         let dbTrips: any[] = [];
@@ -16,7 +19,7 @@ export async function GET(req: NextRequest) {
                 .from("trips")
                 .select("*, bus:buses(bus_number, bus_type, seat_capacity)")
                 .order("departure_time", { ascending: true })
-                .limit(30);
+                .limit(100);
 
             if (!error && data) {
                 dbTrips = data;
@@ -25,7 +28,7 @@ export async function GET(req: NextRequest) {
             console.warn("Could not fetch trips from db:", e);
         }
 
-        // Query occupied seats from trip_seats and local bookings
+        // Query occupied seats from trip_seats table
         const occupiedSeatsMap: Record<string, number[]> = {};
         try {
             const { data: seatsData } = await supabase
@@ -50,89 +53,211 @@ export async function GET(req: NextRequest) {
                 if (b.seat_number && !occupiedSeatsMap[tripKey].includes(b.seat_number)) {
                     occupiedSeatsMap[tripKey].push(b.seat_number);
                 }
-            }
-        });
-
-        // Generate synthetic scheduled trips for the next 7 days to guarantee rich availability
-        const generatedTrips: any[] = [];
-        const routes = [
-            { origin: "Cubao", destination: "Daet", times: ["06:00", "12:00", "20:00", "22:00"], fare: 850 },
-            { origin: "Daet", destination: "Cubao", times: ["07:00", "13:00", "20:30", "22:30"], fare: 850 },
-            { origin: "PITX", destination: "Daet", times: ["08:30", "20:30"], fare: 850 },
-            { origin: "Daet", destination: "PITX", times: ["09:00", "21:00"], fare: 850 },
-        ];
-
-        const today = new Date();
-        for (let dayOffset = 1; dayOffset <= 7; dayOffset++) {
-            const targetDate = new Date(today);
-            targetDate.setDate(today.getDate() + dayOffset);
-            const dateStr = targetDate.toISOString().slice(0, 10);
-
-            for (const r of routes) {
-                for (const t of r.times) {
-                    const [h, m] = t.split(":");
-                    const depDate = new Date(targetDate);
-                    depDate.setHours(Number(h), Number(m), 0, 0);
-
-                    const syntheticId = `sched-${r.origin.toLowerCase()}-${r.destination.toLowerCase()}-${dateStr}-${t.replace(":", "")}`;
-                    const tripKey = `${r.origin}_${r.destination}_${depDate.toISOString()}`;
-                    const occupied = occupiedSeatsMap[syntheticId] || occupiedSeatsMap[tripKey] || [3, 7, 12, 18];
-
-                    // Bind physical bus units to turnaround rotation schedules
-                    let assignedBus = "SL-401 (Superlines Aircon)";
-                    if (r.origin.includes("PITX") || r.destination.includes("PITX")) {
-                        assignedBus = "SL-212 (Executive Express)";
-                    } else if (t.startsWith("06") || t.startsWith("07")) {
-                        assignedBus = "SL-205 (Executive Express)";
-                    } else if (t.startsWith("12") || t.startsWith("13")) {
-                        assignedBus = "SL-310 (De Luxe Aircon)";
-                    } else if (t.startsWith("20")) {
-                        assignedBus = "SL-401 (Superlines Aircon)";
-                    } else if (t.startsWith("22")) {
-                        assignedBus = "SL-515 (Premier Sleeper)";
-                    }
-
-                    generatedTrips.push({
-                        id: syntheticId,
-                        origin: r.origin,
-                        destination: r.destination,
-                        departure_time: depDate.toISOString(),
-                        fare_amount: r.fare,
-                        bus_number: assignedBus,
-                        bus_type: "REGULAR AIRCON",
-                        seat_capacity: 45,
-                        occupied_seats: occupied,
+                if (b.seat_numbers && Array.isArray(b.seat_numbers)) {
+                    b.seat_numbers.forEach(sNum => {
+                        if (!occupiedSeatsMap[tripKey].includes(sNum)) {
+                            occupiedSeatsMap[tripKey].push(sNum);
+                        }
                     });
                 }
             }
+        });
+
+        // Standard Superlines scheduled routes with accurate service classes, fleets, and daily departure times
+        const dailyScheduleTemplates = [
+            // Cubao -> Daet
+            {
+                origin: "Cubao",
+                destination: "Daet",
+                time: "06:00",
+                busNumber: "SL-205 (Executive Express)",
+                busType: "REGULAR AIRCON",
+                fare: 850,
+                capacity: 45
+            },
+            {
+                origin: "Cubao",
+                destination: "Daet",
+                time: "12:00",
+                busNumber: "SL-310 (De Luxe Aircon)",
+                busType: "SUPER DELUXE",
+                fare: 950,
+                capacity: 45
+            },
+            {
+                origin: "Cubao",
+                destination: "Daet",
+                time: "20:00",
+                busNumber: "SL-401 (Superlines Aircon)",
+                busType: "REGULAR AIRCON",
+                fare: 850,
+                capacity: 49
+            },
+            {
+                origin: "Cubao",
+                destination: "Daet",
+                time: "22:00",
+                busNumber: "SL-515 (Premier Sleeper)",
+                busType: "FIRST CLASS",
+                fare: 1100,
+                capacity: 32
+            },
+
+            // Daet -> Cubao
+            {
+                origin: "Daet",
+                destination: "Cubao",
+                time: "07:00",
+                busNumber: "SL-205 (Executive Express)",
+                busType: "REGULAR AIRCON",
+                fare: 850,
+                capacity: 45
+            },
+            {
+                origin: "Daet",
+                destination: "Cubao",
+                time: "13:00",
+                busNumber: "SL-310 (De Luxe Aircon)",
+                busType: "SUPER DELUXE",
+                fare: 950,
+                capacity: 45
+            },
+            {
+                origin: "Daet",
+                destination: "Cubao",
+                time: "20:30",
+                busNumber: "SL-401 (Superlines Aircon)",
+                busType: "REGULAR AIRCON",
+                fare: 850,
+                capacity: 49
+            },
+            {
+                origin: "Daet",
+                destination: "Cubao",
+                time: "22:30",
+                busNumber: "SL-515 (Premier Sleeper)",
+                busType: "FIRST CLASS",
+                fare: 1100,
+                capacity: 32
+            },
+
+            // PITX -> Daet
+            {
+                origin: "PITX",
+                destination: "Daet",
+                time: "08:30",
+                busNumber: "SL-212 (Executive Express)",
+                busType: "REGULAR AIRCON",
+                fare: 850,
+                capacity: 45
+            },
+            {
+                origin: "PITX",
+                destination: "Daet",
+                time: "20:30",
+                busNumber: "SL-212 (Executive Express)",
+                busType: "SUPER DELUXE",
+                fare: 950,
+                capacity: 45
+            },
+
+            // Daet -> PITX
+            {
+                origin: "Daet",
+                destination: "PITX",
+                time: "09:00",
+                busNumber: "SL-212 (Executive Express)",
+                busType: "REGULAR AIRCON",
+                fare: 850,
+                capacity: 45
+            },
+            {
+                origin: "Daet",
+                destination: "PITX",
+                time: "21:00",
+                busNumber: "SL-212 (Executive Express)",
+                busType: "SUPER DELUXE",
+                fare: 950,
+                capacity: 45
+            },
+        ];
+
+        // Generate accurate scheduled trips for the exact requested date (and optionally neighboring days if no exact match)
+        const targetDates = [dateQuery];
+
+        const generatedTrips: any[] = [];
+        for (const dateStr of targetDates) {
+            for (const t of dailyScheduleTemplates) {
+                const depIso = buildDepartureIsoPH(dateStr, t.time);
+                const syntheticId = `sched-${t.origin.toLowerCase()}-${t.destination.toLowerCase()}-${dateStr}-${t.time.replace(":", "")}`;
+                const tripKey = `${t.origin}_${t.destination}_${depIso}`;
+
+                const occupied = occupiedSeatsMap[syntheticId] || occupiedSeatsMap[tripKey] || [3, 7, 12];
+
+                generatedTrips.push({
+                    id: syntheticId,
+                    origin: t.origin,
+                    destination: t.destination,
+                    departure_time: depIso,
+                    fare_amount: t.fare,
+                    bus_number: t.busNumber,
+                    bus_type: t.busType,
+                    seat_capacity: t.capacity,
+                    occupied_seats: occupied,
+                });
+            }
         }
 
-        // Merge DB trips with generated
-        let allTrips = [...dbTrips.map(t => ({
-            id: t.id,
-            origin: t.origin || t.route?.origin?.name || "Cubao",
-            destination: t.destination || t.route?.destination?.name || "Daet",
-            departure_time: t.departure_time,
-            fare_amount: t.fare_amount || 850,
-            bus_number: t.bus?.bus_number || "Superlines Express",
-            bus_type: t.bus?.bus_type || "REGULAR AIRCON",
-            seat_capacity: t.bus?.seat_capacity || 45,
-            occupied_seats: occupiedSeatsMap[t.id] || [],
-        })), ...generatedTrips];
+        // DB trips matching requested date in Philippine Standard Time
+        const matchingDbTrips = dbTrips
+            .filter(t => t.departure_time && isSameDatePH(t.departure_time, dateQuery))
+            .map(t => ({
+                id: t.id,
+                origin: t.origin || t.route?.origin?.name || "Cubao",
+                destination: t.destination || t.route?.destination?.name || "Daet",
+                departure_time: t.departure_time,
+                fare_amount: t.fare_amount || t.price || 850,
+                bus_number: t.bus?.bus_number || t.bus_number || "Superlines Express",
+                bus_type: t.bus?.bus_type || t.bus_type || "REGULAR AIRCON",
+                seat_capacity: t.bus?.seat_capacity || t.seat_capacity || 45,
+                occupied_seats: occupiedSeatsMap[t.id] || [],
+            }));
 
-        // Filter if query requested
-        if (originQuery) {
+        // Merge: Priority given to matching DB trips, then generated daily schedules
+        let allTrips = [...matchingDbTrips, ...generatedTrips];
+
+        // Filter by origin if supplied
+        if (originQuery && originQuery.toLowerCase() !== "all") {
             allTrips = allTrips.filter(t => t.origin.toLowerCase().includes(originQuery.toLowerCase()));
         }
-        if (destQuery) {
+
+        // Filter by destination if supplied
+        if (destQuery && destQuery.toLowerCase() !== "all") {
             allTrips = allTrips.filter(t => t.destination.toLowerCase().includes(destQuery.toLowerCase()));
         }
 
+        // Filter by service class if supplied
+        if (serviceClassQuery && serviceClassQuery !== "ALL") {
+            allTrips = allTrips.filter(t => {
+                const bType = (t.bus_type || "").toUpperCase();
+                return bType.includes(serviceClassQuery) || serviceClassQuery.includes(bType);
+            });
+        }
+
+        // Sort by departure_time ascending (accurate chronological order)
+        allTrips.sort((a, b) => new Date(a.departure_time).getTime() - new Date(b.departure_time).getTime());
+
         return NextResponse.json({
             success: true,
+            date: dateQuery,
+            origin: originQuery,
+            destination: destQuery,
+            serviceClass: serviceClassQuery,
             trips: allTrips,
+            count: allTrips.length,
         });
     } catch (err: any) {
+        console.error("Available trips API error:", err);
         return NextResponse.json({ success: false, error: err.message }, { status: 500 });
     }
 }

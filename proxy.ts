@@ -135,8 +135,8 @@ export default async function proxy(request: NextRequest) {
         }
     }
 
-    // Protect passenger routes (/dashboard, /book, /my-tickets, /complete-profile) - require being logged in
-    const passengerRoutes = ['/dashboard', '/book', '/my-tickets', '/reservations', '/complete-profile']
+    // Protect passenger routes (/dashboard, /my-tickets, /complete-profile) - require being logged in
+    const passengerRoutes = ['/dashboard', '/my-tickets', '/reservations', '/complete-profile']
     if (passengerRoutes.some(p => url.pathname.startsWith(p))) {
         if (!user) {
             return NextResponse.redirect(new URL('/login', request.url))

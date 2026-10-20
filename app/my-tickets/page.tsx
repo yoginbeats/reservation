@@ -27,6 +27,7 @@ import {
     ExternalLink,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { formatDatePH, formatTimePH, formatDateTimePH } from "@/lib/date-utils";
 
 interface UserTicket {
     id: string;
@@ -705,7 +706,7 @@ function TicketsContent() {
                                             <span>{busNum}</span>
                                             <span>•</span>
                                             <span className="font-medium text-foreground">
-                                                {depTime.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })} at {depTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {formatDateTimePH(trip?.departure_time || depTime)}
                                             </span>
                                         </p>
                                     </div>
@@ -1500,10 +1501,8 @@ function TicketsContent() {
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Departure:</span>
-                                    <span>
-                                        {viewingBoardingPass.booking?.trip?.departure_time
-                                            ? new Date(viewingBoardingPass.booking.trip.departure_time).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
-                                            : "--"}
+                                    <span className="font-semibold text-foreground">
+                                        {formatDateTimePH(viewingBoardingPass.booking?.trip?.departure_time)}
                                     </span>
                                 </div>
                                 <div className="flex justify-between border-t pt-1 font-bold">

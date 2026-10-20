@@ -31,9 +31,13 @@ import {
     ChevronUp,
     Percent,
     Info,
-    Calculator
+    Calculator,
+    RefreshCw,
+    Search
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { ModernDatePicker } from "@/components/ui/modern-date-picker";
+import { formatDatePH, formatTimePH, formatDateTimePH, getTodayPH } from "@/lib/date-utils";
 
 export interface DiscountPerson {
     id: string;
@@ -70,11 +74,23 @@ function BookTripContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const tripIdParam = searchParams.get("tripId");
+    const originParam = searchParams.get("origin") || "Cubao";
+    const destParam = searchParams.get("destination") || "Daet";
+    const dateParam = searchParams.get("date") || searchParams.get("departureDate") || getTodayPH();
+    const serviceClassParam = searchParams.get("serviceClass") || "ALL";
+    const passengersParam = searchParams.get("passengers") || "1";
+
+    // Active Search and Filter State
+    const [filterOrigin, setFilterOrigin] = useState(originParam);
+    const [filterDestination, setFilterDestination] = useState(destParam);
+    const [filterDate, setFilterDate] = useState(dateParam);
+    const [filterServiceClass, setFilterServiceClass] = useState(serviceClassParam);
+    const [passengerCount, setPassengerCount] = useState(Number(passengersParam) || 1);
 
     useEffect(() => {
-        fetchTrips();
+        fetchTrips(originParam, destParam, dateParam, serviceClassParam);
         fetchCurrentUser();
-    }, [tripIdParam]);
+    }, [tripIdParam, originParam, destParam, dateParam, serviceClassParam]);
 
     const fetchCurrentUser = async () => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -88,11 +104,61 @@ function BookTripContent() {
         }
     };
 
-    const fetchTrips = async () => {
+    const fetchTrips = async (
+        overrideOrigin?: string,
+        overrideDest?: string,
+        overrideDate?: string,
+        overrideServiceClass?: string
+    ) => {
         setLoading(true);
+        setError(null);
+
+        const currentOrigin = overrideOrigin !== undefined ? overrideOrigin : filterOrigin;
+        const currentDest = overrideDest !== undefined ? overrideDest : filterDestination;
+        const currentDate = overrideDate !== undefined ? overrideDate : filterDate;
+        const currentServiceClass = overrideServiceClass !== undefined ? overrideServiceClass : filterServiceClass;
+
+        try {
+            const query = new URLSearchParams();
+            if (currentOrigin && currentOrigin !== "ALL") query.set("origin", currentOrigin);
+            if (currentDest && currentDest !== "ALL") query.set("destination", currentDest);
+            if (currentDate) query.set("date", currentDate);
+            if (currentServiceClass && currentServiceClass !== "ALL") query.set("serviceClass", currentServiceClass);
+
+            const res = await fetch(`/api/trips/available?${query.toString()}`);
+            const json = await res.json();
+
+            if (json?.success && Array.isArray(json.trips) && json.trips.length > 0) {
+                const normalized = json.trips.map((t: any) => ({
+                    ...t,
+                    fare_amount: t.fare_amount ?? t.price ?? 850,
+                    route: {
+                        origin: { name: t.origin || currentOrigin || "Cubao" },
+                        destination: { name: t.destination || currentDest || "Daet" }
+                    },
+                    bus: {
+                        bus_number: t.bus_number || "Superlines Express",
+                        bus_type: t.bus_type || "REGULAR AIRCON",
+                        seat_capacity: t.seat_capacity || 45
+                    }
+                }));
+
+                setTrips(normalized);
+                if (tripIdParam) {
+                    const matched = normalized.find((t: any) => t.id === tripIdParam);
+                    if (matched) {
+                        handleSelectTrip(matched);
+                    }
+                }
+                setLoading(false);
+                return;
+            }
+        } catch (apiErr) {
+            console.warn("Available trips API note, trying database fallback:", apiErr);
+        }
+
+        // Fallback: direct database query
         let rawData: any[] = [];
-        
-        // 1. Try fetching with bus relation
         const { data, error } = await supabase
             .from('trips')
             .select('*, bus:buses(bus_number, bus_type)')
@@ -100,7 +166,6 @@ function BookTripContent() {
 
         if (error) {
             console.warn("Retrying simple trip fetch:", error.message || error);
-            // 2. Fallback to basic trips query
             const { data: fallbackData } = await supabase
                 .from('trips')
                 .select('*')
@@ -110,7 +175,6 @@ function BookTripContent() {
             rawData = data;
         }
 
-        // Normalize trip schema to support both legacy and direct columns
         const normalizedTrips = rawData.map((t: any) => ({
             ...t,
             fare_amount: t.fare_amount ?? t.price ?? 850,
@@ -467,45 +531,200 @@ function BookTripContent() {
 
             {/* STEP 1: SELECT TRIP SCHEDULE */}
             {step === 1 && (
-                <div className="space-y-4">
-                    <h2 className="text-xl font-bold">Available Trip Schedules</h2>
+                <div className="space-y-6">
+                    {/* INTERACTIVE SEARCH & FILTER BAR */}
+                    <Card className="border-2 border-red-500/20 bg-gradient-to-br from-zinc-50 to-white dark:from-zinc-900 dark:to-zinc-950 shadow-md">
+                        <CardContent className="p-4 sm:p-5 space-y-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
+                                <div className="flex items-center gap-2">
+                                    <Search className="h-4 w-4 text-red-600" />
+                                    <h3 className="font-extrabold text-sm uppercase tracking-wider text-foreground">
+                                        Search & Filter Trip Schedules
+                                    </h3>
+                                </div>
+                                <div className="inline-flex items-center gap-1.5 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 px-3 py-1 text-xs font-bold shadow-sm">
+                                    <Calendar className="h-3.5 w-3.5" />
+                                    <span>{formatDatePH(filterDate)}</span>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-end">
+                                {/* Origin & Destination with Swap */}
+                                <div className="space-y-1 sm:col-span-2">
+                                    <label className="text-[11px] font-black uppercase tracking-wider text-muted-foreground block">
+                                        Route Terminals
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative flex-1">
+                                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-red-600" />
+                                            <select
+                                                value={filterOrigin}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setFilterOrigin(val);
+                                                    fetchTrips(val, filterDestination, filterDate, filterServiceClass);
+                                                }}
+                                                className="w-full rounded-xl border border-input bg-background py-2.5 pl-8 pr-2 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-red-500"
+                                            >
+                                                <option value="Cubao">Cubao Terminal</option>
+                                                <option value="PITX">PITX Terminal</option>
+                                                <option value="Daet">Daet Terminal</option>
+                                            </select>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newOrigin = filterDestination;
+                                                const newDest = filterOrigin;
+                                                setFilterOrigin(newOrigin);
+                                                setFilterDestination(newDest);
+                                                fetchTrips(newOrigin, newDest, filterDate, filterServiceClass);
+                                            }}
+                                            title="Swap Origin & Destination"
+                                            className="rounded-xl border border-input p-2.5 hover:bg-muted text-red-600 transition-colors font-bold"
+                                        >
+                                            ⇄
+                                        </button>
+
+                                        <div className="relative flex-1">
+                                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-red-600" />
+                                            <select
+                                                value={filterDestination}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setFilterDestination(val);
+                                                    fetchTrips(filterOrigin, val, filterDate, filterServiceClass);
+                                                }}
+                                                className="w-full rounded-xl border border-input bg-background py-2.5 pl-8 pr-2 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-red-500"
+                                            >
+                                                <option value="Daet">Daet Terminal</option>
+                                                <option value="Cubao">Cubao Terminal</option>
+                                                <option value="PITX">PITX Terminal</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Departure Date Picker */}
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-black uppercase tracking-wider text-muted-foreground block">
+                                        Departure Date
+                                    </label>
+                                    <ModernDatePicker
+                                        value={filterDate}
+                                        onChange={(val) => {
+                                            setFilterDate(val);
+                                            fetchTrips(filterOrigin, filterDestination, val, filterServiceClass);
+                                        }}
+                                        minDate={getTodayPH()}
+                                        placeholder="Pick Date"
+                                        className="w-full"
+                                    />
+                                </div>
+
+                                {/* Service Class Filter */}
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-black uppercase tracking-wider text-muted-foreground block">
+                                        Service Class
+                                    </label>
+                                    <select
+                                        value={filterServiceClass}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setFilterServiceClass(val);
+                                            fetchTrips(filterOrigin, filterDestination, filterDate, val);
+                                        }}
+                                        className="w-full rounded-xl border border-input bg-background py-2.5 px-3 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-red-500"
+                                    >
+                                        <option value="ALL">All Service Classes</option>
+                                        <option value="REGULAR AIRCON">Regular Aircon (₱850)</option>
+                                        <option value="SUPER DELUXE">Super Deluxe (₱950)</option>
+                                        <option value="FIRST CLASS">First Class (₱1,100)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Active filter summary bar */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs text-muted-foreground border-t">
+                                <span className="font-medium">
+                                    Showing departures for <strong className="text-foreground">{filterOrigin} ➔ {filterDestination}</strong> on <strong className="text-red-600">{formatDatePH(filterDate)}</strong>
+                                </span>
+                                <span className="font-bold text-foreground">
+                                    {trips.length} departure{trips.length === 1 ? "" : "s"} available
+                                </span>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* AVAILABLE SCHEDULES LIST */}
                     {loading ? (
-                        <div className="py-12 text-center text-muted-foreground">Loading available schedules...</div>
+                        <div className="py-16 text-center text-muted-foreground space-y-2">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent"></div>
+                            <p className="font-semibold text-sm">Searching accurate trip schedules...</p>
+                        </div>
                     ) : trips.length > 0 ? (
                         <div className="grid gap-4 md:grid-cols-2">
                             {trips.map((t) => {
-                                const origin = t.route?.origin?.name || "Origin";
-                                const dest = t.route?.destination?.name || "Destination";
-                                const busNum = t.bus?.bus_number || "Superlines Express";
-                                const depTime = new Date(t.departure_time);
+                                const origin = t.route?.origin?.name || t.origin || "Origin";
+                                const dest = t.route?.destination?.name || t.destination || "Destination";
+                                const busNum = t.bus?.bus_number || t.bus_number || "Superlines Express";
+                                const busType = (t.bus?.bus_type || t.bus_type || "REGULAR AIRCON").toUpperCase();
+                                const capacity = t.bus?.seat_capacity || t.seat_capacity || 45;
+                                const occupiedCount = Array.isArray(t.occupied_seats) ? t.occupied_seats.length : 0;
+                                const openSeats = Math.max(0, capacity - occupiedCount);
 
                                 return (
-                                    <Card key={t.id} className="transition-all hover:border-red-500 hover:shadow-md">
+                                    <Card key={t.id} className="transition-all hover:border-red-500 hover:shadow-lg border-2 flex flex-col justify-between">
                                         <CardHeader className="pb-3">
-                                            <div className="flex items-center justify-between text-xs font-semibold uppercase text-red-600">
-                                                <span>{busNum}</span>
-                                                <span className="font-mono text-base font-extrabold text-foreground">
-                                                    ₱{t.fare_amount || 850}
+                                            <div className="flex items-center justify-between text-xs font-semibold uppercase">
+                                                <span className="font-bold text-red-600 flex items-center gap-1.5">
+                                                    <Bus className="h-4 w-4" />
+                                                    {busNum}
                                                 </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
+                                                        busType.includes("FIRST")
+                                                            ? "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200"
+                                                            : busType.includes("SUPER")
+                                                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200"
+                                                            : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border border-red-200"
+                                                    }`}>
+                                                        {busType}
+                                                    </span>
+                                                    <span className="font-mono text-base font-extrabold text-foreground">
+                                                        ₱{t.fare_amount || 850}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <CardTitle className="text-lg flex items-center justify-between mt-1">
+                                            <CardTitle className="text-lg flex items-center justify-between mt-2 font-black">
                                                 <span>{origin}</span>
-                                                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                                <ArrowRight className="h-4 w-4 text-red-600" />
                                                 <span>{dest}</span>
                                             </CardTitle>
                                         </CardHeader>
-                                        <CardContent className="space-y-2 text-xs text-muted-foreground">
-                                            <div className="flex items-center gap-2">
-                                                <Calendar className="h-4 w-4 text-zinc-500" />
-                                                <span>{depTime.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                        <CardContent className="space-y-3 text-xs text-muted-foreground">
+                                            <div className="flex items-center justify-between rounded-xl bg-muted/40 p-3 border">
+                                                <div className="flex items-center gap-2 font-bold text-foreground">
+                                                    <Calendar className="h-4 w-4 text-red-600" />
+                                                    <span>{formatDatePH(t.departure_time)}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 font-black text-sm text-foreground">
+                                                    <Clock className="h-4 w-4 text-red-600" />
+                                                    <span>{formatTimePH(t.departure_time)}</span>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <Clock className="h-4 w-4 text-zinc-500" />
-                                                <span>{depTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            <div className="flex items-center justify-between text-[11px] px-1 font-semibold">
+                                                <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                                    ● Daily Guaranteed Schedule
+                                                </span>
+                                                <span className="text-muted-foreground font-mono">
+                                                    {openSeats} seats available
+                                                </span>
                                             </div>
                                         </CardContent>
-                                        <CardFooter>
-                                            <Button className="w-full bg-red-600 hover:bg-red-700 text-white" onClick={() => handleSelectTrip(t)}>
+                                        <CardFooter className="pt-1">
+                                            <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-11 rounded-xl shadow-md transition-transform active:scale-[0.98]" onClick={() => handleSelectTrip(t)}>
                                                 Select Schedule & Choose Seat
                                             </Button>
                                         </CardFooter>
@@ -514,8 +733,20 @@ function BookTripContent() {
                             })}
                         </div>
                     ) : (
-                        <Card className="p-8 text-center text-muted-foreground">
-                            No active trips found. Please check back later or contact admin.
+                        <Card className="p-12 text-center text-muted-foreground space-y-4">
+                            <p className="font-bold text-base text-foreground">No schedules found for this selection.</p>
+                            <p className="text-xs max-w-md mx-auto">
+                                No active trips matching {filterOrigin} ➔ {filterDestination} on {formatDatePH(filterDate)}. Try picking another departure date or service class above.
+                            </p>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setFilterServiceClass("ALL");
+                                    fetchTrips(filterOrigin, filterDestination, filterDate, "ALL");
+                                }}
+                            >
+                                Show All Classes for this Date
+                            </Button>
                         </Card>
                     )}
                 </div>
@@ -528,7 +759,7 @@ function BookTripContent() {
                         <div>
                             <h2 className="text-xl font-bold">Select Your Seat</h2>
                             <p className="text-sm text-muted-foreground">
-                                {selectedTrip.route?.origin?.name} ➔ {selectedTrip.route?.destination?.name} • {new Date(selectedTrip.departure_time).toLocaleString()}
+                                {selectedTrip.route?.origin?.name || selectedTrip.origin} ➔ {selectedTrip.route?.destination?.name || selectedTrip.destination} • {formatDateTimePH(selectedTrip.departure_time)}
                             </p>
                         </div>
                         <Button variant="outline" size="sm" onClick={() => setStep(1)}>
@@ -600,7 +831,7 @@ function BookTripContent() {
                                 </div>
                             </div>
                             <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Schedule: {new Date(selectedTrip.departure_time).toLocaleString()}</span>
+                                <span>Schedule: {formatDateTimePH(selectedTrip.departure_time)}</span>
                                 <span className="font-mono font-bold text-red-600">
                                     {selectedSeats.length > 0
                                         ? `Seats (${selectedSeats.length}): ${selectedSeats.map((s) => `#${s < 10 ? `0${s}` : s}`).join(", ")}`
