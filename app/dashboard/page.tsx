@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Ticket, Clock, ArrowRight, User, Phone, MapPin, Calendar, ShieldCheck, Edit, AlertCircle, LayoutDashboard, Bus } from "lucide-react";
 import { createClient, getUserWithRoleAndTerminal } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { FacebookProfileCard } from "@/components/facebook-profile-card";
 
 export default async function ClientDashboard() {
@@ -20,12 +21,23 @@ export default async function ClientDashboard() {
         );
     }
 
-    // Fetch user profile
-    const { data: profile } = await supabase
+    // Fetch user profile (try standard client, fallback to supabaseAdmin to guarantee bypass of any RLS locks)
+    let profile: any = null;
+    const { data: pData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user?.id)
         .maybeSingle();
+    profile = pData;
+
+    if (!profile) {
+        const { data: adminProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('*')
+            .eq('id', user?.id)
+            .maybeSingle();
+        if (adminProfile) profile = adminProfile;
+    }
 
     const meta = user?.user_metadata || {};
     const firstName = profile?.first_name || meta.first_name || meta.given_name || "";

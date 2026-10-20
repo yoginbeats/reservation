@@ -250,40 +250,24 @@ export function FacebookProfileCard({
             const newFullName = `${editFirstName.trim()} ${editMiddleName.trim() ? editMiddleName.trim() + " " : ""}${editLastName.trim()}`;
             const parsedAge = editAge ? parseInt(editAge, 10) : null;
 
-            // 1. Update user metadata in Supabase Auth
-            await supabase.auth.updateUser({
-                data: {
-                    first_name: editFirstName.trim(),
-                    middle_name: editMiddleName.trim(),
-                    last_name: editLastName.trim(),
-                    full_name: newFullName,
+            // Call server-side profile update API which guarantees database upsert and Auth sync
+            const res = await fetch("/api/profile/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    firstName: editFirstName.trim(),
+                    middleName: editMiddleName.trim(),
+                    lastName: editLastName.trim(),
                     birthdate: editBirthdate || null,
                     age: parsedAge,
-                    phone_number: editPhoneNumber.trim(),
+                    phoneNumber: editPhoneNumber.trim(),
                     address: editAddress.trim(),
-                    profile_completed: true,
-                }
+                }),
             });
 
-            // 2. Upsert comprehensive profile record in database
-            const { error: dbError } = await supabase.from("profiles").upsert({
-                id: userId,
-                email: email,
-                first_name: editFirstName.trim(),
-                middle_name: editMiddleName.trim(),
-                last_name: editLastName.trim(),
-                full_name: newFullName,
-                birthdate: editBirthdate ? editBirthdate : null,
-                age: parsedAge !== null && !isNaN(parsedAge) ? parsedAge : null,
-                phone_number: editPhoneNumber.trim(),
-                address: editAddress.trim(),
-                profile_completed: true,
-                updated_at: new Date().toISOString(),
-            });
-
-            if (dbError) {
-                console.error("Profile upsert error:", dbError);
-                throw new Error(dbError.message || "Failed to update profile record in database.");
+            const result = await res.json();
+            if (!res.ok || !result.success) {
+                throw new Error(result.error || "Failed to update profile record in database.");
             }
 
             // 3. Immediately update local state for real-time reactivity

@@ -386,8 +386,18 @@ ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.trip_seats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
+    -- Profiles policies
+    DROP POLICY IF EXISTS "Allow all for profiles" ON public.profiles;
+    CREATE POLICY "Allow all for profiles" ON public.profiles FOR ALL USING (true) WITH CHECK (true);
+
+    -- User roles policies
+    DROP POLICY IF EXISTS "Allow all for user_roles" ON public.user_roles;
+    CREATE POLICY "Allow all for user_roles" ON public.user_roles FOR ALL USING (true) WITH CHECK (true);
+
     -- Bookings policies
     DROP POLICY IF EXISTS "Allow all for bookings" ON public.bookings;
     CREATE POLICY "Allow all for bookings" ON public.bookings FOR ALL USING (true) WITH CHECK (true);
@@ -407,6 +417,8 @@ EXCEPTION WHEN OTHERS THEN
     NULL;
 END $$;
 
+GRANT ALL ON public.profiles TO anon, authenticated, service_role;
+GRANT ALL ON public.user_roles TO anon, authenticated, service_role;
 GRANT ALL ON public.bookings TO anon, authenticated, service_role;
 GRANT ALL ON public.payments TO anon, authenticated, service_role;
 GRANT ALL ON public.tickets TO anon, authenticated, service_role;

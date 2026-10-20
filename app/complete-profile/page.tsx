@@ -144,71 +144,25 @@ function CompleteProfileContent() {
             const fullName = `${firstName.trim()} ${middleName.trim() ? middleName.trim() + " " : ""}${lastName.trim()}`;
             const parsedAge = age ? parseInt(age, 10) : null;
 
-            // 1. Update user password & metadata in Supabase Auth
-            const updatePayload: any = {
-                data: {
-                    first_name: firstName.trim(),
-                    middle_name: middleName.trim(),
-                    last_name: lastName.trim(),
-                    full_name: fullName,
-                    birthdate: birthdate,
+            // Call server-side profile update API which guarantees database upsert and Auth sync
+            const res = await fetch("/api/profile/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    firstName: firstName.trim(),
+                    middleName: middleName.trim(),
+                    lastName: lastName.trim(),
+                    birthdate: birthdate || null,
                     age: parsedAge,
-                    phone_number: phoneNumber.trim(),
+                    phoneNumber: phoneNumber.trim(),
                     address: address.trim(),
-                    profile_completed: true,
-                }
-            };
+                    password: password || undefined,
+                }),
+            });
 
-            if (password) {
-                updatePayload.password = password;
-            }
-
-            const { error: authUpdateError } = await supabase.auth.updateUser(updatePayload);
-            if (authUpdateError) {
-                console.warn("Auth metadata update warning:", authUpdateError);
-            }
-
-            // 2. Upsert comprehensive profile record in database
-            const profilePayload = {
-                id: user.id,
-                email: user.email,
-                first_name: firstName.trim(),
-                middle_name: middleName.trim(),
-                last_name: lastName.trim(),
-                full_name: fullName,
-                birthdate: birthdate ? birthdate : null,
-                age: parsedAge !== null && !isNaN(parsedAge) ? parsedAge : null,
-                phone_number: phoneNumber.trim(),
-                address: address.trim(),
-                profile_completed: true,
-                updated_at: new Date().toISOString(),
-            };
-
-            const { error: profileError } = await supabase
-                .from("profiles")
-                .upsert(profilePayload);
-
-            if (profileError) {
-                console.error("DB profile upsert error:", profileError);
-                throw new Error(profileError.message || "Failed to save profile record to database.");
-            }
-
-            // 3. Ensure role exists safely (do not overwrite existing roles like ADMIN or TELLER)
-            try {
-                const { data: existingRole } = await supabase
-                    .from("user_roles")
-                    .select("role")
-                    .eq("user_id", user.id)
-                    .maybeSingle();
-
-                if (!existingRole) {
-                    await supabase.from("user_roles").insert({
-                        user_id: user.id,
-                        role: "PASSENGER",
-                    });
-                }
-            } catch (roleErr) {
-                console.warn("User role assignment non-fatal notice:", roleErr);
+            const result = await res.json();
+            if (!res.ok || !result.success) {
+                throw new Error(result.error || "Failed to save profile record to database.");
             }
 
             // 4. Send Welcome Confirmation Email
