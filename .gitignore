@@ -48,3 +48,5 @@ hostinger-deploy.zip
 hostinger-deploy*.zip
 deploy_temp/
 node_modules_old/
+
+!release/*.zip
