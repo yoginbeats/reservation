@@ -58,12 +58,8 @@ export async function GET(req: NextRequest) {
         const routes = [
             { origin: "Cubao", destination: "Daet", times: ["06:00", "12:00", "20:00", "22:00"], fare: 850 },
             { origin: "Daet", destination: "Cubao", times: ["07:00", "13:00", "20:30", "22:30"], fare: 850 },
-            { origin: "Alabang", destination: "Daet", times: ["07:30", "21:00"], fare: 850 },
-            { origin: "Daet", destination: "Alabang", times: ["08:00", "21:30"], fare: 850 },
             { origin: "PITX", destination: "Daet", times: ["08:30", "20:30"], fare: 850 },
             { origin: "Daet", destination: "PITX", times: ["09:00", "21:00"], fare: 850 },
-            { origin: "Cubao", destination: "Naga", times: ["09:30", "21:15"], fare: 950 },
-            { origin: "Naga", destination: "Cubao", times: ["10:00", "21:45"], fare: 950 },
         ];
 
         const today = new Date();
@@ -86,10 +82,6 @@ export async function GET(req: NextRequest) {
                     let assignedBus = "SL-401 (Superlines Aircon)";
                     if (r.origin.includes("PITX") || r.destination.includes("PITX")) {
                         assignedBus = "SL-212 (Executive Express)";
-                    } else if (r.origin.includes("Alabang") || r.destination.includes("Alabang")) {
-                        assignedBus = "SL-308 (Superlines De Luxe)";
-                    } else if (r.origin.includes("Naga") || r.destination.includes("Naga")) {
-                        assignedBus = "SL-520 (Premier Sleeper)";
                     } else if (t.startsWith("06") || t.startsWith("07")) {
                         assignedBus = "SL-205 (Executive Express)";
                     } else if (t.startsWith("12") || t.startsWith("13")) {

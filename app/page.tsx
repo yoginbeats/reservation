@@ -173,9 +173,8 @@ export default function Home() {
                                                     className="w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 py-3.5 pl-9 pr-3 text-xs font-bold text-zinc-800 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 outline-none"
                                                 >
                                                     <option value="Cubao">Cubao Terminal</option>
-                                                    <option value="EDSA Pasay">EDSA Pasay</option>
+                                                    <option value="PITX">PITX Terminal</option>
                                                     <option value="Daet">Daet Terminal</option>
-                                                    <option value="Naga">Naga Terminal</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -193,9 +192,8 @@ export default function Home() {
                                                     className="w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 py-3.5 pl-9 pr-3 text-xs font-bold text-zinc-800 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 outline-none"
                                                 >
                                                     <option value="Daet">Daet Terminal</option>
-                                                    <option value="Naga">Naga Terminal</option>
-                                                    <option value="Legazpi">Legazpi City</option>
                                                     <option value="Cubao">Cubao Terminal</option>
+                                                    <option value="PITX">PITX Terminal</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -300,24 +298,24 @@ export default function Home() {
 
                         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-left space-y-3">
                             <div className="flex justify-between items-center text-xs text-amber-400 font-bold">
-                                <span>DELUXE BUS</span>
-                                <span className="text-white text-base font-black">₱950</span>
+                                <span>EXECUTIVE EXPRESS</span>
+                                <span className="text-white text-base font-black">₱850</span>
                             </div>
-                            <h4 className="font-bold text-lg text-white">Cubao ➔ Naga</h4>
-                            <p className="text-xs text-zinc-400">With Restroom / CR on board</p>
-                            <Link href="/book?origin=Cubao&destination=Naga" className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
+                            <h4 className="font-bold text-lg text-white">PITX ➔ Daet</h4>
+                            <p className="text-xs text-zinc-400">Direct Express via South Luzon Expressway</p>
+                            <Link href="/book?origin=PITX&destination=Daet" className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
                                 Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
                             </Link>
                         </div>
 
                         <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-left space-y-3">
                             <div className="flex justify-between items-center text-xs text-blue-400 font-bold">
-                                <span>FIRST CLASS</span>
-                                <span className="text-white text-base font-black">₱1,050</span>
+                                <span>RETURN LEG</span>
+                                <span className="text-white text-base font-black">₱850</span>
                             </div>
-                            <h4 className="font-bold text-lg text-white">Pasay ➔ Legazpi</h4>
-                            <p className="text-xs text-zinc-400">Reclining Seats & Free Wi-Fi</p>
-                            <Link href="/book?origin=Pasay&destination=Legazpi" className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
+                            <h4 className="font-bold text-lg text-white">Daet ➔ Cubao</h4>
+                            <p className="text-xs text-zinc-400">Scheduled Daily Return Trips</p>
+                            <Link href="/book?origin=Daet&destination=Cubao" className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
                                 Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
                             </Link>
                         </div>

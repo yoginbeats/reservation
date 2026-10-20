@@ -75,7 +75,9 @@ export interface CachedBooking {
     payment_method: string;
     transaction_ref: string;
     qr_token: string;
+    trip_id?: string;
     trip: {
+        id?: string;
         origin: string;
         destination: string;
         departure_time: string;
@@ -99,10 +101,6 @@ const OCT_30_CUBAO_ID = "oct30-cubao-daet-401";
 const OCT_30_DAET_ID = "oct30-daet-cubao-401";
 const OCT_30_PITX_ID = "oct30-pitx-daet-212";
 const OCT_30_DAET_PITX_ID = "oct30-daet-pitx-212";
-const OCT_30_ALABANG_ID = "oct30-alabang-daet-308";
-const OCT_30_DAET_ALABANG_ID = "oct30-daet-alabang-308";
-const OCT_30_CUBAO_NAGA_ID = "oct30-cubao-naga-520";
-const OCT_30_NAGA_CUBAO_ID = "oct30-naga-cubao-520";
 
 function ensureOctober30SeedData(list: CachedBooking[]) {
     // 1. CUBAO ⇄ DAET (SL-401)
@@ -218,120 +216,6 @@ function ensureOctober30SeedData(list: CachedBooking[]) {
             }
         });
     }
-
-    // 3. ALABANG ⇄ DAET (SL-308)
-    if (!list.some(b => b.id === OCT_30_ALABANG_ID)) {
-        list.push({
-            id: OCT_30_ALABANG_ID,
-            created_at: "2026-10-20T09:00:00.000Z",
-            passenger_name: "Mateo Garcia",
-            passenger_contact: "09159998877",
-            passenger_email: "mateo.garcia@outlook.com",
-            passenger_type: "REGULAR",
-            seat_number: 7,
-            seat_numbers: [7],
-            seat_count: 1,
-            total_price: 850,
-            original_price: 850,
-            booking_status: "CONFIRMED",
-            payment_status: "PAID",
-            ticket_status: "VALID",
-            payment_method: "GCASH_DIRECT",
-            transaction_ref: "GCASH-982144729308",
-            qr_token: "TKT-20261030-MG308",
-            trip: {
-                origin: "Alabang",
-                destination: "Daet",
-                departure_time: "2026-10-30T21:00:00.000Z",
-                bus_number: "SL-308 (Superlines De Luxe)",
-            }
-        });
-    }
-
-    if (!list.some(b => b.id === OCT_30_DAET_ALABANG_ID)) {
-        list.push({
-            id: OCT_30_DAET_ALABANG_ID,
-            created_at: "2026-10-20T09:15:00.000Z",
-            passenger_name: "Clara Bautista",
-            passenger_contact: "09275556677",
-            passenger_email: "clara.bautista@gmail.com",
-            passenger_type: "REGULAR",
-            seat_number: 9,
-            seat_numbers: [9],
-            seat_count: 1,
-            total_price: 850,
-            original_price: 850,
-            booking_status: "CONFIRMED",
-            payment_status: "PAID",
-            ticket_status: "VALID",
-            payment_method: "GCASH_DIRECT",
-            transaction_ref: "GCASH-982144729310",
-            qr_token: "TKT-20261030-CB308",
-            trip: {
-                origin: "Daet",
-                destination: "Alabang",
-                departure_time: "2026-10-30T21:00:00.000Z",
-                bus_number: "SL-308 (Superlines De Luxe)",
-            }
-        });
-    }
-
-    // 4. CUBAO ⇄ NAGA (SL-520)
-    if (!list.some(b => b.id === OCT_30_CUBAO_NAGA_ID)) {
-        list.push({
-            id: OCT_30_CUBAO_NAGA_ID,
-            created_at: "2026-10-20T09:20:00.000Z",
-            passenger_name: "Gabriel Santos",
-            passenger_contact: "09334445566",
-            passenger_email: "gabriel.santos@gmail.com",
-            passenger_type: "REGULAR",
-            seat_number: 5,
-            seat_numbers: [5],
-            seat_count: 1,
-            total_price: 950,
-            original_price: 950,
-            booking_status: "CONFIRMED",
-            payment_status: "PAID",
-            ticket_status: "VALID",
-            payment_method: "GCASH_DIRECT",
-            transaction_ref: "GCASH-982144729520",
-            qr_token: "TKT-20261030-GS520",
-            trip: {
-                origin: "Cubao",
-                destination: "Naga",
-                departure_time: "2026-10-30T21:15:00.000Z",
-                bus_number: "SL-520 (Premier Sleeper)",
-            }
-        });
-    }
-
-    if (!list.some(b => b.id === OCT_30_NAGA_CUBAO_ID)) {
-        list.push({
-            id: OCT_30_NAGA_CUBAO_ID,
-            created_at: "2026-10-20T09:40:00.000Z",
-            passenger_name: "Patricia Reyes",
-            passenger_contact: "09458889900",
-            passenger_email: "patricia.reyes@gmail.com",
-            passenger_type: "REGULAR",
-            seat_number: 8,
-            seat_numbers: [8],
-            seat_count: 1,
-            total_price: 950,
-            original_price: 950,
-            booking_status: "CONFIRMED",
-            payment_status: "PAID",
-            ticket_status: "VALID",
-            payment_method: "GCASH_DIRECT",
-            transaction_ref: "GCASH-982144729525",
-            qr_token: "TKT-20261030-PR520",
-            trip: {
-                origin: "Naga",
-                destination: "Cubao",
-                departure_time: "2026-10-30T21:15:00.000Z",
-                bus_number: "SL-520 (Premier Sleeper)",
-            }
-        });
-    }
 }
 
 function loadFromFile(): CachedBooking[] {
@@ -340,8 +224,15 @@ function loadFromFile(): CachedBooking[] {
             const data = fs.readFileSync(CACHE_FILE, "utf-8");
             const parsed = JSON.parse(data);
             if (Array.isArray(parsed)) {
-                ensureOctober30SeedData(parsed);
-                return parsed;
+                // Filter out any removed terminals (Alabang, Naga, Turbina)
+                const excluded = ["alabang", "naga", "turbina"];
+                const filtered = parsed.filter(b => {
+                    const orig = (b.trip?.origin || "").toLowerCase();
+                    const dest = (b.trip?.destination || "").toLowerCase();
+                    return !excluded.some(ex => orig.includes(ex) || dest.includes(ex));
+                });
+                ensureOctober30SeedData(filtered);
+                return filtered;
             }
         }
     } catch {}
@@ -357,9 +248,8 @@ function saveToFile(bookings: CachedBooking[]) {
 }
 
 // Initialize from file
-if (globalForStore.localBookingsCache.length === 0) {
-    globalForStore.localBookingsCache = loadFromFile();
-}
+globalForStore.localBookingsCache = loadFromFile();
+saveToFile(globalForStore.localBookingsCache);
 
 export function saveLocalBooking(booking: CachedBooking) {
     const list = globalForStore.localBookingsCache || [];

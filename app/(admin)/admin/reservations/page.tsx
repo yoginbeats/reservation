@@ -428,7 +428,7 @@ export default function AdminReservationsPage() {
                     >
                         All Terminals
                     </button>
-                    {["Cubao", "Daet", "PITX", "Alabang", "Naga"].map((term) => (
+                    {["Cubao", "Daet", "PITX"].map((term) => (
                         <button
                             key={term}
                             type="button"
