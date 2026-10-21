@@ -1123,7 +1123,13 @@ export function TellerDashboardClient({
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-zinc-500">Bus Unit:</span>
-                                <span className="font-bold text-black">{selectedTicketForPrint.trip?.bus_number}</span>
+                                <span className="font-bold text-black">{selectedTicketForPrint.trip?.bus_number || "Bus TBD"}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-zinc-500">Bus Classification:</span>
+                                <span className="font-bold text-blue-700 uppercase">
+                                    {(selectedTicketForPrint.trip?.bus_type || "REGULAR AIRCON").replace(/[-_]/g, " ")}
+                                </span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-zinc-500">Departure:</span>

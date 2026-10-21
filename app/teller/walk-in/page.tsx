@@ -497,13 +497,23 @@ export default function TellerWalkInBookingPage() {
                             </div>
                         </div>
 
-                        <div className="text-xs space-y-1">
+                        <div className="text-xs space-y-1.5">
                             <p className="text-muted-foreground">Route & Trip</p>
                             <p className="font-bold text-sm">
                                 {completedBooking.trip.route?.origin?.name} ➔ {completedBooking.trip.route?.destination?.name}
                             </p>
-                            <p className="text-muted-foreground">
-                                Bus: {completedBooking.trip.bus?.bus_number} • Schedule: {new Date(completedBooking.trip.departure_time).toLocaleString()}
+                            <div className="grid grid-cols-2 gap-2 pt-1 font-mono">
+                                <div className="bg-muted/40 p-2 rounded-lg border">
+                                    <span className="text-[10px] text-muted-foreground block font-bold uppercase">Bus Unit</span>
+                                    <span className="font-bold text-foreground text-xs">{completedBooking.trip.bus?.bus_number || "Bus TBD (Bay Assignment)"}</span>
+                                </div>
+                                <div className="bg-muted/40 p-2 rounded-lg border">
+                                    <span className="text-[10px] text-muted-foreground block font-bold uppercase">Bus Classification</span>
+                                    <span className="font-bold text-blue-600 dark:text-blue-400 text-xs">{(completedBooking.trip.bus?.bus_type || "REGULAR AIRCON").replace(/[-_]/g, " ")}</span>
+                                </div>
+                            </div>
+                            <p className="text-muted-foreground text-[11px] pt-0.5">
+                                Departure Schedule: {new Date(completedBooking.trip.departure_time).toLocaleString()}
                             </p>
                         </div>
 

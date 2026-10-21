@@ -567,15 +567,15 @@ function ConductorManifestContent() {
                             {/* Physical Bus Assignment Box */}
                             <div className="rounded-xl border-2 border-red-900/40 bg-zinc-900/90 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 min-w-[280px]">
                                 <div>
-                                    <p className="text-[10px] uppercase font-mono font-bold text-zinc-400">Physical Bus Unit Assigned</p>
+                                    <p className="text-[10px] uppercase font-mono font-bold text-zinc-400">Assigned Bus Unit & Classification</p>
                                     <div className="flex items-center gap-2 mt-0.5">
                                         <Bus className="h-5 w-5 text-red-500" />
                                         <div>
                                             <div className="font-mono text-base font-black text-white">
-                                                {selectedTrip.bus?.bus_number || "NO BUS ASSIGNED (TBD)"}
+                                                Bus Unit: {selectedTrip.bus?.bus_number || "NO BUS ASSIGNED (TBD)"}
                                             </div>
-                                            <div className="text-[10px] text-zinc-400 uppercase font-mono">
-                                                {selectedTrip.bus?.bus_type || "REGULAR AIRCON"}
+                                            <div className="text-[11px] text-zinc-300 font-mono font-bold">
+                                                Classification: <span className="text-red-400">{selectedTrip.bus?.bus_type || "REGULAR AIRCON"}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -697,9 +697,9 @@ function ConductorManifestContent() {
                                         </div>
                                     )}
 
-                                    {/* Bus Type */}
+                                    {/* Bus Classification */}
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-zinc-300">Bus Type / Specification</label>
+                                        <label className="text-xs font-bold text-zinc-300">Bus Classification</label>
                                         <select
                                             value={newBusType}
                                             onChange={(e) => setNewBusType(e.target.value)}

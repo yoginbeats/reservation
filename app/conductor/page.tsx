@@ -317,7 +317,7 @@ export default function ConductorDashboardPage() {
                                         <div className="flex items-center justify-between text-xs font-mono">
                                             <div className="flex items-center gap-1.5 font-bold text-red-400">
                                                 <Bus className="h-4 w-4 text-red-500" />
-                                                <span>{busNum}</span>
+                                                <span>Bus Unit: {busNum}</span>
                                             </div>
                                             <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold font-mono border ${
                                                 isBoarding
@@ -334,8 +334,9 @@ export default function ConductorDashboardPage() {
                                             <ArrowRight className="h-4 w-4 text-red-500" />
                                             <span>{dest}</span>
                                         </CardTitle>
-                                        <CardDescription className="text-[11px] font-mono text-zinc-400">
-                                            {busType} • Fare: ₱{t.fare_amount || 850}.00
+                                        <CardDescription className="text-[11px] font-mono text-zinc-400 flex items-center justify-between">
+                                            <span>Classification: <strong className="text-zinc-200">{busType}</strong></span>
+                                            <span className="text-emerald-400 font-bold">Fare: ₱{t.fare_amount || 850}.00</span>
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-4 pt-4">
@@ -490,7 +491,7 @@ export default function ConductorDashboardPage() {
                             )}
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-zinc-300">Bus Type</label>
+                                <label className="text-xs font-bold text-zinc-300">Bus Classification</label>
                                 <select
                                     value={newBusType}
                                     onChange={(e) => setNewBusType(e.target.value)}

@@ -618,7 +618,9 @@ function TicketsContent() {
                         const trip = booking?.trip;
                         const origin = trip?.route?.origin?.name || "Cubao";
                         const dest = trip?.route?.destination?.name || "Daet";
-                        const busNum = trip?.bus?.bus_number || "Superlines Express";
+                        const busNum = trip?.bus?.bus_number || (trip as any)?.bus_number || "Bus TBD (Assigned at Bay)";
+                        const rawBusType = trip?.bus?.bus_type || (trip as any)?.bus_type || "REGULAR AIRCON";
+                        const busClassification = String(rawBusType).toUpperCase().replace(/[-_]/g, " ");
                         const depTime = trip?.departure_time ? new Date(trip.departure_time) : new Date();
 
                         // Departure calculations
@@ -690,12 +692,12 @@ function TicketsContent() {
                                         </div>
                                     </div>
 
-                                    {/* Route & Bus Details */}
-                                    <div className="space-y-1 bg-muted/30 p-3 rounded-lg border">
+                                    {/* Route & Schedule */}
+                                    <div className="space-y-2.5 bg-muted/30 p-3.5 rounded-xl border">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-xs text-muted-foreground uppercase font-semibold">Route & Bus Unit</p>
+                                            <p className="text-xs text-muted-foreground uppercase font-semibold">Route & Schedule</p>
                                             <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                                                ₱{booking?.total_price || 850}.00
+                                                ₱{booking?.total_price || 850}.00 (PAID)
                                             </span>
                                         </div>
                                         <p className="text-lg font-black flex items-center gap-2">
@@ -703,13 +705,27 @@ function TicketsContent() {
                                             <ArrowRight className="h-4 w-4 text-blue-600" />
                                             <span>{dest}</span>
                                         </p>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-2">
-                                            <span>{busNum}</span>
-                                            <span>•</span>
-                                            <span className="font-medium text-foreground">
-                                                {formatDateTimePH(trip?.departure_time || depTime)}
-                                            </span>
+                                        <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                                            <Clock className="h-3.5 w-3.5 text-blue-600" />
+                                            {formatDateTimePH(trip?.departure_time || depTime)}
                                         </p>
+
+                                        {/* Dedicated Bus Unit & Bus Classification */}
+                                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/60 text-xs">
+                                            <div className="bg-background/80 p-2 rounded-lg border">
+                                                <span className="text-[10px] uppercase font-bold text-muted-foreground block">Bus Unit</span>
+                                                <span className="font-mono font-extrabold text-foreground text-sm flex items-center gap-1 mt-0.5">
+                                                    <Bus className="h-3.5 w-3.5 text-blue-600" />
+                                                    {busNum}
+                                                </span>
+                                            </div>
+                                            <div className="bg-background/80 p-2 rounded-lg border">
+                                                <span className="text-[10px] uppercase font-bold text-muted-foreground block">Bus Classification</span>
+                                                <span className="font-mono font-extrabold text-xs text-blue-700 dark:text-blue-300 block mt-0.5">
+                                                    {busClassification}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Departure Countdown & Policy Alert Badge */}
@@ -1463,6 +1479,18 @@ function TicketsContent() {
                                     <span>Departure:</span>
                                     <span className="font-semibold text-foreground">
                                         {formatDateTimePH(viewingBoardingPass.booking?.trip?.departure_time)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Bus Unit:</span>
+                                    <span className="font-bold text-foreground">
+                                        {viewingBoardingPass.booking?.trip?.bus?.bus_number || (viewingBoardingPass.booking?.trip as any)?.bus_number || "Bus TBD (Assigned at Bay)"}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Bus Classification:</span>
+                                    <span className="font-bold text-blue-600 uppercase">
+                                        {String(viewingBoardingPass.booking?.trip?.bus?.bus_type || (viewingBoardingPass.booking?.trip as any)?.bus_type || "REGULAR AIRCON").replace(/[-_]/g, " ")}
                                     </span>
                                 </div>
                                 <div className="flex justify-between border-t pt-1 font-bold">
