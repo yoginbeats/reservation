@@ -30,15 +30,17 @@ $highlightRowBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]
 $borderPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(82, 82, 91), 2)
 $innerLinePen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(45, 48, 56), 1.5)
 $relationPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(150, 155, 170), 2.5)
+$tellerPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(52, 211, 153), 2.2) # Emerald for teller
+$conductorPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(251, 191, 36), 2.2) # Amber for conductor
 
 # Fonts
 $titleFont = New-Object System.Drawing.Font("Segoe UI", 24, [System.Drawing.FontStyle]::Bold)
 $subtitleFont = New-Object System.Drawing.Font("Segoe UI", 13, [System.Drawing.FontStyle]::Regular)
 $tableHeaderFont = New-Object System.Drawing.Font("Segoe UI", 15, [System.Drawing.FontStyle]::Bold)
-$typeFont = New-Object System.Drawing.Font("Consolas", 12, [System.Drawing.FontStyle]::Regular)
-$nameFont = New-Object System.Drawing.Font("Consolas", 13, [System.Drawing.FontStyle]::Bold)
-$keyFont = New-Object System.Drawing.Font("Consolas", 11, [System.Drawing.FontStyle]::Bold)
-$labelFont = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+$typeFont = New-Object System.Drawing.Font("Consolas", 11, [System.Drawing.FontStyle]::Regular)
+$nameFont = New-Object System.Drawing.Font("Consolas", 12.5, [System.Drawing.FontStyle]::Bold)
+$keyFont = New-Object System.Drawing.Font("Consolas", 10.5, [System.Drawing.FontStyle]::Bold)
+$labelFont = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
 
 # Title Block
 [void]$g.DrawString("SUPERLINES TICKETING & RESERVATION SYSTEM", $titleFont, $whiteBrush, 80, 45)
@@ -84,9 +86,9 @@ function Draw-Table {
     # Header bottom line
     [void]$g.DrawLine($borderPen, [float]$x, [float]($y + $headerH), [float]($x + $w), [float]($y + $headerH))
 
-    # Column divisions (Type: 22%, Name: 40%, Key: 38%)
-    $colTypeW = [float][math]::Floor($w * 0.22)
-    $colNameW = [float][math]::Floor($w * 0.40)
+    # Column divisions (Type: 135px, Name: 175px, Key: remaining width)
+    $colTypeW = 135.0
+    $colNameW = 175.0
     $colKeyW  = [float]($w - $colTypeW - $colNameW)
 
     $col1X = [float]$x
@@ -148,32 +150,45 @@ function Draw-Relation {
         [hashtable]$from,
         [hashtable]$to,
         [string]$label,
-        [array]$waypoints = @(),
-        [hashtable]$labelPos = $null
+        [object[]]$waypoints = @(),
+        [hashtable]$labelPos = $null,
+        [System.Drawing.Pen]$customPen = $null
     )
+
+    $usePen = if ($customPen) { $customPen } else { $relationPen }
 
     $points = New-Object System.Collections.Generic.List[System.Drawing.PointF]
     $points.Add((New-Object System.Drawing.PointF([float]$from.X, [float]$from.Y)))
-    foreach ($wp in $waypoints) {
-        $points.Add((New-Object System.Drawing.PointF([float]$wp.X, [float]$wp.Y)))
+    if ($waypoints) {
+        foreach ($item in $waypoints) {
+            if ($item -is [System.Collections.IDictionary]) {
+                $points.Add((New-Object System.Drawing.PointF([float]$item.X, [float]$item.Y)))
+            } elseif ($item -is [System.Collections.IEnumerable]) {
+                foreach ($sub in $item) {
+                    if ($sub -is [System.Collections.IDictionary]) {
+                        $points.Add((New-Object System.Drawing.PointF([float]$sub.X, [float]$sub.Y)))
+                    }
+                }
+            }
+        }
     }
     $points.Add((New-Object System.Drawing.PointF([float]$to.X, [float]$to.Y)))
 
     # Draw lines
     for ($i = 0; $i -lt $points.Count - 1; $i++) {
-        [void]$g.DrawLine($relationPen, $points[$i], $points[$i+1])
+        [void]$g.DrawLine($usePen, $points[$i], $points[$i+1])
     }
 
     # Target point circle
     $lastP = $points[$points.Count - 1]
     $radius = 6.0
     [void]$g.FillEllipse($tableHeaderBrush, [float]($lastP.X - $radius), [float]($lastP.Y - $radius), [float]($radius * 2), [float]($radius * 2))
-    [void]$g.DrawEllipse($relationPen, [float]($lastP.X - $radius), [float]($lastP.Y - $radius), [float]($radius * 2), [float]($radius * 2))
+    [void]$g.DrawEllipse($usePen, [float]($lastP.X - $radius), [float]($lastP.Y - $radius), [float]($radius * 2), [float]($radius * 2))
 
     # Start point ring
     $firstP = $points[0]
     [void]$g.FillEllipse($tableHeaderBrush, [float]($firstP.X - 5), [float]($firstP.Y - 5), 10.0, 10.0)
-    [void]$g.DrawEllipse($relationPen, [float]($firstP.X - 5), [float]($firstP.Y - 5), 10.0, 10.0)
+    [void]$g.DrawEllipse($usePen, [float]($firstP.X - 5), [float]($firstP.Y - 5), 10.0, 10.0)
 
     # Draw relation label pill
     if ($label) {
@@ -182,9 +197,9 @@ function Draw-Relation {
         if ($labelPos) {
             $midX = [float]$labelPos.X
             $midY = [float]$labelPos.Y
-        } elseif ($waypoints.Count -gt 0) {
-            $midX = [float]$waypoints[0].X
-            $midY = [float]$waypoints[0].Y
+        } elseif ($points.Count -gt 2) {
+            $midX = [float]$points[1].X
+            $midY = [float]$points[1].Y
         }
 
         $labelSize = $g.MeasureString($label, $labelFont)
@@ -209,7 +224,7 @@ function Draw-Relation {
 }
 
 # -------------------------------------------------------------
-# TABLE DEFINITIONS (EXACTLY MATCHING THE USER'S SCREENSHOT)
+# TABLE DEFINITIONS (INCLUDING TELLER & CONDUCTOR ROLES)
 # -------------------------------------------------------------
 
 # 1. BUSES (Top Center-Right)
@@ -224,7 +239,7 @@ $buses = Draw-Table "BUSES" 1420 150 540 $busesCols $cyanBrush
 # 2. TRIPS (Directly Below BUSES)
 $tripsCols = @(
     @{ Type = "uuid"; Name = "id"; Key = "PK" },
-    @{ Type = "uuid"; Name = "bus_id"; Key = "FK" },
+    @{ Type = "uuid"; Name = "bus_id"; Key = "FK -> BUSES.id" },
     @{ Type = "text"; Name = "origin"; Key = "Daet / Cubao / PITX" },
     @{ Type = "text"; Name = "destination"; Key = "Daet / Cubao / PITX" },
     @{ Type = "timestamptz"; Name = "departure_time"; Key = "NOT NULL" },
@@ -240,49 +255,56 @@ $profilesCols = @(
     @{ Type = "text"; Name = "phone"; Key = "09XXXXXXXXX" },
     @{ Type = "timestamptz"; Name = "created_at"; Key = "NOW()" }
 )
-$profiles = Draw-Table "PROFILES" 140 460 560 $profilesCols $greenBrush
+$profiles = Draw-Table "PROFILES" 100 460 620 $profilesCols $greenBrush
 
-# 4. USER_ROLES (Directly Below PROFILES)
+# 4. USER_ROLES (Directly Below PROFILES with ALL 4 ROLES)
 $rolesCols = @(
-    @{ Type = "uuid"; Name = "user_id"; Key = "PK (FK auth.users)" },
-    @{ Type = "text"; Name = "role"; Key = "ADMIN / CLIENT / STAFF" }
+    @{ Type = "uuid"; Name = "id"; Key = "PK" },
+    @{ Type = "uuid"; Name = "user_id"; Key = "FK (auth.users)" },
+    @{ Type = "text"; Name = "role"; Key = "ADMIN, TELLER, CONDUCTOR, CLIENT" },
+    @{ Type = "uuid"; Name = "terminal_id"; Key = "FK (Assigned Station for Teller)" }
 )
-$userRoles = Draw-Table "USER_ROLES" 140 850 560 $rolesCols $greenBrush
+$userRoles = Draw-Table "USER_ROLES" 100 850 640 $rolesCols $greenBrush
 
-# 5. RESERVATIONS (Directly Below TRIPS)
+# 5. RESERVATIONS (Central Ledger with Teller & Online Attributes)
 $resCols = @(
     @{ Type = "uuid"; Name = "id"; Key = "PK" },
     @{ Type = "uuid"; Name = "customer_id"; Key = "FK (auth.users)" },
-    @{ Type = "uuid"; Name = "trip_id"; Key = "FK" },
+    @{ Type = "uuid"; Name = "trip_id"; Key = "FK -> TRIPS.id" },
+    @{ Type = "uuid"; Name = "created_by"; Key = "FK (Teller ID or Passenger ID)" },
+    @{ Type = "text"; Name = "booking_source"; Key = "ONLINE (GCash) / WALK_IN (Teller)" },
     @{ Type = "text"; Name = "seat_number"; Key = "#01 - #49" },
     @{ Type = "text"; Name = "passenger_name"; Key = "NOT NULL" },
     @{ Type = "decimal"; Name = "total_price"; Key = "NET FARE" },
     @{ Type = "text"; Name = "status"; Key = "CONFIRMED / PENDING" }
 )
-$reservations = Draw-Table "RESERVATIONS" 1360 840 660 $resCols $purpleBrush
+$reservations = Draw-Table "RESERVATIONS" 1360 810 680 $resCols $purpleBrush
 
-# 6. TICKETS (Bottom Left of RESERVATIONS)
+# 6. TICKETS (Bottom Left of Center with Conductor Verification)
 $ticketsCols = @(
     @{ Type = "uuid"; Name = "id"; Key = "PK" },
     @{ Type = "uuid"; Name = "reservation_id"; Key = "FK (UNIQUE)" },
-    @{ Type = "text"; Name = "qr_code"; Key = "UNIQUE (QR TOKEN)" },
-    @{ Type = "text"; Name = "status"; Key = "VALID / USED / EXPIRED" }
+    @{ Type = "text"; Name = "qr_code"; Key = "UNIQUE (QR Boarding Token)" },
+    @{ Type = "uuid"; Name = "verified_by"; Key = "FK -> Conductor ID" },
+    @{ Type = "timestamptz"; Name = "verified_at"; Key = "Onboard Boarding Check" },
+    @{ Type = "text"; Name = "status"; Key = "VALID / BOARDED / USED" }
 )
-$tickets = Draw-Table "TICKETS" 1050 1320 560 $ticketsCols $amberBrush
+$tickets = Draw-Table "TICKETS" 1020 1340 600 $ticketsCols $amberBrush
 
-# 7. PAYMENTS (Bottom Right of RESERVATIONS)
+# 7. PAYMENTS (Bottom Right of Center)
 $paymentsCols = @(
     @{ Type = "uuid"; Name = "id"; Key = "PK" },
     @{ Type = "uuid"; Name = "reservation_id"; Key = "FK" },
     @{ Type = "decimal"; Name = "amount"; Key = "NOT NULL" },
-    @{ Type = "text"; Name = "status"; Key = "PAID / PENDING" },
+    @{ Type = "text"; Name = "payment_method"; Key = "GCash (Online) / Cash (Teller)" },
+    @{ Type = "text"; Name = "status"; Key = "PAID / PENDING / REFUNDED" },
     @{ Type = "text"; Name = "transaction_id"; Key = "GCASH-REF / POS-TX" }
 )
-$payments = Draw-Table "PAYMENTS" 1680 1320 580 $paymentsCols $amberBrush
+$payments = Draw-Table "PAYMENTS" 1680 1340 600 $paymentsCols $amberBrush
 
 
 # -------------------------------------------------------------
-# RELATIONSHIP CONNECTORS (MATCHING THE SCREENSHOT EXACTLY)
+# RELATIONSHIP CONNECTORS
 # -------------------------------------------------------------
 
 # BUSES -> TRIPS ("assigned to") - Straight vertical
@@ -291,23 +313,40 @@ Draw-Relation $buses.BottomMid $trips.TopMid "assigned to"
 # PROFILES -> USER_ROLES ("has role") - Straight vertical
 Draw-Relation $profiles.BottomMid $userRoles.TopMid "has role"
 
-# PROFILES -> RESERVATIONS ("makes") - Diagonal connector with label
-$profRight = @{ X = [float]($profiles.X + $profiles.W); Y = [float]($profiles.Y + 100.0) }
-$resLeft   = @{ X = [float]$reservations.X; Y = [float]($reservations.Y + 60.0) }
-$makesWP   = @{ X = 1000.0; Y = [float](($profRight.Y + $resLeft.Y) / 2.0) }
-Draw-Relation $profRight $resLeft "makes" -waypoints @($makesWP)
+# PROFILES -> RESERVATIONS ("makes (online)")
+$profRight = @{ X = [float]($profiles.X + $profiles.W); Y = [float]($profiles.Y + 70.0) }
+$resLeft1  = @{ X = [float]$reservations.X; Y = [float]($reservations.Y + 50.0) }
+$makesWP1  = @{ X = 960.0; Y = [float]$profRight.Y }
+$makesWP2  = @{ X = 960.0; Y = [float]$resLeft1.Y }
+$makesLabelPos = @{ X = 960.0; Y = [float](($profRight.Y + $resLeft1.Y) / 2.0) }
+Draw-Relation $profRight $resLeft1 "makes (online)" -waypoints @($makesWP1, $makesWP2) -labelPos $makesLabelPos
 
-# TRIPS -> RESERVATIONS ("has") - Straight vertical with centered label
+# USER_ROLES -> RESERVATIONS ("teller issues walk-in")
+$rolesRight = @{ X = [float]($userRoles.X + $userRoles.W); Y = [float]($userRoles.Y + 60.0) }
+$resLeft2   = @{ X = [float]$reservations.X; Y = [float]($reservations.Y + 140.0) }
+$tellerWP1  = @{ X = 1040.0; Y = [float]$rolesRight.Y }
+$tellerWP2  = @{ X = 1040.0; Y = [float]$resLeft2.Y }
+$tellerLabelPos = @{ X = 1040.0; Y = [float](($rolesRight.Y + $resLeft2.Y) / 2.0) }
+Draw-Relation $rolesRight $resLeft2 "teller issues (walk-in)" -waypoints @($tellerWP1, $tellerWP2) -labelPos $tellerLabelPos -customPen $tellerPen
+
+# USER_ROLES -> TICKETS ("conductor verifies / boards")
+$rolesBottom = @{ X = [float]($userRoles.X + ($userRoles.W * 0.70)); Y = [float]($userRoles.Y + $userRoles.H) }
+$tickLeft    = @{ X = [float]$tickets.X; Y = [float]($tickets.Y + 60.0) }
+$condWP1     = @{ X = [float]$rolesBottom.X; Y = [float]$tickLeft.Y }
+$condLabelPos = @{ X = [float](($rolesBottom.X + $tickLeft.X) / 2.0); Y = [float]$tickLeft.Y }
+Draw-Relation $rolesBottom $tickLeft "conductor verifies (boarded)" -waypoints @($condWP1) -labelPos $condLabelPos -customPen $conductorPen
+
+# TRIPS -> RESERVATIONS ("has") - Straight vertical
 $hasMidY = [float](($trips.BottomMid.Y + $reservations.TopMid.Y) / 2.0)
 $hasLabelPos = @{ X = [float]$trips.BottomMid.X; Y = $hasMidY }
 Draw-Relation $trips.BottomMid $reservations.TopMid "has" -labelPos $hasLabelPos
 
-# RESERVATIONS -> TICKETS ("generates") - Down-left from bottom border
+# RESERVATIONS -> TICKETS ("generates") - Down-left
 $resBottomY = [float]($reservations.Y + $reservations.H)
 $tickStart = @{ X = [float]($reservations.X + 160.0); Y = $resBottomY }
 Draw-Relation $tickStart $tickets.TopMid "generates"
 
-# RESERVATIONS -> PAYMENTS ("requires") - Down-right from bottom border
+# RESERVATIONS -> PAYMENTS ("requires") - Down-right
 $payStart = @{ X = [float]($reservations.X + $reservations.W - 160.0); Y = $resBottomY }
 Draw-Relation $payStart $payments.TopMid "requires"
 
