@@ -484,9 +484,9 @@ export function AdminNewReservationDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-0 rounded-2xl bg-card border-2 shadow-2xl">
-                {/* Header */}
-                <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md px-6 py-4 border-b flex items-center justify-between">
+            <DialogContent className="w-[96vw] max-w-5xl max-h-[92vh] flex flex-col p-0 rounded-2xl bg-card border shadow-2xl overflow-hidden">
+                {/* Fixed Header */}
+                <div className="shrink-0 bg-background px-6 py-4 border-b flex items-center justify-between z-10">
                     <div className="flex items-center gap-2.5">
                         <div className="h-9 w-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
                             <Plus className="h-5 w-5" />
@@ -505,7 +505,7 @@ export function AdminNewReservationDialog({
                     </Button>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-6">
                     {/* Error Alert */}
                     {error && (
                         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300">
@@ -694,9 +694,9 @@ export function AdminNewReservationDialog({
                                 </Button>
                             </div>
 
-                            <div className="grid gap-6 lg:grid-cols-2">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                                 {/* Left Column: Seat Picker with Multi-Seat Selection */}
-                                <div className="space-y-3">
+                                <div className="lg:col-span-5 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
                                             2. Select Seat(s)
@@ -712,29 +712,31 @@ export function AdminNewReservationDialog({
                                         </span>
                                     </div>
 
-                                    <SeatPicker
-                                        busType={selectedTrip?.bus?.bus_type || selectedTrip?.service_class || "REGULAR_AIRCON"}
-                                        busNumber={selectedTrip?.bus?.bus_number || selectedTrip?.bus_number}
-                                        totalSeats={selectedTrip?.bus?.seat_capacity || 49}
-                                        bookedSeats={bookedSeats}
-                                        selectedSeat={selectedSeat}
-                                        selectedSeats={selectedSeats}
-                                        onSelectSeat={(seatNum) => {
-                                            setSelectedSeat(seatNum);
-                                        }}
-                                        onSelectSeats={(seats) => {
-                                            setSelectedSeats(seats);
-                                            if (seats.length > 0) setSelectedSeat(seats[seats.length - 1]);
-                                            else setSelectedSeat(null);
-                                            if (discountCount > seats.length) {
-                                                handleSetDiscountCount(seats.length);
-                                            }
-                                        }}
-                                    />
+                                    <div className="w-full flex justify-center">
+                                        <SeatPicker
+                                            busType={selectedTrip?.bus?.bus_type || selectedTrip?.service_class || "REGULAR_AIRCON"}
+                                            busNumber={selectedTrip?.bus?.bus_number || selectedTrip?.bus_number}
+                                            totalSeats={selectedTrip?.bus?.seat_capacity || 49}
+                                            bookedSeats={bookedSeats}
+                                            selectedSeat={selectedSeat}
+                                            selectedSeats={selectedSeats}
+                                            onSelectSeat={(seatNum) => {
+                                                setSelectedSeat(seatNum);
+                                            }}
+                                            onSelectSeats={(seats) => {
+                                                setSelectedSeats(seats);
+                                                if (seats.length > 0) setSelectedSeat(seats[seats.length - 1]);
+                                                else setSelectedSeat(null);
+                                                if (discountCount > seats.length) {
+                                                    handleSetDiscountCount(seats.length);
+                                                }
+                                            }}
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Right Column: Passenger Info, Discount Count Selector, and Payment */}
-                                <div className="space-y-4">
+                                <div className="lg:col-span-7 space-y-4">
                                     <h3 className="font-bold text-sm text-foreground">
                                         3. Passenger Details & Statutory Discount
                                     </h3>
@@ -781,13 +783,13 @@ export function AdminNewReservationDialog({
                                             </div>
                                         </div>
 
-                                        {/* DISCOUNT QUANTITY SELECTOR ("Ilan ang i-didiscount") */}
+                                        {/* DISCOUNT QUANTITY SELECTOR */}
                                         <div className="space-y-2.5 pt-3 border-t">
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                                                         <Percent className="h-3.5 w-3.5 text-purple-600" />
-                                                        Ilan ang i-didiscount? (Statutory 20% Discount)
+                                                        Statutory 20% Discount Beneficiaries
                                                     </Label>
                                                     <p className="text-[11px] text-muted-foreground">
                                                         Senior Citizen (RA 9994), Student (RA 11314), and PWD (RA 10754).

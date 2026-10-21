@@ -157,7 +157,7 @@ export function SeatPicker({
     const hasMultiSelected = selectedSeats && selectedSeats.length > 0;
 
     return (
-        <div className="mx-auto max-w-md rounded-2xl border-2 border-zinc-300 bg-white p-4 sm:p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-950 space-y-4">
+        <div className="mx-auto w-full max-w-sm sm:max-w-md rounded-2xl border-2 border-zinc-300 bg-white p-3 sm:p-5 shadow-xl dark:border-zinc-700 dark:bg-zinc-950 space-y-4">
             {/* Classification Quick Switcher (if enabled) */}
             {allowClassificationSwitch && (
                 <div className="flex items-center justify-between border-b pb-3 dark:border-zinc-800 gap-2">
