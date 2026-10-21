@@ -47,6 +47,8 @@ next-env.d.ts
 hostinger-deploy.zip
 hostinger-deploy*.zip
 deploy_temp/
+clean_deploy/
+release_src/
 node_modules_old/
 
 !release/*.zip
