@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Route, Plus, ArrowRight } from "lucide-react";
+import { Route, Plus, ArrowRight, ChevronDownIcon } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AdminRoutesPage() {
@@ -19,15 +20,17 @@ export default function AdminRoutesPage() {
     const [distance, setDistance] = useState("340");
     const supabase = createClient();
 
+    const [terminalsLoading, setTerminalsLoading] = useState(true);
     const fetchTerminals = async () => {
         const { data } = await supabase.from('terminals').select('*').order('name');
         if (data) {
             setTerminals(data);
             if (data.length >= 2) {
-                setOriginId(data[0].id);
-                setDestId(data[1].id);
+                setOriginId(String(data[0].id));
+                setDestId(String(data[1].id));
             }
         }
+        setTerminalsLoading(false);
     };
 
     const fetchRoutes = async () => {
@@ -43,11 +46,53 @@ export default function AdminRoutesPage() {
         if (data) setRoutes(data);
         setLoading(false);
     };
+    
+    // Create default route combos if they don't exist
+    const createDefaultRoutes = async () => {
+        const { data: termData } = await supabase.from('terminals').select('id,name');
+        if (!termData) return;
+        const nameToId = Object.fromEntries(termData.map(t => [t.name, t.id]));
+        const combos = [
+            { origin: nameToId['Daet'], dest: nameToId['Cubao'] },
+            { origin: nameToId['Daet'], dest: nameToId['PITX'] },
+            { origin: nameToId['PITX'], dest: nameToId['Daet'] },
+            { origin: nameToId['Cubao'], dest: nameToId['Daet'] },
+        ];
+        for (const c of combos) {
+            const { data: existing } = await supabase
+                .from('routes')
+                .select('id')
+                .eq('origin_terminal_id', c.origin)
+                .eq('destination_terminal_id', c.dest);
+            if (!existing || existing.length === 0) {
+                await supabase.from('routes').insert({
+                    origin_terminal_id: c.origin,
+                    destination_terminal_id: c.dest,
+                    distance_km: 0,
+                    estimated_hours: 0,
+                    status: 'ACTIVE',
+                });
+            }
+        }
+        fetchRoutes();
+    };
 
     useEffect(() => {
-        fetchRoutes();
-        fetchTerminals();
+        const init = async () => {
+            await fetchTerminals();
+            await createDefaultRoutes();
+            await fetchRoutes();
+        };
+        init();
     }, []);
+
+    // Clear selections each time the modal opens
+    useEffect(() => {
+        if (openModal) {
+            setOriginId('');
+            setDestId('');
+        }
+    }, [openModal]);
 
     const handleCreateRoute = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -67,6 +112,13 @@ export default function AdminRoutesPage() {
         fetchRoutes();
     };
 
+    // Delete a route (cancel trip)
+    const handleDeleteRoute = async (routeId: string) => {
+        if (!confirm('Are you sure you want to delete this route?')) return;
+        await supabase.from('routes').delete().eq('id', routeId);
+        fetchRoutes();
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -74,6 +126,7 @@ export default function AdminRoutesPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Route Management</h1>
                     <p className="text-muted-foreground">Configure travel routes between terminals (e.g. Cubao ➔ Daet, Daet ➔ PITX).</p>
                 </div>
+                {terminalsLoading && <p className="text-muted-foreground">Loading terminals…</p>}
 
                 <Dialog open={openModal} onOpenChange={setOpenModal}>
                     <DialogTrigger asChild>
@@ -81,6 +134,10 @@ export default function AdminRoutesPage() {
                             <Plus className="mr-2 h-4 w-4" /> Add Route
                         </Button>
                     </DialogTrigger>
+                    {/* Button to generate the required default routes */}
+                    <Button className="ml-2 bg-emerald-600 hover:bg-emerald-700" onClick={createDefaultRoutes}>
+                        Create Default Routes
+                    </Button>
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Create Travel Route</DialogTitle>
@@ -88,16 +145,40 @@ export default function AdminRoutesPage() {
                         </DialogHeader>
                         <form onSubmit={handleCreateRoute} className="space-y-4 pt-2">
                             <div className="space-y-2">
-                                <Label htmlFor="rOrigin">Origin Terminal</Label>
-                                <select id="rOrigin" className="w-full rounded-md border p-2 bg-background" value={originId} onChange={(e) => setOriginId(e.target.value)}>
-                                    {terminals.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                </select>
+                                <Label>Origin Terminal</Label>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" className="w-full justify-between">
+                                            {originId ? terminals.find(t => t.id === Number(originId))?.name || originId : "Select Origin Terminal"}
+                                            <ChevronDownIcon className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-full">
+                                        {terminals.map(t => (
+                                            <DropdownMenuItem key={t.id} onSelect={() => setOriginId(String(t.id))}>
+                                                {t.name || t.id}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="rDest">Destination Terminal</Label>
-                                <select id="rDest" className="w-full rounded-md border p-2 bg-background" value={destId} onChange={(e) => setDestId(e.target.value)}>
-                                    {terminals.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                </select>
+                                                        <div className="space-y-2">
+                                <Label>Destination Terminal</Label>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" className="w-full justify-between">
+                                            {destId ? terminals.find(t => t.id === Number(destId))?.name || destId : "Select Destination Terminal"}
+                                            <ChevronDownIcon className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-full">
+                                        {terminals.map(t => (
+                                            <DropdownMenuItem key={t.id} onSelect={() => setDestId(String(t.id))}>
+                                                {t.name || t.id}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="rDist">Distance (km)</Label>
@@ -128,6 +209,7 @@ export default function AdminRoutesPage() {
                                         <th className="p-4">Distance</th>
                                         <th className="p-4">Est. Duration</th>
                                         <th className="p-4">Status</th>
+                                        <th className="p-4">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -144,6 +226,9 @@ export default function AdminRoutesPage() {
                                                 <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
                                                     {r.status}
                                                 </span>
+                                            </td>
+                                            <td className="p-4">
+                                                <Button variant="destructive" size="sm" onClick={() => handleDeleteRoute(r.id)}>Delete</Button>
                                             </td>
                                         </tr>
                                     ))}

@@ -30,13 +30,29 @@ export default function AdminTerminalsPage() {
 
     const handleCreateTerminal = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name || !location) return;
-
-        await supabase.from('terminals').insert({ name, location, status: 'ACTIVE' });
-        setName("");
-        setLocation("");
-        setOpenModal(false);
-        fetchTerminals();
+        if (!name || !location) {
+            alert('Please provide both terminal name and location.');
+            return;
+        }
+        setLoading(true);
+        try {
+            const { error } = await supabase.from('terminals').insert({ name, location, status: 'ACTIVE' });
+            if (error) {
+                console.error('Insert error:', error);
+                alert('Failed to add terminal: ' + error.message);
+                return;
+            }
+            // Clear form and close modal on success
+            setName('');
+            setLocation('');
+            setOpenModal(false);
+            await fetchTerminals();
+        } catch (err) {
+            console.error('Unexpected error:', err);
+            alert('An unexpected error occurred while adding the terminal.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

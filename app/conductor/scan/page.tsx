@@ -221,7 +221,7 @@ export default function ConductorQrScanPage() {
                     <p className="text-xs text-zinc-400">Scan or enter passenger QR code token to verify boarding and inspect discount IDs.</p>
                 </div>
                 {tripIdFilter && (
-                    <Button variant="outline" size="sm" asChild className="border-zinc-700 text-zinc-300 hover:text-white">
+                    <Button variant="outline" size="sm" asChild className="border-zinc-700 bg-zinc-800 text-zinc-100 hover:bg-zinc-700 hover:text-white">
                         <a href={`/conductor/manifest?trip_id=${tripIdFilter}`}>
                             View Trip Manifest
                         </a>
@@ -247,10 +247,15 @@ export default function ConductorQrScanPage() {
                 <CardContent className="space-y-4">
                     {/* Live Video Feed */}
                     {cameraActive && (
-                        <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-black h-64 flex items-center justify-center">
-                            <video ref={videoRef} autoPlay playsInline className="h-full w-full object-cover" />
-                            <div className="absolute inset-0 border-2 border-red-500/50 rounded-xl pointer-events-none flex items-center justify-center">
-                                <div className="h-36 w-36 border-2 border-red-500 border-dashed rounded-lg animate-pulse" />
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                            <div className="relative w-full max-w-md">
+                                <video ref={videoRef} autoPlay playsInline className="w-full h-auto rounded-lg" />
+                                <Button size="sm" variant="destructive" onClick={() => setCameraActive(false)} className="absolute top-2 right-2">
+                                    <XCircle className="h-4 w-4 mr-1" /> Close
+                                </Button>
+                                <div className="absolute inset-0 border-2 border-red-500/50 rounded-lg pointer-events-none flex items-center justify-center">
+                                    <div className="h-36 w-36 border-2 border-red-500 border-dashed rounded-lg animate-pulse" />
+                                </div>
                             </div>
                         </div>
                     )}

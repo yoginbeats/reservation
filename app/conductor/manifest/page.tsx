@@ -325,7 +325,7 @@ function ConductorManifestContent() {
                             </Link>
                         </Button>
                     )}
-                    <Button variant="outline" size="sm" onClick={() => window.print()} className="border-zinc-700 text-zinc-200">
+                    <Button variant="outline" size="sm" onClick={() => window.print()} className="border-zinc-700 bg-zinc-200 text-black hover:bg-zinc-300">
                         <Printer className="mr-1.5 h-4 w-4" />
                         Print Manifest
                     </Button>
@@ -333,11 +333,11 @@ function ConductorManifestContent() {
             </div>
 
             {/* Official Printable Header */}
-            <div className="hidden border-b pb-4 print:block text-black">
+            <div className="hidden border-b pb-4 print:block bg-zinc-950 text-white">
                 <h1 className="text-2xl font-black uppercase text-red-600">SUPERLINES TRANSPORTATION CO., INC.</h1>
                 <p className="text-sm font-bold">OFFICIAL TRIP PASSENGER MANIFEST & SEAT BOARDING AUDIT</p>
                 {selectedTrip && (
-                    <div className="mt-3 grid grid-cols-4 gap-4 text-xs font-mono border-t pt-2 border-black">
+                    <div className="mt-3 grid grid-cols-4 gap-4 text-xs font-mono border-t pt-2 border-zinc-800">
                         <div>ROUTE: {selectedTrip.route?.origin?.name} ➔ {selectedTrip.route?.destination?.name}</div>
                         <div>BUS #: {selectedTrip.bus?.bus_number}</div>
                         <div>DATE: {new Date(selectedTrip.departure_time).toLocaleDateString()}</div>
