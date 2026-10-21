@@ -71,9 +71,10 @@ function ConductorManifestContent() {
     const [inspectedSeatNumber, setInspectedSeatNumber] = useState<number | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-    // Conductor Schedule Selective Filters (Date, Origin, Departure Time, Classification)
-    const [filterDate, setFilterDate] = useState<string>("");
+    // Conductor Schedule Selective Filters (Date, Origin, Destination, Departure Time, Classification)
+    const [filterDate, setFilterDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
     const [filterOrigin, setFilterOrigin] = useState<string>("ALL");
+    const [filterDestination, setFilterDestination] = useState<string>("ALL");
     const [filterDepartureTime, setFilterDepartureTime] = useState<string>("ALL");
     const [filterClassification, setFilterClassification] = useState<string>("ALL");
 
@@ -316,7 +317,7 @@ function ConductorManifestContent() {
             return false;
         }
 
-        // 1. Date Filter
+        // 1. Date Filter (defaults to today)
         if (filterDate && depDate !== filterDate) {
             return false;
         }
@@ -326,12 +327,17 @@ function ConductorManifestContent() {
             return false;
         }
 
-        // 3. Departure Time Filter
+        // 3. Specific Destination Filter
+        if (filterDestination !== "ALL" && !dest.toLowerCase().includes(filterDestination.toLowerCase())) {
+            return false;
+        }
+
+        // 4. Departure Time Filter
         if (filterDepartureTime !== "ALL" && depTimeStr !== filterDepartureTime) {
             return false;
         }
 
-        // 4. Classification Filter (Regular Aircon, Super Deluxe, First Class)
+        // 5. Classification Filter (Regular Aircon, Super Deluxe, First Class)
         if (filterClassification !== "ALL") {
             if (!busType.includes(filterClassification.toUpperCase())) {
                 return false;
@@ -340,6 +346,41 @@ function ConductorManifestContent() {
 
         return true;
     });
+
+    // Dynamic Route Options for Easy Senior-Friendly Navigation
+    const availableOrigins = ["Daet", "Cubao", "PITX"];
+    const availableDestinations = Array.from(new Set(
+        trips
+            .filter(t => {
+                if (filterOrigin === "ALL") return true;
+                const orig = t.route?.origin?.name || t.origin || "";
+                return orig.toLowerCase().includes(filterOrigin.toLowerCase());
+            })
+            .map(t => t.route?.destination?.name || t.destination)
+            .filter(Boolean)
+    )).sort();
+
+    const availableDepartureTimes = Array.from(new Set(
+        trips
+            .filter(t => {
+                const orig = t.route?.origin?.name || t.origin || "";
+                const dest = t.route?.destination?.name || t.destination || "";
+                if (filterOrigin !== "ALL" && !orig.toLowerCase().includes(filterOrigin.toLowerCase())) return false;
+                if (filterDestination !== "ALL" && !dest.toLowerCase().includes(filterDestination.toLowerCase())) return false;
+                return true;
+            })
+            .map(t => t.departure_time ? new Date(t.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "")
+            .filter(Boolean)
+    )).sort();
+
+    // Automatically sync selectedTrip to filteredTrips so conductors don't need to manually click through lists
+    useEffect(() => {
+        if (filteredTrips.length > 0) {
+            if (!selectedTrip || !filteredTrips.some(t => t.id === selectedTrip.id)) {
+                setSelectedTrip(filteredTrips[0]);
+            }
+        }
+    }, [filteredTrips, selectedTrip]);
 
     return (
         <div className="space-y-6">
@@ -383,153 +424,196 @@ function ConductorManifestContent() {
                 )}
             </div>
 
-            {/* Conductor Selective Filter Bar (Date, Origin, Departure Time, Classification) */}
-            <div className="print:hidden space-y-3 bg-zinc-950 border border-zinc-800 rounded-2xl p-4 shadow-md">
-                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                    <span className="text-xs font-black text-red-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <Filter className="h-3.5 w-3.5" />
-                        <span>Filter Specific Trip Run & Reservations</span>
-                    </span>
-                    {(filterDate || filterOrigin !== "ALL" || filterDepartureTime !== "ALL" || filterClassification !== "ALL") && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setFilterDate("");
-                                setFilterOrigin("ALL");
-                                setFilterDepartureTime("ALL");
-                                setFilterClassification("ALL");
-                                setTripSearch("");
-                            }}
-                            className="text-[11px] text-zinc-400 hover:text-white underline font-medium"
-                        >
-                            Reset Filters
-                        </button>
-                    )}
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    {/* 1. Date */}
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase">Departure Date</label>
-                        <input
-                            type="date"
-                            value={filterDate}
-                            onChange={(e) => setFilterDate(e.target.value)}
-                            className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs font-bold text-zinc-100 outline-none focus:border-red-500"
-                        />
+            {/* Senior-Friendly Conductor Quick Navigator (Large Dropdowns) */}
+            <div className="print:hidden space-y-4 bg-zinc-950 border-2 border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+                    <div>
+                        <span className="text-sm font-black text-red-500 uppercase tracking-wider flex items-center gap-2">
+                            <Filter className="h-4 w-4" />
+                            <span>Conductor Trip Navigator</span>
+                        </span>
+                        <p className="text-xs text-zinc-400 mt-0.5">
+                            Piliin ang Origin, Destination, Oras, at Bus Type para agad lumabas ang reservation manifest ng inyong biyahe.
+                        </p>
                     </div>
 
-                    {/* 2. Origin */}
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase">Origin Terminal</label>
+                    <div className="flex items-center gap-2">
+                        {(filterDate !== new Date().toISOString().split("T")[0] || filterOrigin !== "ALL" || filterDestination !== "ALL" || filterDepartureTime !== "ALL" || filterClassification !== "ALL") && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setFilterDate(new Date().toISOString().split("T")[0]);
+                                    setFilterOrigin("ALL");
+                                    setFilterDestination("ALL");
+                                    setFilterDepartureTime("ALL");
+                                    setFilterClassification("ALL");
+                                    setTripSearch("");
+                                }}
+                                className="px-3 py-1.5 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-900 border border-zinc-700 rounded-lg transition"
+                            >
+                                Reset Filters
+                            </button>
+                        )}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => selectedTrip && fetchManifest(selectedTrip.id)}
+                            disabled={refreshing}
+                            className="bg-white text-black font-bold hover:bg-zinc-100 hover:text-black border-zinc-300 text-xs h-8"
+                        >
+                            <RefreshCw className={`h-3.5 w-3.5 mr-1 text-black ${refreshing ? "animate-spin" : ""}`} />
+                            Refresh
+                        </Button>
+                    </div>
+                </div>
+
+                {/* 5 Prominent, Easy-to-Read Dropdowns for Older Conductors */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    {/* 1. Origin Terminal */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-zinc-300 uppercase flex items-center gap-1">
+                            <span>📍 1. Origin Terminal</span>
+                        </label>
                         <select
                             value={filterOrigin}
-                            onChange={(e) => setFilterOrigin(e.target.value)}
-                            className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs font-bold text-zinc-100 outline-none focus:border-red-500"
+                            onChange={(e) => {
+                                setFilterOrigin(e.target.value);
+                                setFilterDestination("ALL");
+                                setFilterDepartureTime("ALL");
+                            }}
+                            className="w-full rounded-xl border-2 border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm font-bold text-white outline-none focus:border-red-500 shadow-inner"
                         >
-                            <option value="ALL">All Origins</option>
-                            <option value="Daet">Daet Terminal</option>
+                            <option value="ALL">-- Lahat ng Origin --</option>
+                            <option value="Daet">Daet Central Terminal</option>
                             <option value="Cubao">Cubao Terminal</option>
                             <option value="PITX">PITX Terminal</option>
                         </select>
                     </div>
 
-                    {/* 3. Departure Time */}
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase">Departure Time</label>
+                    {/* 2. Destination Terminal */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-zinc-300 uppercase flex items-center gap-1">
+                            <span>🏁 2. Destination</span>
+                        </label>
+                        <select
+                            value={filterDestination}
+                            onChange={(e) => {
+                                setFilterDestination(e.target.value);
+                                setFilterDepartureTime("ALL");
+                            }}
+                            className="w-full rounded-xl border-2 border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm font-bold text-white outline-none focus:border-red-500 shadow-inner"
+                        >
+                            <option value="ALL">-- Lahat ng Destination --</option>
+                            {availableDestinations.map(d => (
+                                <option key={d} value={d}>{d} Terminal</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* 3. Scheduled Time */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-zinc-300 uppercase flex items-center gap-1">
+                            <span>⏰ 3. Scheduled Time</span>
+                        </label>
                         <select
                             value={filterDepartureTime}
                             onChange={(e) => setFilterDepartureTime(e.target.value)}
-                            className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs font-bold text-zinc-100 outline-none focus:border-red-500 font-mono"
+                            className="w-full rounded-xl border-2 border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm font-bold font-mono text-white outline-none focus:border-red-500 shadow-inner"
                         >
-                            <option value="ALL">All Departure Times</option>
-                            {Array.from(new Set(trips.map(t => t.departure_time ? new Date(t.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "").filter(Boolean))).map((tStr) => (
+                            <option value="ALL">-- Lahat ng Oras --</option>
+                            {availableDepartureTimes.map((tStr) => (
                                 <option key={tStr} value={tStr}>{tStr}</option>
                             ))}
                         </select>
                     </div>
 
                     {/* 4. Bus Classification */}
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase">Service Classification</label>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-zinc-300 uppercase flex items-center gap-1">
+                            <span>🚌 4. Bus Classification</span>
+                        </label>
                         <select
                             value={filterClassification}
                             onChange={(e) => setFilterClassification(e.target.value)}
-                            className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs font-bold text-zinc-100 outline-none focus:border-red-500"
+                            className="w-full rounded-xl border-2 border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm font-bold text-white outline-none focus:border-red-500 shadow-inner"
                         >
-                            <option value="ALL">All Classifications</option>
+                            <option value="ALL">-- All Classifications --</option>
                             <option value="REGULAR AIRCON">Regular Aircon (49 Seats)</option>
-                            <option value="SUPER DELUXE">Super Deluxe (43 Seats)</option>
-                            <option value="FIRST CLASS">First Class (41 Seats)</option>
+                            <option value="SUPER DELUXE">Super Deluxe (43 Seats • CR)</option>
+                            <option value="FIRST CLASS">First Class (41 Seats • Sleeper)</option>
                         </select>
                     </div>
-                </div>
-            </div>
 
-            {/* Trip Selector Buttons with Schedule Search */}
-            <div className="print:hidden space-y-2">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-                        <span>Select Filtered Departure Run</span>
-                        <span className="text-[10px] text-zinc-500 font-normal">({filteredTrips.length} matching)</span>
-                    </span>
-                    <div className="flex items-center gap-2">
-                        <div className="relative w-48 sm:w-64">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
-                            <Input
-                                placeholder="Filter route or bus #..."
-                                value={tripSearch}
-                                onChange={(e) => setTripSearch(e.target.value)}
-                                className="h-7 pl-8 pr-2 text-xs bg-zinc-950 border-zinc-800 text-zinc-200"
-                            />
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => selectedTrip && fetchManifest(selectedTrip.id)}
-                            disabled={refreshing}
-                            className="text-xs text-zinc-400 hover:text-white h-7 px-2"
-                        >
-                            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${refreshing ? "animate-spin" : ""}`} />
-                            Refresh
-                        </Button>
+                    {/* 5. Date */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-zinc-300 uppercase flex items-center gap-1">
+                            <span>📅 5. Petsa / Date</span>
+                        </label>
+                        <input
+                            type="date"
+                            value={filterDate}
+                            onChange={(e) => setFilterDate(e.target.value)}
+                            className="w-full rounded-xl border-2 border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-bold text-white outline-none focus:border-red-500 shadow-inner"
+                        />
                     </div>
                 </div>
 
+                {/* Filter Result & Clean Selection Cards */}
                 {filteredTrips.length === 0 ? (
-                    <div className="py-6 text-center text-xs text-zinc-500 border border-dashed border-zinc-800 rounded-xl">
-                        No departure runs match the selected Date, Origin, Departure Time, or Classification.
+                    <div className="p-6 text-center text-xs text-amber-300 bg-amber-950/20 border-2 border-dashed border-amber-800/60 rounded-xl">
+                        ⚠️ Walang scheduled trip na tumutugma sa napiling Origin, Destination, at Oras para sa petsang ito ({filterDate || "Lahat"}). Paki-check ang petsa o i-reset ang filters.
                     </div>
                 ) : (
-                <div className="flex flex-wrap gap-2">
-                    {filteredTrips.map((t) => {
-                        const isSelected = selectedTrip?.id === t.id;
-                        return (
-                            <button
-                                key={t.id}
-                                type="button"
-                                onClick={() => setSelectedTrip(t)}
-                                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border text-left ${
-                                    isSelected
-                                        ? "bg-red-600 text-white border-red-600 shadow-md ring-2 ring-red-500/20"
-                                        : "bg-zinc-950 text-zinc-300 border-zinc-800 hover:bg-zinc-900"
-                                }`}
-                            >
-                                <div className="font-extrabold flex items-center justify-between gap-2">
-                                    <span>{t.route?.origin?.name} ➔ {t.route?.destination?.name}</span>
-                                    {t.status === 'BOARDING' && (
-                                        <span className="text-[9px] bg-amber-500 text-zinc-950 px-1.5 py-0.2 rounded font-black">
-                                            BOARDING
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="text-[10px] font-normal opacity-80 font-mono mt-0.5">
-                                    🚍 {t.bus?.bus_number} • {new Date(t.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </div>
-                            </button>
-                        );
-                    })}
-                </div>
+                    <div className="pt-2">
+                        <div className="text-xs text-zinc-400 font-bold mb-2 flex items-center justify-between">
+                            <span>Natagpuang Schedule ({filteredTrips.length} Biyahe):</span>
+                            <span className="text-[11px] text-zinc-500">I-click lamang para mag-palit ng aktibong biyahe</span>
+                        </div>
+                        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                            {filteredTrips.map((t) => {
+                                const isSelected = selectedTrip?.id === t.id;
+                                const origName = t.route?.origin?.name || t.origin;
+                                const destName = t.route?.destination?.name || t.destination;
+                                const busNum = t.bus?.bus_number || "Bus TBD";
+                                const busType = t.bus?.bus_type || "REGULAR AIRCON";
+                                const timeStr = new Date(t.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                                return (
+                                    <button
+                                        key={t.id}
+                                        type="button"
+                                        onClick={() => setSelectedTrip(t)}
+                                        className={`p-3.5 rounded-xl text-left border-2 transition-all flex flex-col justify-between gap-2 ${
+                                            isSelected
+                                                ? "bg-red-950/60 border-red-500 shadow-lg ring-2 ring-red-500/30 text-white"
+                                                : "bg-zinc-900/90 border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-black text-sm text-white flex items-center gap-1.5">
+                                                <span>{origName}</span>
+                                                <span className="text-red-500">➔</span>
+                                                <span>{destName}</span>
+                                            </span>
+                                            {isSelected && (
+                                                <span className="px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-black uppercase">
+                                                    ✓ AKTIBO
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-zinc-800">
+                                            <span className="text-emerald-400 font-black text-sm">⏰ {timeStr}</span>
+                                            <span className="text-zinc-300 font-bold">🚍 {busNum}</span>
+                                        </div>
+                                        <div className="text-[11px] font-bold text-zinc-400 uppercase">
+                                            {busType.replace(/[-_]/g, ' ')}
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {selectedTrip && (
