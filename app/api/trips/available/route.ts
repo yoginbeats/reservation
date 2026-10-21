@@ -231,8 +231,8 @@ export async function GET(req: NextRequest) {
                 };
             });
 
-        // Merge: Priority given to matching DB trips, then generated daily schedules
-        let allTrips = [...matchingDbTrips, ...generatedTrips];
+        // Centralized Data Flow: When Admin has scheduled trips in the DB for this date, use Admin trips exclusively
+        let allTrips = matchingDbTrips.length > 0 ? matchingDbTrips : generatedTrips;
 
         // Filter by origin if supplied
         if (originQuery && originQuery.toLowerCase() !== "all") {

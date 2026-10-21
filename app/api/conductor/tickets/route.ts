@@ -221,9 +221,34 @@ export async function GET(req: NextRequest) {
                 console.warn("Error querying trip bookings:", err);
             }
 
-            // B: Merge with local cached bookings
+            // Fetch trip details to ensure accurate trip-level matching
+            let tripMeta: any = null;
+            try {
+                const { data: tData } = await supabase
+                    .from("trips")
+                    .select("id, departure_time, origin, destination, route:routes(origin:origin_terminal_id(name), destination:destination_terminal_id(name))")
+                    .eq("id", tripId)
+                    .maybeSingle();
+                if (tData) tripMeta = tData;
+            } catch {}
+
+            // B: Merge with local cached bookings that belong strictly to this scheduled trip
             const localList = getLocalBookings();
+            const tripOrigin = tripMeta?.route?.origin?.name || tripMeta?.origin || "";
+            const tripDestination = tripMeta?.route?.destination?.name || tripMeta?.destination || "";
+
             for (const lb of localList) {
+                // Exact trip ID match or matching Origin/Destination
+                const isExactTrip = lb.trip_id === tripId || lb.trip?.id === tripId;
+                const isMatchingRoute = Boolean(tripOrigin && tripDestination && (
+                    lb.trip?.origin?.toLowerCase().includes(tripOrigin.toLowerCase()) &&
+                    lb.trip?.destination?.toLowerCase().includes(tripDestination.toLowerCase())
+                ));
+
+                if (!isExactTrip && !isMatchingRoute) {
+                    continue;
+                }
+
                 const seats = lb.seat_numbers && lb.seat_numbers.length > 0 ? lb.seat_numbers : [lb.seat_number];
                 for (const seatNum of seats) {
                     const alreadyExists = manifestBookings.some(m => m.seat_number === seatNum);
