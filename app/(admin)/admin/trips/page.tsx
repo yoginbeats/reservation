@@ -58,6 +58,7 @@ export default function AdminTripsPage() {
 
     // Form inputs for scheduling
     const [routeId, setRouteId] = useState("");
+    const [selectedTerminalTab, setSelectedTerminalTab] = useState<"ALL" | "Cubao" | "Daet" | "PITX">("ALL");
     const [busId, setBusId] = useState("");
     const [departureTime, setDepartureTime] = useState("");
     const [fareAmount, setFareAmount] = useState("850");
@@ -417,17 +418,34 @@ export default function AdminTripsPage() {
             {/* Scheduled Trips Card */}
             <Card className="shadow-sm border">
                 <CardHeader className="pb-3 border-b bg-muted/20">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
                             <CardTitle className="text-base font-bold flex items-center gap-2">
                                 <span>Active Scheduled Departures</span>
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-bold font-mono">
-                                    {trips.length} Trips
+                                    {trips.length} Trips Total
                                 </span>
                             </CardTitle>
                             <CardDescription className="text-xs">
                                 Live trip departures accessible across Cubao, Daet, PITX counter booths, and online passengers.
                             </CardDescription>
+                        </div>
+                        {/* Terminal Origin Filter Tabs */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto bg-muted/50 p-1 rounded-xl border">
+                            {(["ALL", "Cubao", "Daet", "PITX"] as const).map((term) => (
+                                <button
+                                    key={term}
+                                    type="button"
+                                    onClick={() => setSelectedTerminalTab(term)}
+                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                                        selectedTerminalTab === term
+                                            ? "bg-blue-600 text-white shadow-sm"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    }`}
+                                >
+                                    {term === "ALL" ? "All Terminals" : `${term} Terminal`}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </CardHeader>
@@ -456,7 +474,13 @@ export default function AdminTripsPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {trips.map((t) => {
+                                    {trips
+                                        .filter((t) => {
+                                            if (selectedTerminalTab === "ALL") return true;
+                                            const orig = (t.origin || t.route?.origin?.name || "").toLowerCase();
+                                            return orig.includes(selectedTerminalTab.toLowerCase());
+                                        })
+                                        .map((t) => {
                                         const depTime = new Date(t.departure_time);
                                         const tripBookings = getBookingsForTrip(t);
                                         const bookedCount = tripBookings.length;

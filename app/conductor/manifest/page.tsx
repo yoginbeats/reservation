@@ -71,6 +71,12 @@ function ConductorManifestContent() {
     const [inspectedSeatNumber, setInspectedSeatNumber] = useState<number | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+    // Conductor Schedule Selective Filters (Date, Origin, Departure Time, Classification)
+    const [filterDate, setFilterDate] = useState<string>("");
+    const [filterOrigin, setFilterOrigin] = useState<string>("ALL");
+    const [filterDepartureTime, setFilterDepartureTime] = useState<string>("ALL");
+    const [filterClassification, setFilterClassification] = useState<string>("ALL");
+
     // Official Superlines Manifest Layout State
     const [manifestLayout, setManifestLayout] = useState<BusClassification>(() =>
         getBusClassification(selectedTrip?.bus?.bus_type, selectedTrip?.bus?.bus_number)
@@ -296,12 +302,43 @@ function ConductorManifestContent() {
     });
 
     const filteredTrips = trips.filter((t) => {
-        const origin = t.route?.origin?.name || "";
-        const dest = t.route?.destination?.name || "";
+        const origin = t.route?.origin?.name || t.origin || "";
+        const dest = t.route?.destination?.name || t.destination || "";
         const busNum = t.bus?.bus_number || "";
+        const busType = (t.bus?.bus_type || t.bus_type || "REGULAR AIRCON").toUpperCase();
+        const depIso = t.departure_time || "";
+        const depDate = depIso ? new Date(depIso).toISOString().slice(0, 10) : "";
+        const depTimeStr = depIso ? new Date(depIso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+
+        // Text search
         const q = tripSearch.toLowerCase().trim();
-        if (!q) return true;
-        return origin.toLowerCase().includes(q) || dest.toLowerCase().includes(q) || busNum.toLowerCase().includes(q);
+        if (q && !(origin.toLowerCase().includes(q) || dest.toLowerCase().includes(q) || busNum.toLowerCase().includes(q))) {
+            return false;
+        }
+
+        // 1. Date Filter
+        if (filterDate && depDate !== filterDate) {
+            return false;
+        }
+
+        // 2. Specific Origin Filter
+        if (filterOrigin !== "ALL" && !origin.toLowerCase().includes(filterOrigin.toLowerCase())) {
+            return false;
+        }
+
+        // 3. Departure Time Filter
+        if (filterDepartureTime !== "ALL" && depTimeStr !== filterDepartureTime) {
+            return false;
+        }
+
+        // 4. Classification Filter (Regular Aircon, Super Deluxe, First Class)
+        if (filterClassification !== "ALL") {
+            if (!busType.includes(filterClassification.toUpperCase())) {
+                return false;
+            }
+        }
+
+        return true;
     });
 
     return (
@@ -346,12 +383,95 @@ function ConductorManifestContent() {
                 )}
             </div>
 
+            {/* Conductor Selective Filter Bar (Date, Origin, Departure Time, Classification) */}
+            <div className="print:hidden space-y-3 bg-zinc-950 border border-zinc-800 rounded-2xl p-4 shadow-md">
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                    <span className="text-xs font-black text-red-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <Filter className="h-3.5 w-3.5" />
+                        <span>Filter Specific Trip Run & Reservations</span>
+                    </span>
+                    {(filterDate || filterOrigin !== "ALL" || filterDepartureTime !== "ALL" || filterClassification !== "ALL") && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setFilterDate("");
+                                setFilterOrigin("ALL");
+                                setFilterDepartureTime("ALL");
+                                setFilterClassification("ALL");
+                                setTripSearch("");
+                            }}
+                            className="text-[11px] text-zinc-400 hover:text-white underline font-medium"
+                        >
+                            Reset Filters
+                        </button>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {/* 1. Date */}
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase">Departure Date</label>
+                        <input
+                            type="date"
+                            value={filterDate}
+                            onChange={(e) => setFilterDate(e.target.value)}
+                            className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs font-bold text-zinc-100 outline-none focus:border-red-500"
+                        />
+                    </div>
+
+                    {/* 2. Origin */}
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase">Origin Terminal</label>
+                        <select
+                            value={filterOrigin}
+                            onChange={(e) => setFilterOrigin(e.target.value)}
+                            className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs font-bold text-zinc-100 outline-none focus:border-red-500"
+                        >
+                            <option value="ALL">All Origins</option>
+                            <option value="Daet">Daet Terminal</option>
+                            <option value="Cubao">Cubao Terminal</option>
+                            <option value="PITX">PITX Terminal</option>
+                        </select>
+                    </div>
+
+                    {/* 3. Departure Time */}
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase">Departure Time</label>
+                        <select
+                            value={filterDepartureTime}
+                            onChange={(e) => setFilterDepartureTime(e.target.value)}
+                            className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs font-bold text-zinc-100 outline-none focus:border-red-500 font-mono"
+                        >
+                            <option value="ALL">All Departure Times</option>
+                            {Array.from(new Set(trips.map(t => t.departure_time ? new Date(t.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "").filter(Boolean))).map((tStr) => (
+                                <option key={tStr} value={tStr}>{tStr}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* 4. Bus Classification */}
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase">Service Classification</label>
+                        <select
+                            value={filterClassification}
+                            onChange={(e) => setFilterClassification(e.target.value)}
+                            className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs font-bold text-zinc-100 outline-none focus:border-red-500"
+                        >
+                            <option value="ALL">All Classifications</option>
+                            <option value="REGULAR AIRCON">Regular Aircon (49 Seats)</option>
+                            <option value="SUPER DELUXE">Super Deluxe (43 Seats)</option>
+                            <option value="FIRST CLASS">First Class (41 Seats)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             {/* Trip Selector Buttons with Schedule Search */}
             <div className="print:hidden space-y-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-                        <span>Select Scheduled Departure Run</span>
-                        <span className="text-[10px] text-zinc-500 font-normal">({filteredTrips.length} active)</span>
+                        <span>Select Filtered Departure Run</span>
+                        <span className="text-[10px] text-zinc-500 font-normal">({filteredTrips.length} matching)</span>
                     </span>
                     <div className="flex items-center gap-2">
                         <div className="relative w-48 sm:w-64">
@@ -376,6 +496,11 @@ function ConductorManifestContent() {
                     </div>
                 </div>
 
+                {filteredTrips.length === 0 ? (
+                    <div className="py-6 text-center text-xs text-zinc-500 border border-dashed border-zinc-800 rounded-xl">
+                        No departure runs match the selected Date, Origin, Departure Time, or Classification.
+                    </div>
+                ) : (
                 <div className="flex flex-wrap gap-2">
                     {filteredTrips.map((t) => {
                         const isSelected = selectedTrip?.id === t.id;
