@@ -556,58 +556,29 @@ function BookTripContent() {
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-end">
-                                {/* Origin & Destination with Swap */}
+                                {/* Allowed Superlines Route Format */}
                                 <div className="space-y-1 sm:col-span-2">
                                     <label className="text-[11px] font-black uppercase tracking-wider text-muted-foreground block">
-                                        Route Terminals
+                                        Route Terminals (Official Superlines Routes)
                                     </label>
                                     <div className="flex items-center gap-2">
                                         <div className="relative flex-1">
                                             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-red-600" />
                                             <select
-                                                value={filterOrigin}
+                                                value={`${filterOrigin}-${filterDestination}`}
                                                 onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    setFilterOrigin(val);
-                                                    fetchTrips(val, filterDestination, filterDate, filterServiceClass);
+                                                    const [newOrig, newDest] = e.target.value.split("-");
+                                                    setFilterOrigin(newOrig);
+                                                    setFilterDestination(newDest);
+                                                    fetchTrips(newOrig, newDest, filterDate, filterServiceClass);
                                                 }}
-                                                className="w-full rounded-xl border border-input bg-background py-2.5 pl-8 pr-2 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-red-500"
+                                                className="w-full rounded-xl border border-input bg-background py-2.5 pl-8 pr-2 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-red-500 font-mono"
                                             >
-                                                <option value="Cubao">Cubao Terminal</option>
-                                                <option value="PITX">PITX Terminal</option>
-                                                <option value="Daet">Daet Terminal</option>
-                                            </select>
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const newOrigin = filterDestination;
-                                                const newDest = filterOrigin;
-                                                setFilterOrigin(newOrigin);
-                                                setFilterDestination(newDest);
-                                                fetchTrips(newOrigin, newDest, filterDate, filterServiceClass);
-                                            }}
-                                            title="Swap Origin & Destination"
-                                            className="rounded-xl border border-input p-2.5 hover:bg-muted text-red-600 transition-colors font-bold"
-                                        >
-                                            ⇄
-                                        </button>
-
-                                        <div className="relative flex-1">
-                                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-red-600" />
-                                            <select
-                                                value={filterDestination}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    setFilterDestination(val);
-                                                    fetchTrips(filterOrigin, val, filterDate, filterServiceClass);
-                                                }}
-                                                className="w-full rounded-xl border border-input bg-background py-2.5 pl-8 pr-2 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-red-500"
-                                            >
-                                                <option value="Daet">Daet Terminal</option>
-                                                <option value="Cubao">Cubao Terminal</option>
-                                                <option value="PITX">PITX Terminal</option>
+                                                <option value="Daet-PITX">Daet ➔ PITX (Daet - PITX)</option>
+                                                <option value="Daet-Cubao">Daet ➔ Cubao (Daet - Cubao)</option>
+                                                <option value="PITX-Daet">PITX ➔ Daet (PITX - Daet)</option>
+                                                <option value="PITX-Cubao">PITX ➔ Cubao (PITX - Cubao)</option>
+                                                <option value="Cubao-Daet">Cubao ➔ Daet (Cubao - Daet)</option>
                                             </select>
                                         </div>
                                     </div>
@@ -730,10 +701,13 @@ function BookTripContent() {
                                                 </span>
                                             </div>
                                         </CardContent>
-                                        <CardFooter className="pt-1">
-                                            <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-11 rounded-xl shadow-md transition-transform active:scale-[0.98]" onClick={() => handleSelectTrip(t)}>
-                                                Select Schedule & Choose Seat
-                                            </Button>
+                                        <CardFooter className="pt-2 border-t bg-muted/20 flex items-center justify-between">
+                                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                                                Status: <span className="text-emerald-600 font-black">Active Daily Schedule</span>
+                                            </span>
+                                            <span className="text-xs font-black text-red-600 font-mono">
+                                                {busNum}
+                                            </span>
                                         </CardFooter>
                                     </Card>
                                 );
