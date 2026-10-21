@@ -1002,10 +1002,10 @@ function BookTripContent() {
                                                     </div>
                                                 </div>
 
-                                                {/* Name ng Discount Person */}
+                                                {/* Discounted Passenger Legal Name */}
                                                 <div className="space-y-1.5">
                                                     <Label className="text-xs font-bold text-foreground">
-                                                        Name ng Discount Person (Full Legal Name) *
+                                                        Discounted Passenger Name (Full Legal Name) *
                                                     </Label>
                                                     <Input
                                                         required

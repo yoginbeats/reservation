@@ -433,7 +433,7 @@ function ConductorManifestContent() {
                             <span>Conductor Trip Navigator</span>
                         </span>
                         <p className="text-xs text-zinc-400 mt-0.5">
-                            Piliin ang Origin, Destination, Oras, at Bus Type para agad lumabas ang reservation manifest ng inyong biyahe.
+                            Select Origin, Destination, Scheduled Time, and Bus Classification to instantly load the passenger reservation manifest.
                         </p>
                     </div>
 
@@ -467,7 +467,7 @@ function ConductorManifestContent() {
                     </div>
                 </div>
 
-                {/* 5 Prominent, Easy-to-Read Dropdowns for Older Conductors */}
+                {/* 5 Prominent, Easy-to-Read Dropdowns for Senior Conductors */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     {/* 1. Origin Terminal */}
                     <div className="space-y-1.5">
@@ -483,7 +483,7 @@ function ConductorManifestContent() {
                             }}
                             className="w-full rounded-xl border-2 border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm font-bold text-white outline-none focus:border-red-500 shadow-inner"
                         >
-                            <option value="ALL">-- Lahat ng Origin --</option>
+                            <option value="ALL">-- All Origins --</option>
                             <option value="Daet">Daet Central Terminal</option>
                             <option value="Cubao">Cubao Terminal</option>
                             <option value="PITX">PITX Terminal</option>
@@ -503,7 +503,7 @@ function ConductorManifestContent() {
                             }}
                             className="w-full rounded-xl border-2 border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm font-bold text-white outline-none focus:border-red-500 shadow-inner"
                         >
-                            <option value="ALL">-- Lahat ng Destination --</option>
+                            <option value="ALL">-- All Destinations --</option>
                             {availableDestinations.map(d => (
                                 <option key={d} value={d}>{d} Terminal</option>
                             ))}
@@ -520,7 +520,7 @@ function ConductorManifestContent() {
                             onChange={(e) => setFilterDepartureTime(e.target.value)}
                             className="w-full rounded-xl border-2 border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm font-bold font-mono text-white outline-none focus:border-red-500 shadow-inner"
                         >
-                            <option value="ALL">-- Lahat ng Oras --</option>
+                            <option value="ALL">-- All Scheduled Times --</option>
                             {availableDepartureTimes.map((tStr) => (
                                 <option key={tStr} value={tStr}>{tStr}</option>
                             ))}
@@ -547,7 +547,7 @@ function ConductorManifestContent() {
                     {/* 5. Date */}
                     <div className="space-y-1.5">
                         <label className="text-xs font-bold text-zinc-300 uppercase flex items-center gap-1">
-                            <span>📅 5. Petsa / Date</span>
+                            <span>📅 5. Departure Date</span>
                         </label>
                         <input
                             type="date"
@@ -561,13 +561,13 @@ function ConductorManifestContent() {
                 {/* Filter Result & Clean Selection Cards */}
                 {filteredTrips.length === 0 ? (
                     <div className="p-6 text-center text-xs text-amber-300 bg-amber-950/20 border-2 border-dashed border-amber-800/60 rounded-xl">
-                        ⚠️ Walang scheduled trip na tumutugma sa napiling Origin, Destination, at Oras para sa petsang ito ({filterDate || "Lahat"}). Paki-check ang petsa o i-reset ang filters.
+                        ⚠️ No scheduled trips match the selected filters for this date ({filterDate || "All Dates"}). Please check the departure date or click Reset Filters.
                     </div>
                 ) : (
                     <div className="pt-2">
                         <div className="text-xs text-zinc-400 font-bold mb-2 flex items-center justify-between">
-                            <span>Natagpuang Schedule ({filteredTrips.length} Biyahe):</span>
-                            <span className="text-[11px] text-zinc-500">I-click lamang para mag-palit ng aktibong biyahe</span>
+                            <span>Matching Schedules ({filteredTrips.length} {filteredTrips.length === 1 ? "Trip" : "Trips"}):</span>
+                            <span className="text-[11px] text-zinc-500">Click any card to switch the active departure run</span>
                         </div>
                         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                             {filteredTrips.map((t) => {
@@ -590,17 +590,17 @@ function ConductorManifestContent() {
                                         }`}
                                     >
                                         <div className="flex items-center justify-between">
-                                            <span className="font-black text-sm text-white flex items-center gap-1.5">
-                                                <span>{origName}</span>
-                                                <span className="text-red-500">➔</span>
-                                                <span>{destName}</span>
-                                            </span>
-                                            {isSelected && (
-                                                <span className="px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-black uppercase">
-                                                    ✓ AKTIBO
-                                                </span>
-                                            )}
-                                        </div>
+                                             <span className="font-black text-sm text-white flex items-center gap-1.5">
+                                                 <span>{origName}</span>
+                                                 <span className="text-red-500">➔</span>
+                                                 <span>{destName}</span>
+                                             </span>
+                                             {isSelected && (
+                                                 <span className="px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-black uppercase">
+                                                     ✓ ACTIVE
+                                                 </span>
+                                             )}
+                                         </div>
                                         <div className="flex items-center justify-between text-xs font-mono pt-1 border-t border-zinc-800">
                                             <span className="text-emerald-400 font-black text-sm">⏰ {timeStr}</span>
                                             <span className="text-zinc-300 font-bold">🚍 {busNum}</span>

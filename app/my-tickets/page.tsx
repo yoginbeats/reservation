@@ -962,7 +962,7 @@ function TicketsContent() {
                             <div>
                                 <h3 className="text-lg font-extrabold text-foreground flex items-center gap-2">
                                     <RotateCw className="h-5 w-5 text-blue-600" />
-                                    Rebook Trip / Palit Biyahe
+                                    Rebook Trip / Change Schedule
                                 </h3>
                                 <p className="text-xs text-muted-foreground">
                                     Select a new schedule and seat. Automatic 20% deduction applies if within 3 days prior to travel.
@@ -1264,7 +1264,7 @@ function TicketsContent() {
                                 </div>
 
                                 <div className="rounded-lg bg-amber-50 dark:bg-amber-950/40 p-3 text-[11px] text-amber-900 dark:text-amber-200 border border-amber-300">
-                                    <strong>Paunawa:</strong> Ang pondo ay pormal na ipapasa sa GCash Gateway matapos ang internal accounting audit. Awtomatikong papasok ito sa inyong GCash wallet sa loob ng 3 hanggang 7 business days kalakip ng opisyal na SMS text mula sa GCash.
+                                    <strong>Notice:</strong> Funds will be submitted to the GCash Payment Gateway following internal accounting audit. The amount will be credited to your GCash wallet within 3 to 7 business days accompanied by an official SMS confirmation from GCash.
                                 </div>
 
                                 <Button
@@ -1283,14 +1283,14 @@ function TicketsContent() {
                                 <div className="rounded-xl border border-blue-300 bg-blue-50/70 dark:bg-blue-950/40 p-4 space-y-2 text-xs">
                                     <div className="flex items-center gap-2 font-extrabold text-blue-950 dark:text-blue-100">
                                         <Info className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                        <span>Bakit 3 Business Days hanggang 1 Linggo ang GCash Refund?</span>
+                                        <span>Why Does a GCash Online Refund Take 3 Business Days to 1 Week?</span>
                                     </div>
                                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                        Ayon sa settlement guidelines ng GCash at Merchant Banking Network, ang bawat online refund ay dumadaan sa dalawang yugto:
+                                        According to settlement guidelines established by GCash and the Merchant Banking Network, online refunds undergo two phases:
                                     </p>
                                     <ul className="text-[11px] text-muted-foreground space-y-1 list-disc pl-4">
-                                        <li><strong>Stage 1 (1-2 Days):</strong> Superlines Accounting Audit upang tiyakin na hindi pa nagamit o na-board ang ticket.</li>
-                                        <li><strong>Stage 2 (3-5 Business Days):</strong> Pag-clear at wallet crediting ng GCash Payment Acquirer diretso sa inyong mobile number.</li>
+                                        <li><strong>Stage 1 (1-2 Days):</strong> Superlines Accounting Audit to verify that the ticket has not been boarded or used.</li>
+                                        <li><strong>Stage 2 (3-5 Business Days):</strong> Clearing and wallet crediting by the GCash Payment Acquirer directly to your registered mobile number.</li>
                                     </ul>
                                 </div>
 
