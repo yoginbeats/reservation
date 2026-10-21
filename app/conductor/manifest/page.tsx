@@ -733,7 +733,7 @@ function ConductorManifestContent() {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => setShowBusModal(false)}
-                                            className="border-zinc-700 text-zinc-300 hover:text-white"
+                                            className="bg-white text-black hover:bg-zinc-100 hover:text-black font-bold border-zinc-300"
                                             disabled={assignSubmitting}
                                         >
                                             Cancel

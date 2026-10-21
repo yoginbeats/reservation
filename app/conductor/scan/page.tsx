@@ -443,7 +443,7 @@ export default function ConductorQrScanPage() {
                                 )}
                             </Button>
                         ) : (
-                            <Button variant="outline" className="w-full text-zinc-300" onClick={() => setScanResult(null)}>
+                            <Button variant="outline" className="w-full bg-white text-black hover:bg-zinc-100 hover:text-black font-bold border-zinc-300" onClick={() => setScanResult(null)}>
                                 Clear and Scan Next Ticket
                             </Button>
                         )}

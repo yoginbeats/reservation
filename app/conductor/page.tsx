@@ -237,9 +237,9 @@ export default function ConductorDashboardPage() {
                             fetchTrips().finally(() => setRefreshing(false));
                         }}
                         disabled={refreshing}
-                        className="border-zinc-700 text-zinc-300 hover:text-white"
+                        className="bg-white text-black font-bold hover:bg-zinc-100 hover:text-black border-zinc-300"
                     >
-                        <RefreshCw className={`h-4 w-4 mr-1.5 ${refreshing ? "animate-spin" : ""}`} />
+                        <RefreshCw className={`h-4 w-4 mr-1.5 text-black ${refreshing ? "animate-spin" : ""}`} />
                         Refresh
                     </Button>
                     <Button size="sm" asChild className="bg-red-600 hover:bg-red-700 font-bold shadow-md shadow-red-600/30">
@@ -355,19 +355,19 @@ export default function ConductorDashboardPage() {
                                                 size="sm"
                                                 variant="outline"
                                                 onClick={() => handleOpenAssignModal(t)}
-                                                className="border-zinc-700 text-zinc-300 hover:text-white text-xs h-8"
+                                                className="bg-white text-black hover:bg-zinc-100 hover:text-black font-bold border-zinc-300 text-xs h-8"
                                             >
-                                                <Edit className="h-3.5 w-3.5 mr-1 text-red-400" />
+                                                <Edit className="h-3.5 w-3.5 mr-1 text-red-600" />
                                                 Assign / Swap Bus
                                             </Button>
                                             <Button
                                                 size="sm"
                                                 variant="outline"
                                                 asChild
-                                                className="flex-1 border-zinc-700 text-zinc-200 hover:text-white text-xs h-8"
+                                                className="flex-1 bg-white text-black hover:bg-zinc-100 hover:text-black font-bold border-zinc-300 text-xs h-8"
                                             >
-                                                <Link href={`/conductor/manifest?trip_id=${t.id}`}>
-                                                    <FileText className="h-3.5 w-3.5 mr-1" />
+                                                <Link href={`/conductor/manifest?trip_id=${t.id}`} className="text-black">
+                                                    <FileText className="h-3.5 w-3.5 mr-1 text-black" />
                                                     Manifest & 45 Seats
                                                 </Link>
                                             </Button>
@@ -523,7 +523,7 @@ export default function ConductorDashboardPage() {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => setModalTrip(null)}
-                                    className="border-zinc-700 text-zinc-300 hover:text-white"
+                                    className="bg-white text-black hover:bg-zinc-100 hover:text-black font-bold border-zinc-300"
                                     disabled={submittingBus}
                                 >
                                     Cancel
