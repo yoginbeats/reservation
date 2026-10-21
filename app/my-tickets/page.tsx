@@ -712,17 +712,33 @@ function TicketsContent() {
 
                                         {/* Dedicated Bus Unit & Bus Classification */}
                                         <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/60 text-xs">
-                                            <div className="bg-background/80 p-2 rounded-lg border">
+                                            <div className="bg-background/80 p-2.5 rounded-lg border">
                                                 <span className="text-[10px] uppercase font-bold text-muted-foreground block">Bus Unit</span>
                                                 <span className="font-mono font-extrabold text-foreground text-sm flex items-center gap-1 mt-0.5">
                                                     <Bus className="h-3.5 w-3.5 text-blue-600" />
                                                     {busNum}
                                                 </span>
                                             </div>
-                                            <div className="bg-background/80 p-2 rounded-lg border">
+                                            <div className="bg-background/80 p-2.5 rounded-lg border">
                                                 <span className="text-[10px] uppercase font-bold text-muted-foreground block">Bus Classification</span>
                                                 <span className="font-mono font-extrabold text-xs text-blue-700 dark:text-blue-300 block mt-0.5">
                                                     {busClassification}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Dedicated Fare Paid Section */}
+                                        <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 p-2.5 rounded-lg text-xs font-mono">
+                                            <div>
+                                                <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-300 block">Fare Paid</span>
+                                                <span className="text-[11px] text-muted-foreground">GCash Verified Payment</span>
+                                            </div>
+                                            <div className="text-right flex items-center gap-1.5">
+                                                <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
+                                                    ₱{booking?.total_price || 850}.00
+                                                </span>
+                                                <span className="text-[10px] font-black text-emerald-800 bg-emerald-200 dark:bg-emerald-900/80 px-2 py-0.5 rounded-full border border-emerald-300">
+                                                    PAID
                                                 </span>
                                             </div>
                                         </div>
