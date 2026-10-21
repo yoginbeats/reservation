@@ -25,7 +25,11 @@ export default async function TellerDashboardPage() {
         tripsRaw = rawData;
     }
 
-    const trips = tripsRaw.map((t: any) => ({
+    // Filter trips to only those for the teller's assigned terminal
+    const tellerTerminalId = termObj?.id;
+    const filteredRaw = tripsRaw.filter((t: any) => t.origin_terminal_id === tellerTerminalId);
+
+    const trips = filteredRaw.map((t: any) => ({
         ...t,
         fare_amount: t.fare_amount ?? t.price ?? 850,
         route: {

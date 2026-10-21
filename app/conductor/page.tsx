@@ -28,7 +28,7 @@ export default function ConductorDashboardPage() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterCategory, setFilterCategory] = useState<"ALL" | "TODAY" | "BOARDING" | "UNASSIGNED">("ALL");
+    const [filterCategory, setFilterCategory] = useState<"ALL" | "TODAY" | "BOARDING" | "UNASSIGNED" | "ADMIN">("ALL");
 
     // Reassignment Modal State
     const [modalTrip, setModalTrip] = useState<any | null>(null);
@@ -201,9 +201,17 @@ export default function ConductorDashboardPage() {
         const isUnassigned = !t.bus?.bus_number || t.bus.bus_number.includes("TBD") || t.bus.bus_number.includes("Express");
 
         if (!matchesQuery) return false;
+
+        // Centralized filter: Conductor only sees admin-verified/created trips if present
+        const hasAdminTrips = trips.some((item) => !!item.created_by);
+        if (hasAdminTrips && !t.created_by) {
+            return false;
+        }
+
         if (filterCategory === "TODAY") return isToday;
         if (filterCategory === "BOARDING") return isBoarding;
         if (filterCategory === "UNASSIGNED") return isUnassigned;
+        if (filterCategory === "ADMIN") return !!t.created_by;
         return true;
     });
 
@@ -267,7 +275,7 @@ export default function ConductorDashboardPage() {
                         />
                     </div>
                     <div className="flex gap-1.5 overflow-x-auto">
-                        {(["ALL", "TODAY", "BOARDING", "UNASSIGNED"] as const).map((cat) => (
+                        {(["ALL", "TODAY", "BOARDING", "UNASSIGNED", "ADMIN"] as const).map((cat) => (
                             <button
                                 key={cat}
                                 type="button"

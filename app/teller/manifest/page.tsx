@@ -75,18 +75,44 @@ export default function TellerManifestPage() {
             bus: t.bus || { bus_number: "Superlines Express", bus_type: "REGULAR AIRCON" }
         }));
 
-        setTrips(normalizedTrips);
+        // Centralize: Filter trips based on the logged-in Teller's assigned terminal
+        let terminalFiltered = normalizedTrips;
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.id) {
+                const { data: roleData } = await supabase
+                    .from('user_roles')
+                    .select('terminal:terminal_id(id, name)')
+                    .eq('user_id', user.id)
+                    .single();
+
+                const tName = ((roleData as any)?.terminal?.name || "").toLowerCase().replace(/central|terminal|station/g, "").trim();
+                if (tName) {
+                    const matched = normalizedTrips.filter((t: any) => {
+                        const origin = (t.origin || t.route?.origin?.name || "").toLowerCase();
+                        return origin.includes(tName) || tName.includes(origin);
+                    });
+                    if (matched.length > 0) {
+                        terminalFiltered = matched;
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("Could not load teller terminal filter for manifest:", e);
+        }
+
+        setTrips(terminalFiltered);
         if (initialTripId) {
-            const found = normalizedTrips.find(t => t.id === initialTripId);
+            const found = terminalFiltered.find(t => t.id === initialTripId);
             if (found) {
                 handleSelectTrip(found);
-            } else if (normalizedTrips.length > 0) {
-                handleSelectTrip(normalizedTrips[0]);
+            } else if (terminalFiltered.length > 0) {
+                handleSelectTrip(terminalFiltered[0]);
             } else {
                 setLoading(false);
             }
-        } else if (normalizedTrips.length > 0) {
-            handleSelectTrip(normalizedTrips[0]);
+        } else if (terminalFiltered.length > 0) {
+            handleSelectTrip(terminalFiltered[0]);
         } else {
             setLoading(false);
         }

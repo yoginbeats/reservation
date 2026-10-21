@@ -161,12 +161,7 @@ export default function AdminLoginPage() {
                             <ArrowLeft className="h-3.5 w-3.5" /> Back to Home
                         </Link>
                         <div className="h-4 w-[1px] bg-zinc-800" />
-                        <Link
-                            href="/admin/register"
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-200 hover:text-white transition-colors bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg"
-                        >
-                            Create Admin Account
-                        </Link>
+
                     </div>
                 </div>
             </header>

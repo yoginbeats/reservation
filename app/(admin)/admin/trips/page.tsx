@@ -166,6 +166,9 @@ export default function AdminTripsPage() {
         e.preventDefault();
         if (!busId || !departureTime) return;
 
+        const { data: { user } } = await supabase.auth.getUser();
+        const adminId = user?.id || null;
+
         const selectedRoute = routes.find(r => r.id === routeId);
         const originName = selectedRoute?.origin?.name || "Cubao";
         const destName = selectedRoute?.destination?.name || "Daet";
@@ -173,13 +176,16 @@ export default function AdminTripsPage() {
         const selectedBus = buses.find(b => b.id === busId);
         const capacity = selectedBus?.seat_capacity || 45;
 
-        // 1. Insert Outbound Trip
+        // 1. Insert Outbound Trip with Admin ID & Route ID
         const { data: newOutbound } = await supabase.from('trips').insert({
             bus_id: busId,
+            route_id: routeId || null,
             origin: originName,
             destination: destName,
             departure_time: new Date(departureTime).toISOString(),
+            fare_amount: Number(fareAmount),
             price: Number(fareAmount),
+            created_by: adminId,
             created_at: new Date().toISOString()
         }).select().single();
 
@@ -194,12 +200,18 @@ export default function AdminTripsPage() {
 
         // 2. Automatically bind and insert Inbound Return Trip if enabled
         if (autoCreateReturn && returnDepartureTime) {
+            // Find reverse route if available
+            const reverseRoute = routes.find(r => r.origin?.name === destName && r.destination?.name === originName);
+
             const { data: newInbound } = await supabase.from('trips').insert({
                 bus_id: busId, // Same Bus Unit
+                route_id: reverseRoute?.id || null,
                 origin: destName, // Return reverse direction
                 destination: originName,
                 departure_time: new Date(returnDepartureTime).toISOString(),
+                fare_amount: Number(fareAmount),
                 price: Number(fareAmount),
+                created_by: adminId,
                 created_at: new Date().toISOString()
             }).select().single();
 

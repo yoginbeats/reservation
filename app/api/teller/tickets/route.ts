@@ -307,41 +307,22 @@ export async function GET(req: NextRequest) {
                 const { data } = await supabase
                     .from("trips")
                     .select("*, bus:buses(bus_number, bus_type, capacity), route:routes(origin:origin_terminal_id(name), destination:destination_terminal_id(name))")
-                    .order("departure_time", { ascending: true })
-                    .limit(10);
-                if (data) tripsData = data;
+                    .order("departure_time", { ascending: true });
+                if (data && data.length > 0) {
+                    // Extract teller's terminal keyword (e.g., Daet, Cubao, PITX)
+                    const tellerTermKeyword = (termObj?.name || "").toLowerCase().replace(/central|terminal|station/g, "").trim();
+
+                    // Centralized filter: Only show trips matching teller's terminal origin
+                    const terminalFiltered = data.filter((t: any) => {
+                        const tripOrigin = (t.origin || t.route?.origin?.name || "").toLowerCase();
+                        if (!tellerTermKeyword) return true;
+                        return tripOrigin.includes(tellerTermKeyword) || tellerTermKeyword.includes(tripOrigin);
+                    });
+
+                    tripsData = terminalFiltered.length > 0 ? terminalFiltered : data;
+                }
             } catch (err) {
                 console.warn("Could not query trips for bay board:", err);
-            }
-
-            // Fallback sample trips if empty
-            if (tripsData.length === 0) {
-                tripsData = [
-                    {
-                        id: "trip-c1",
-                        departure_time: new Date(Date.now() + 1000 * 60 * 30).toISOString(),
-                        fare_amount: 850,
-                        status: "BOARDING",
-                        bus: { bus_number: "BUS-101", bus_type: "REGULAR AIRCON", capacity: 45 },
-                        route: { origin: { name: "Cubao" }, destination: { name: "Daet" } },
-                    },
-                    {
-                        id: "trip-c2",
-                        departure_time: new Date(Date.now() + 1000 * 60 * 90).toISOString(),
-                        fare_amount: 850,
-                        status: "SCHEDULED",
-                        bus: { bus_number: "SL-501", bus_type: "SUPER DELUXE", capacity: 45 },
-                        route: { origin: { name: "Cubao" }, destination: { name: "Jose Panganiban" } },
-                    },
-                    {
-                        id: "trip-c3",
-                        departure_time: new Date(Date.now() + 1000 * 60 * 180).toISOString(),
-                        fare_amount: 850,
-                        status: "SCHEDULED",
-                        bus: { bus_number: "BUS-103", bus_type: "DELUXE AIRCON", capacity: 45 },
-                        route: { origin: { name: "Cubao" }, destination: { name: "Daet" } },
-                    },
-                ];
             }
 
             // Assign terminal bays and compute seat occupancy

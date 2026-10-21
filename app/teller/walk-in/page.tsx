@@ -79,28 +79,33 @@ export default function TellerWalkInBookingPage() {
             }
         }));
 
-        let finalTrips = normalizedTrips;
-        if (finalTrips.length === 0) {
-            try {
-                const res = await fetch("/api/trips/available");
-                const availData = await res.json();
-                if (availData?.trips && Array.isArray(availData.trips)) {
-                    finalTrips = availData.trips.map((t: any) => ({
-                        ...t,
-                        fare_amount: t.fare_amount ?? 850,
-                        route: {
-                            origin: { name: t.origin || "Cubao" },
-                            destination: { name: t.destination || "Daet" }
-                        },
-                        bus: {
-                            bus_number: t.bus_number || "SL-401 (Superlines Aircon)",
-                            bus_type: t.bus_type || "REGULAR AIRCON"
-                        }
-                    }));
+        // Centralize: Filter trips based on the logged-in Teller's assigned terminal
+        let terminalFiltered = normalizedTrips;
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.id) {
+                const { data: roleData } = await supabase
+                    .from('user_roles')
+                    .select('terminal:terminal_id(id, name)')
+                    .eq('user_id', user.id)
+                    .single();
+
+                const tName = ((roleData as any)?.terminal?.name || "").toLowerCase().replace(/central|terminal|station/g, "").trim();
+                if (tName) {
+                    const matched = normalizedTrips.filter((t: any) => {
+                        const origin = (t.origin || t.route?.origin?.name || "").toLowerCase();
+                        return origin.includes(tName) || tName.includes(origin);
+                    });
+                    if (matched.length > 0) {
+                        terminalFiltered = matched;
+                    }
                 }
-            } catch {}
+            }
+        } catch (e) {
+            console.warn("Could not load teller terminal filter for walk-in:", e);
         }
 
+        let finalTrips = terminalFiltered;
         setTrips(finalTrips);
         if (initialTripId) {
             const found = finalTrips.find((t: any) => t.id === initialTripId);

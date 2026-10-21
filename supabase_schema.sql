@@ -134,6 +134,7 @@ CREATE TABLE IF NOT EXISTS public.trips (
     departure_time TIMESTAMP WITH TIME ZONE NOT NULL,
     arrival_time TIMESTAMP WITH TIME ZONE,
     fare_amount NUMERIC(10,2) NOT NULL DEFAULT 850.00,
+    created_by UUID REFERENCES auth.users(id) DEFAULT NULL,
     status VARCHAR(20) DEFAULT 'SCHEDULED' CHECK (status IN ('SCHEDULED', 'BOARDING', 'IN_TRANSIT', 'COMPLETED', 'CANCELLED')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
