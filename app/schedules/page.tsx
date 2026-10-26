@@ -1,56 +1,25 @@
 import Image from "next/image";
-import { Clock, MapPin, Bus, Phone, ShieldCheck, AlertCircle } from "lucide-react";
+import { Clock, MapPin, Bus, Phone, ShieldCheck } from "lucide-react";
+import { getDailySchedulesAction, DailyScheduleItem } from "@/app/actions/daily-schedule";
 
 export const metadata = {
     title: "Daily Bus Schedules & Terminal Departures | Superlines Transportation",
     description: "Official static daily trip departures and bus schedule timetable from Superlines Daet Central Terminal.",
 };
 
-interface ScheduleItem {
-    time: string;
-    route: string;
-    busType: "FIRST CLASS (F/C) W/ CR" | "REGULAR AIRCON (A/C)" | "AIRCON (A/C) W/ CR" | "ORDINARY";
-    busNumber?: string;
-    via?: string;
-}
+export const revalidate = 0; // Dynamic server rendering to reflect admin updates immediately
 
-const AM_SCHEDULES: ScheduleItem[] = [
-    { time: "5:00 AM", route: "Daet ➔ Cubao - Alabang", busType: "REGULAR AIRCON (A/C)" },
-    { time: "5:45 AM", route: "Daet ➔ Cubao - Alabang", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 976" },
-    { time: "7:30 AM", route: "Daet ➔ Cubao - Alabang", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 961", via: "Via Vinzons" },
-    { time: "9:00 AM", route: "Daet ➔ Cubao - Alabang", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 971" },
-    { time: "10:30 AM", route: "Daet ➔ Cubao - Alabang", busType: "ORDINARY" },
-    { time: "12:30 PM", route: "Daet ➔ PITX - Cubao - Alabang", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 141" },
-];
+export default async function SchedulesPage() {
+    const res = await getDailySchedulesAction();
+    const schedules: DailyScheduleItem[] = res.success && res.data ? res.data : [];
 
-const PM_SCHEDULES: ScheduleItem[] = [
-    { time: "2:00 PM", route: "Daet ➔ PITX - Cubao - Alabang", busType: "REGULAR AIRCON (A/C)" },
-    { time: "3:30 PM", route: "Daet ➔ PITX - Cubao - Alabang", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 146" },
-    { time: "4:45 PM", route: "Daet ➔ PITX - Cubao - Alabang", busType: "REGULAR AIRCON (A/C)" },
-    { time: "5:00 PM", route: "Daet ➔ PITX - Cubao - Alabang", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 197" },
-    { time: "6:00 PM", route: "Daet ➔ PITX - Cubao - Alabang", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 1177", via: "San Vicente" },
-    { time: "7:00 PM", route: "Daet ➔ PITX - Cubao - Alabang", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 709", via: "Fr. Tarum PITX" },
-    { time: "7:00 PM", route: "Daet ➔ PITX - Cubao", busType: "FIRST CLASS (F/C) W/ CR", busNumber: "Bus 310" },
-    { time: "7:30 PM", route: "Daet ➔ PITX - Cubao", busType: "FIRST CLASS (F/C) W/ CR" },
-    { time: "7:45 PM", route: "Daet ➔ PITX - Cubao", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 900" },
-    { time: "8:00 PM", route: "Daet ➔ Cubao - Alabang", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 109", via: "Fr. Mercedes" },
-    { time: "8:30 PM", route: "Daet ➔ Alabang - Cubao", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 973", via: "Via Vinzons (Reg A/C)" },
-    { time: "8:45 PM", route: "Daet ➔ PITX - Alabang", busType: "AIRCON (A/C) W/ CR", busNumber: "Bus 330" },
-    { time: "9:00 PM", route: "Daet ➔ Alabang - Cubao", busType: "FIRST CLASS (F/C) W/ CR", busNumber: "Bus 336" },
-    { time: "9:15 PM", route: "Daet ➔ Alabang - Cubao", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 333" },
-    { time: "9:30 PM", route: "Daet ➔ Cubao - Alabang", busType: "REGULAR AIRCON (A/C)", busNumber: "Bus 914" },
-];
+    // Filter only active schedules for public display
+    const activeSchedules = schedules.filter(s => s.is_active);
 
-const FEEDER_SCHEDULES = [
-    { period: "A.M.", route: "Capalonga / Larap", busNumber: "Bus 704" },
-    { period: "A.M.", route: "Capalonga", busNumber: "Bus 196" },
-    { period: "A.M.", route: "Tabas (Tab. Tnl)", busNumber: "Bus 111" },
-    { period: "P.M.", route: "Ordinary Passenger (ORD P/P)", busNumber: "Bus 710" },
-    { period: "P.M.", route: "Aircon Panganiban (A/C Pang.)", busNumber: "Bus 974" },
-    { period: "P.M.", route: "Aircon Paracale (A/C Par.)", busNumber: "Bus 1169" },
-];
+    const amSchedules = activeSchedules.filter(s => s.period === "AM");
+    const pmSchedules = activeSchedules.filter(s => s.period === "PM");
+    const feederSchedules = activeSchedules.filter(s => s.period === "FEEDER");
 
-export default function SchedulesPage() {
     return (
         <div className="min-h-screen bg-zinc-950 font-sans text-white py-10 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto space-y-8">
@@ -102,33 +71,41 @@ export default function SchedulesPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-800 font-medium text-zinc-200">
-                                {AM_SCHEDULES.map((s, idx) => (
-                                    <tr key={idx} className="hover:bg-zinc-800/40 transition-colors">
-                                        <td className="py-3.5 px-4 sm:px-6 font-black text-amber-400 text-base font-mono whitespace-nowrap">
-                                            {s.time}
-                                        </td>
-                                        <td className="py-3.5 px-4 sm:px-6 font-bold text-white whitespace-nowrap">
-                                            {s.route}
-                                        </td>
-                                        <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
-                                            <span className={`inline-block px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider ${
-                                                s.busType.includes("FIRST CLASS")
-                                                    ? "bg-purple-950/80 text-purple-300 border border-purple-800/80"
-                                                    : s.busType.includes("ORDINARY")
-                                                    ? "bg-zinc-800 text-zinc-300"
-                                                    : "bg-blue-950/80 text-blue-300 border border-blue-800/80"
-                                            }`}>
-                                                {s.busType}
-                                            </span>
-                                        </td>
-                                        <td className="py-3.5 px-4 sm:px-6 font-mono text-xs font-bold text-zinc-300 whitespace-nowrap">
-                                            {s.busNumber || "—"}
-                                        </td>
-                                        <td className="py-3.5 px-4 sm:px-6 text-xs text-zinc-400">
-                                            {s.via || "Direct Express"}
+                                {amSchedules.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="py-8 text-center text-zinc-500">
+                                            No morning departures currently active.
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    amSchedules.map((s) => (
+                                        <tr key={s.id} className="hover:bg-zinc-800/40 transition-colors">
+                                            <td className="py-3.5 px-4 sm:px-6 font-black text-amber-400 text-base font-mono whitespace-nowrap">
+                                                {s.time}
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 font-bold text-white whitespace-nowrap">
+                                                {s.route}
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
+                                                <span className={`inline-block px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider ${
+                                                    s.bus_type.includes("FIRST CLASS")
+                                                        ? "bg-purple-950/80 text-purple-300 border border-purple-800/80"
+                                                        : s.bus_type.includes("ORDINARY")
+                                                        ? "bg-zinc-800 text-zinc-300"
+                                                        : "bg-blue-950/80 text-blue-300 border border-blue-800/80"
+                                                }`}>
+                                                    {s.bus_type}
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 font-mono text-xs font-bold text-zinc-300 whitespace-nowrap">
+                                                {s.bus_number || "—"}
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 text-xs text-zinc-400">
+                                                {s.via || "Direct Express"}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -165,33 +142,41 @@ export default function SchedulesPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-800 font-medium text-zinc-200">
-                                {PM_SCHEDULES.map((s, idx) => (
-                                    <tr key={idx} className="hover:bg-zinc-800/40 transition-colors">
-                                        <td className="py-3.5 px-4 sm:px-6 font-black text-red-400 text-base font-mono whitespace-nowrap">
-                                            {s.time}
-                                        </td>
-                                        <td className="py-3.5 px-4 sm:px-6 font-bold text-white whitespace-nowrap">
-                                            {s.route}
-                                        </td>
-                                        <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
-                                            <span className={`inline-block px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider ${
-                                                s.busType.includes("FIRST CLASS")
-                                                    ? "bg-purple-950/80 text-purple-300 border border-purple-800/80"
-                                                    : s.busType.includes("W/ CR")
-                                                    ? "bg-amber-950/80 text-amber-300 border border-amber-800/80"
-                                                    : "bg-blue-950/80 text-blue-300 border border-blue-800/80"
-                                            }`}>
-                                                {s.busType}
-                                            </span>
-                                        </td>
-                                        <td className="py-3.5 px-4 sm:px-6 font-mono text-xs font-bold text-zinc-300 whitespace-nowrap">
-                                            {s.busNumber || "—"}
-                                        </td>
-                                        <td className="py-3.5 px-4 sm:px-6 text-xs text-zinc-400">
-                                            {s.via || "Direct Express"}
+                                {pmSchedules.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="py-8 text-center text-zinc-500">
+                                            No afternoon/night departures currently active.
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    pmSchedules.map((s) => (
+                                        <tr key={s.id} className="hover:bg-zinc-800/40 transition-colors">
+                                            <td className="py-3.5 px-4 sm:px-6 font-black text-red-400 text-base font-mono whitespace-nowrap">
+                                                {s.time}
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 font-bold text-white whitespace-nowrap">
+                                                {s.route}
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
+                                                <span className={`inline-block px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider ${
+                                                    s.bus_type.includes("FIRST CLASS")
+                                                        ? "bg-purple-950/80 text-purple-300 border border-purple-800/80"
+                                                        : s.bus_type.includes("W/ CR")
+                                                        ? "bg-amber-950/80 text-amber-300 border border-amber-800/80"
+                                                        : "bg-blue-950/80 text-blue-300 border border-blue-800/80"
+                                                }`}>
+                                                    {s.bus_type}
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 font-mono text-xs font-bold text-zinc-300 whitespace-nowrap">
+                                                {s.bus_number || "—"}
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 text-xs text-zinc-400">
+                                                {s.via || "Direct Express"}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -217,19 +202,26 @@ export default function SchedulesPage() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-zinc-800 p-4 gap-4">
-                        {FEEDER_SCHEDULES.map((f, idx) => (
-                            <div key={idx} className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex items-center justify-between">
-                                <div>
-                                    <span className="text-[10px] font-black uppercase text-blue-400 bg-blue-950/60 border border-blue-800/60 px-2 py-0.5 rounded">
-                                        {f.period} Service
-                                    </span>
-                                    <h4 className="text-sm font-bold text-white mt-1.5">{f.route}</h4>
-                                </div>
-                                <span className="font-mono text-sm font-black text-amber-400 bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-800">
-                                    {f.busNumber}
-                                </span>
+                        {feederSchedules.length === 0 ? (
+                            <div className="col-span-3 py-6 text-center text-zinc-500">
+                                No connecting feeder routes currently listed.
                             </div>
-                        ))}
+                        ) : (
+                            feederSchedules.map((f) => (
+                                <div key={f.id} className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex items-center justify-between">
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase text-blue-400 bg-blue-950/60 border border-blue-800/60 px-2 py-0.5 rounded">
+                                            {f.time}
+                                        </span>
+                                        <h4 className="text-sm font-bold text-white mt-1.5">{f.route}</h4>
+                                        {f.via && <p className="text-[11px] text-zinc-400">{f.via}</p>}
+                                    </div>
+                                    <span className="font-mono text-sm font-black text-amber-400 bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-800">
+                                        {f.bus_number || "—"}
+                                    </span>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
 
