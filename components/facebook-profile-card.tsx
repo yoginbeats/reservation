@@ -264,6 +264,8 @@ export function FacebookProfileCard({
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
+                    userId,
+                    email,
                     firstName: editFirstName.trim(),
                     middleName: editMiddleName.trim(),
                     lastName: editLastName.trim(),

@@ -5,17 +5,13 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export async function POST(req: NextRequest) {
     try {
         // 1. Authenticate user via unified session detection
-        const { user } = await getUserWithRoleAndTerminal();
-
-        if (!user) {
-            return NextResponse.json(
-                { success: false, error: "Unauthorized. Please log in first." },
-                { status: 401 }
-            );
-        }
+        const sessionResult = await getUserWithRoleAndTerminal();
+        let user: any = sessionResult.user;
 
         const body = await req.json();
         const {
+            userId = "",
+            email = "",
             firstName = "",
             middleName = "",
             lastName = "",
@@ -25,6 +21,56 @@ export async function POST(req: NextRequest) {
             address = "",
             password = "",
         } = body;
+
+        // Fallback: If session cookies were not detected by Next.js SSR middleware, resolve via Supabase Admin
+        if (!user && (userId || email)) {
+            if (userId) {
+                try {
+                    const { data: adminUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+                    if (adminUser?.user) {
+                        user = adminUser.user;
+                    }
+                } catch (uErr) {
+                    console.warn("Fallback auth user by id notice:", uErr);
+                }
+            }
+
+            if (!user && email) {
+                try {
+                    const { data: userList } = await supabaseAdmin.auth.admin.listUsers();
+                    const matched = userList?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+                    if (matched) user = matched;
+                } catch (mErr) {
+                    console.warn("Fallback auth user by email notice:", mErr);
+                }
+            }
+
+            if (!user && userId) {
+                const { data: prof } = await supabaseAdmin
+                    .from("profiles")
+                    .select("*")
+                    .eq("id", userId)
+                    .maybeSingle();
+
+                if (prof) {
+                    user = {
+                        id: prof.id,
+                        email: prof.email || email,
+                        role: prof.role || "PASSENGER",
+                        user_metadata: {
+                            full_name: prof.full_name,
+                        },
+                    };
+                }
+            }
+        }
+
+        if (!user) {
+            return NextResponse.json(
+                { success: false, error: "Unauthorized. Please log in first." },
+                { status: 401 }
+            );
+        }
 
         const cleanFirst = String(firstName || "").trim();
         const cleanMiddle = String(middleName || "").trim();

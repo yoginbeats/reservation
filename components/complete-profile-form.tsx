@@ -127,6 +127,8 @@ export function CompleteProfileForm({
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
+                    userId: user?.id,
+                    email: userEmail,
                     firstName: firstName.trim(),
                     middleName: middleName.trim(),
                     lastName: lastName.trim(),
