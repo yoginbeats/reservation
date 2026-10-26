@@ -24,7 +24,8 @@ import {
     Info,
     Bath,
     DoorOpen,
-    Armchair
+    Armchair,
+    Filter
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { 

@@ -49,7 +49,12 @@ export default async function ClientDashboard() {
     const age = profile?.age ?? meta.age ?? null;
     const address = profile?.address || meta.address || null;
     const avatarUrl = profile?.avatar_url || meta.avatar_url || meta.picture || null;
-    const isProfileComplete = profile?.profile_completed || (Boolean(phoneNumber) && Boolean(address));
+    const isProfileComplete = Boolean(
+        profile?.profile_completed ||
+        meta?.profile_completed ||
+        user?.profile_completed ||
+        (Boolean(phoneNumber) && Boolean(address))
+    );
 
     // Fetch upcoming reservations
     const { data: reservations } = await supabase

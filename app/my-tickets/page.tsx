@@ -92,7 +92,7 @@ interface UserTicket {
         trip: {
             id?: string;
             departure_time: string;
-            bus: { bus_number: string } | null;
+            bus: { bus_number: string; bus_type?: string } | null;
             route: {
                 origin: { name: string } | null;
                 destination: { name: string } | null;

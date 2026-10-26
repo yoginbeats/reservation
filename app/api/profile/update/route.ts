@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUserWithRoleAndTerminal } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function POST(req: NextRequest) {
     try {
-        const supabase = await createClient();
-        const { data: { user }, error: authErr } = await supabase.auth.getUser();
+        // 1. Authenticate user via unified session detection
+        const { user } = await getUserWithRoleAndTerminal();
 
-        if (authErr || !user) {
+        if (!user) {
             return NextResponse.json(
                 { success: false, error: "Unauthorized. Please log in first." },
                 { status: 401 }
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // 1. Update Auth user metadata (client session & admin API)
+        // 1. Update Auth user metadata
         const metadataUpdate: any = {
             first_name: cleanFirst,
             middle_name: cleanMiddle,
@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
         };
 
         try {
+            const supabase = await createClient();
             await supabase.auth.updateUser({ data: metadataUpdate });
         } catch (e) {
             console.warn("Client auth updateUser notice:", e);
@@ -136,7 +137,7 @@ export async function POST(req: NextRequest) {
             console.warn("Notice: Continuing with Auth metadata persistence despite DB notice:", lastError.message);
         }
 
-        // 3. Ensure role exists safely (do not overwrite ADMIN or TELLER)
+        // 3. Ensure role exists safely (do not overwrite ADMIN, TELLER, CONDUCTOR)
         try {
             const { data: existingRole } = await supabaseAdmin
                 .from("user_roles")
@@ -168,11 +169,40 @@ export async function POST(req: NextRequest) {
             }).catch(() => {});
         } catch (_) {}
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             success: true,
             message: "Profile updated successfully.",
             profile: { ...fullPayload, ...(savedProfile || {}) },
         });
+
+        // 5. Keep system session cookie in sync if present
+        const currentSessionCookie = req.cookies.get("superlines_auth_session")?.value;
+        if (currentSessionCookie) {
+            try {
+                const parsed = JSON.parse(decodeURIComponent(currentSessionCookie));
+                if (parsed?.user) {
+                    parsed.user.name = fullName;
+                    parsed.user.phone_number = cleanPhone;
+                    parsed.user.address = cleanAddress;
+                    parsed.user.birthdate = validBirthdate;
+                    parsed.user.age = parsedAge;
+                    parsed.user.profile_completed = true;
+                    parsed.user.user_metadata = {
+                        ...(parsed.user.user_metadata || {}),
+                        ...metadataUpdate,
+                    };
+                    const sessionPayload = JSON.stringify(parsed);
+                    response.cookies.set("superlines_auth_session", sessionPayload, {
+                        path: "/",
+                        sameSite: "lax",
+                        httpOnly: false,
+                        maxAge: 60 * 60 * 24 * 7,
+                    });
+                }
+            } catch {}
+        }
+
+        return response;
     } catch (err: any) {
         console.error("API /api/profile/update error:", err);
         return NextResponse.json(

@@ -125,6 +125,14 @@ export function FacebookProfileCard({
         sanitizeAuthCookies();
     }, [userId]);
 
+    useEffect(() => {
+        const handleOpenEdit = () => {
+            handleOpenEditModal();
+        };
+        window.addEventListener("superlines_open_profile_edit", handleOpenEdit);
+        return () => window.removeEventListener("superlines_open_profile_edit", handleOpenEdit);
+    }, [currentFirstName, currentMiddleName, currentLastName, currentPhoneNumber, currentBirthdate, currentAge, currentAddress]);
+
     const handleCameraClick = () => {
         fileInputRef.current?.click();
     };
