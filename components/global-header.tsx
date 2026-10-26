@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { LogOut, User, Menu, X, Ticket, Calendar, Home, ShieldCheck } from "lucide-react";
+import { LogOut, User, Menu, X, Ticket, Calendar, Home, ShieldCheck, Clock } from "lucide-react";
 
 export function GlobalHeader() {
     const pathname = usePathname();
@@ -133,6 +133,7 @@ export function GlobalHeader() {
     const navLinks = [
         { href: "/", label: "Home", icon: Home, active: pathname === "/" },
         { href: "/book", label: "Search & Book", icon: Calendar, active: pathname?.startsWith("/book") },
+        { href: "/schedules", label: "Daily Schedules", icon: Clock, active: pathname === "/schedules" },
         { href: "/my-tickets", label: "My Tickets", icon: Ticket, active: pathname?.startsWith("/my-tickets") },
         ...(user
             ? [{ href: "/dashboard", label: "My Account", icon: User, active: pathname?.startsWith("/dashboard") }]
