@@ -59,15 +59,11 @@ export function AcademicDisclaimerModal() {
     const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
-        // Show modal on initial load of the session
-        const hasSeen = sessionStorage.getItem("superlines_academic_notice_seen");
-        if (!hasSeen) {
-            setIsOpen(true);
-        }
+        // Always show notice modal on arrival to ensure no one misses the academic disclaimer
+        setIsOpen(true);
     }, []);
 
     const handleAcknowledge = () => {
-        sessionStorage.setItem("superlines_academic_notice_seen", "true");
         setIsOpen(false);
     };
 

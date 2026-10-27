@@ -15,8 +15,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Superlines Transportation Co. Inc. - Official Ticketing & Reservation",
-  description: "Official online bus booking and ticketing portal for Superlines Transportation Co. Inc.",
+  title: "Superlines - Academic Project Demo",
+  description: "Academic Capstone Project Demo - Not an official reservation system of Superlines Transportation Co. Inc.",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      "max-video-preview": -1,
+      "max-image-preview": "none",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
