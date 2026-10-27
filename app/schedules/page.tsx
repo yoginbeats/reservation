@@ -28,15 +28,15 @@ export default async function SchedulesPage() {
                 <div className="text-center space-y-3">
                     <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-950/40 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-red-400">
                         <Bus className="h-4 w-4 text-red-500" />
-                        <span>Official Terminal Dispatch Roster</span>
+                        <span>Official Terminal Dispatch Timetable</span>
                     </div>
 
                     <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">
-                        Daily Bus Schedules & Terminal Departures
+                        Standard Daily Superlines Schedule Roster
                     </h1>
 
                     <p className="text-sm sm:text-base text-zinc-400 max-w-2xl mx-auto font-medium">
-                        Official regular daily trip timetable from <strong className="text-white">Superlines Daet Central Terminal</strong> to Metro Manila (Cubao, PITX, Alabang) and provincial connecting routes.
+                        Daily Bus Schedules & Terminal Departures from <strong className="text-white">Superlines Daet Central Terminal</strong> to Metro Manila (Cubao, PITX, Alabang) and provincial connecting routes.
                     </p>
                 </div>
 

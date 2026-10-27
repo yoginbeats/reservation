@@ -119,6 +119,9 @@ export function AdminNewReservationDialog({
                     },
                 }));
                 setTrips(normalized);
+                if (normalized.length > 0) {
+                    handleSelectTrip(normalized[0]);
+                }
                 setLoadingTrips(false);
                 return;
             }
@@ -137,7 +140,7 @@ export function AdminNewReservationDialog({
                 `)
                 .order("departure_time", { ascending: true });
 
-            if (!error && data) {
+            if (!error && data && data.length > 0) {
                 const normalizedTrips = data.map((t: any) => ({
                     ...t,
                     fare_amount: t.fare_amount ?? 850,
@@ -152,6 +155,7 @@ export function AdminNewReservationDialog({
                     },
                 }));
                 setTrips(normalizedTrips);
+                handleSelectTrip(normalizedTrips[0]);
             }
         } catch (dbErr) {
             console.error("Direct trips query failed:", dbErr);
@@ -484,7 +488,10 @@ export function AdminNewReservationDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogContent className="w-[96vw] max-w-5xl max-h-[92vh] flex flex-col p-0 rounded-2xl bg-card border shadow-2xl overflow-hidden">
+            <DialogContent 
+                showCloseButton={false}
+                className="w-[96vw] max-w-[96vw] sm:max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl max-h-[94vh] flex flex-col p-0 rounded-2xl bg-card border shadow-2xl overflow-hidden"
+            >
                 {/* Fixed Header */}
                 <div className="shrink-0 bg-background px-6 py-4 border-b flex items-center justify-between z-10">
                     <div className="flex items-center gap-2.5">
@@ -617,86 +624,86 @@ export function AdminNewReservationDialog({
                                 </Button>
                             </CardFooter>
                         </Card>
-                    ) : !selectedTrip ? (
-                        /* STEP 1: SELECT TRIP SCHEDULE */
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-base font-bold text-foreground">1. Select Bus Trip Schedule</h3>
-                                <span className="text-xs text-muted-foreground">
-                                    {trips.length} active departure{trips.length === 1 ? "" : "s"} found
-                                </span>
-                            </div>
-
-                            {loadingTrips ? (
-                                <div className="flex flex-col items-center justify-center p-12 text-muted-foreground space-y-2">
-                                    <RefreshCw className="h-6 w-6 animate-spin text-emerald-600" />
-                                    <p className="text-xs">Loading trips and terminal schedules...</p>
-                                </div>
-                            ) : trips.length === 0 ? (
-                                <div className="p-8 text-center border-2 border-dashed rounded-xl text-muted-foreground text-xs">
-                                    No active trips scheduled. Create a new trip under Trips & Schedules first.
-                                </div>
-                            ) : (
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    {trips.map((t) => {
-                                        const origin = t.route?.origin?.name || t.origin || "Cubao";
-                                        const dest = t.route?.destination?.name || t.destination || "Daet";
-                                        const busNum = t.bus?.bus_number || t.bus_number || "Bus TBD";
-                                        const depTime = new Date(t.departure_time);
-
-                                        return (
-                                            <Card
-                                                key={t.id}
-                                                className="cursor-pointer transition-all hover:border-emerald-500 hover:shadow-md border"
-                                                onClick={() => handleSelectTrip(t)}
-                                            >
-                                                <CardHeader className="pb-2">
-                                                    <div className="flex justify-between items-center text-xs font-bold text-emerald-600">
-                                                        <span className="flex items-center gap-1.5">
-                                                            <Bus className="h-3.5 w-3.5" />
-                                                            {busNum}
-                                                        </span>
-                                                        <span className="text-base font-black text-foreground">₱{t.fare_amount || 850}.00</span>
-                                                    </div>
-                                                    <CardTitle className="text-sm flex items-center justify-between mt-1">
-                                                        <span>{origin}</span>
-                                                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                                                        <span>{dest}</span>
-                                                    </CardTitle>
-                                                </CardHeader>
-                                                <CardContent className="text-[11px] text-muted-foreground flex justify-between items-center">
-                                                    <span>Departure: {depTime.toLocaleDateString()} {depTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                                                    <span className="text-emerald-700 dark:text-emerald-400 font-bold">Select ➔</span>
-                                                </CardContent>
-                                            </Card>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
                     ) : (
-                        /* STEP 2: MULTI-SEAT PICKER & PASSENGER DETAILS */
                         <div className="space-y-6">
-                            {/* Trip Selection Summary Bar */}
-                            <div className="flex items-center justify-between p-3.5 rounded-xl bg-muted/60 border text-xs">
-                                <div className="space-y-0.5">
-                                    <div className="font-extrabold text-sm text-foreground flex items-center gap-2">
+                            {/* Prominent Bus Trip & Departure Schedule Selector */}
+                            <div className="rounded-xl border bg-muted/40 p-4 space-y-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <label htmlFor="adminTripSelect" className="text-xs font-black tracking-wider uppercase text-foreground flex items-center gap-2">
                                         <Bus className="h-4 w-4 text-emerald-600" />
-                                        <span>{selectedTrip.route?.origin?.name || selectedTrip.origin} ➔ {selectedTrip.route?.destination?.name || selectedTrip.destination}</span>
-                                        <span className="text-xs font-mono font-bold text-muted-foreground">({selectedTrip.bus?.bus_number || selectedTrip.bus_number})</span>
-                                    </div>
-                                    <p className="text-muted-foreground">
-                                        Schedule: {new Date(selectedTrip.departure_time).toLocaleString()} • Base Fare: ₱{unitFare}.00 per seat
-                                    </p>
+                                        Bus Trip & Departure Schedule
+                                    </label>
+                                    {selectedTrip && (
+                                        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-300 dark:border-emerald-800 flex items-center gap-1.5 w-fit">
+                                            <span>Unit Fare: ₱{unitFare}.00</span>
+                                            <span>•</span>
+                                            <span>{selectedTrip.bus?.seat_capacity || 45} Seats ({selectedTrip.bus?.bus_type || "Aircon"})</span>
+                                        </span>
+                                    )}
                                 </div>
-                                <Button variant="outline" size="sm" onClick={() => setSelectedTrip(null)} className="text-xs">
-                                    Change Trip
-                                </Button>
+
+                                {loadingTrips ? (
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 border rounded-xl bg-background">
+                                        <RefreshCw className="h-4 w-4 animate-spin text-emerald-600" />
+                                        <span>Loading scheduled departures...</span>
+                                    </div>
+                                ) : trips.length === 0 ? (
+                                    <div className="p-3 text-xs text-amber-700 bg-amber-50 rounded-xl border border-amber-200">
+                                        No active scheduled trips found. Please add a trip under Trips & Schedules.
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
+                                        <div className={selectedTrip ? "lg:col-span-8" : "lg:col-span-12"}>
+                                            <select
+                                                id="adminTripSelect"
+                                                className="w-full text-xs sm:text-sm font-semibold bg-background text-foreground border border-border rounded-xl px-3 py-2.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                                                value={selectedTrip?.id || ""}
+                                                onChange={(e) => {
+                                                    const tripId = e.target.value;
+                                                    const t = trips.find((x) => String(x.id) === tripId);
+                                                    if (t) handleSelectTrip(t);
+                                                }}
+                                            >
+                                                {!selectedTrip && <option value="" disabled>-- Select a Bus Trip & Schedule --</option>}
+                                                {trips.map((t) => {
+                                                    const orig = t.route?.origin?.name || t.origin || "Cubao";
+                                                    const dst = t.route?.destination?.name || t.destination || "Daet";
+                                                    const busNum = t.bus?.bus_number || t.bus_number || "Bus TBD";
+                                                    const busType = t.bus?.bus_type || t.service_class || "Regular Aircon";
+                                                    const dep = new Date(t.departure_time);
+                                                    const dateStr = dep.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+                                                    const timeStr = dep.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+                                                    return (
+                                                        <option key={t.id} value={t.id}>
+                                                            {orig} ➔ {dst} • {dateStr} at {timeStr} • {busNum} ({busType}) • ₱{t.fare_amount || 850}.00
+                                                        </option>
+                                                    );
+                                                })}
+                                            </select>
+                                        </div>
+
+                                        {selectedTrip && (
+                                            <div className="lg:col-span-4 flex items-center justify-between sm:justify-end gap-3 text-xs bg-background p-2 rounded-xl border shadow-2xs">
+                                                <div className="flex items-center gap-1.5 font-bold text-foreground">
+                                                    <Clock className="h-3.5 w-3.5 text-emerald-600" />
+                                                    <span>
+                                                        {new Date(selectedTrip.departure_time).toLocaleDateString([], { month: "short", day: "numeric" })} • {new Date(selectedTrip.departure_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                                    </span>
+                                                </div>
+                                                <span className="font-mono font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-md border border-emerald-200 dark:border-emerald-800">
+                                                    ₱{unitFare}.00
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                                {/* Left Column: Seat Picker with Multi-Seat Selection */}
-                                <div className="lg:col-span-5 space-y-3">
+                            {selectedTrip ? (
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-6">
+                                    {/* Left Column: Seat Picker with Multi-Seat Selection */}
+                                    <div className="lg:col-span-5 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
                                             2. Select Seat(s)
@@ -1000,15 +1007,21 @@ export function AdminNewReservationDialog({
                                             type="button"
                                             onClick={handleCreateBooking}
                                             disabled={submitting || (!selectedSeat && selectedSeats.length === 0)}
-                                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold h-11 shadow-md text-sm"
+                                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold h-11 shadow-md text-sm cursor-pointer"
                                         >
                                             {submitting ? "Confirming & Locking Seats..." : `Confirm Reservation & Lock Seats (₱${netFare}.00)`}
                                         </Button>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        ) : (
+                            <div className="py-12 text-center text-muted-foreground border-2 border-dashed rounded-2xl space-y-2">
+                                <Bus className="h-10 w-10 mx-auto text-muted-foreground/40" />
+                                <p className="font-bold text-sm text-foreground">Please select a bus trip schedule above to view seats and passenger form</p>
+                            </div>
+                        )}
+                    </div>
+                )}
                 </div>
             </DialogContent>
         </Dialog>

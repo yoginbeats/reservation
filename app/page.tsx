@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 import { getTodayPH } from "@/lib/date-utils";
+import { AcademicDisclaimerCard, AcademicDisclaimerModal } from "@/components/academic-disclaimer";
 
 export default function Home() {
     const router = useRouter();
@@ -48,6 +49,9 @@ export default function Home() {
 
     return (
         <div className="min-h-screen bg-zinc-950 font-sans text-white">
+            {/* ACADEMIC DISCLAIMER MODAL (AUTO-OPENS ON FIRST ARRIVAL) */}
+            <AcademicDisclaimerModal />
+
             {/* HERO SECTION WITH SCENIC HIGHWAY BACKGROUND */}
             <section className="relative min-h-[calc(100vh-120px)] flex items-center justify-center overflow-hidden bg-cover bg-center bg-no-repeat py-12 px-4 sm:px-6"
                 style={{
@@ -58,6 +62,9 @@ export default function Home() {
                 <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:32px_32px] opacity-10 pointer-events-none" />
 
                 <div className="container mx-auto max-w-7xl relative z-10">
+                    {/* PERMANENT ACADEMIC DISCLAIMER CARD ON FIRST PAGE */}
+                    <AcademicDisclaimerCard className="mb-8" />
+
                     <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
                         
                         {/* LEFT COLUMN: HERO TEXT & BADGES */}
