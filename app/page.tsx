@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,11 @@ import {
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 import { getTodayPH } from "@/lib/date-utils";
 import { AcademicDisclaimerCard, AcademicDisclaimerModal } from "@/components/academic-disclaimer";
+import { createClient } from "@/lib/supabase/client";
 
 export default function Home() {
     const router = useRouter();
+    const [user, setUser] = useState<any>(null);
     const [tripType, setTripType] = useState<"one-way" | "round-trip">("one-way");
     const [serviceClass, setServiceClass] = useState<"REGULAR AIRCON" | "SUPER DELUXE" | "FIRST CLASS">("REGULAR AIRCON");
     const [origin, setOrigin] = useState("Cubao");
@@ -28,6 +30,26 @@ export default function Home() {
     const [departureDate, setDepartureDate] = useState(() => getTodayPH());
     const [returnDate, setReturnDate] = useState("");
     const [passengers, setPassengers] = useState("1");
+    const supabase = createClient();
+
+    useEffect(() => {
+        const checkUserSession = async () => {
+            try {
+                const res = await fetch("/api/auth/session");
+                const data = await res.json();
+                if (data?.authenticated && data?.user) {
+                    setUser(data.user);
+                    return;
+                }
+            } catch {}
+
+            try {
+                const { data } = await supabase.auth.getUser();
+                if (data?.user) setUser(data.user);
+            } catch {}
+        };
+        checkUserSession();
+    }, []);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -44,7 +66,15 @@ export default function Home() {
         if (returnDate && tripType === "round-trip") {
             params.set("returnDate", returnDate);
         }
-        router.push(`/book?${params.toString()}`);
+        const targetUrl = `/book?${params.toString()}`;
+
+        // Require sign-in before booking
+        if (!user) {
+            router.push(`/login?redirect=${encodeURIComponent(targetUrl)}&notice=login_required`);
+            return;
+        }
+
+        router.push(targetUrl);
     };
 
     return (
@@ -315,7 +345,10 @@ export default function Home() {
                             </div>
                             <h4 className="font-bold text-lg text-white">Cubao ➔ Daet</h4>
                             <p className="text-xs text-zinc-400">49 Seats • Daily Standard Express</p>
-                            <Link href={`/book?origin=Cubao&destination=Daet&date=${getTodayPH()}&serviceClass=REGULAR+AIRCON`} className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2">
+                            <Link 
+                                href={user ? `/book?origin=Cubao&destination=Daet&date=${getTodayPH()}&serviceClass=REGULAR+AIRCON` : `/login?redirect=${encodeURIComponent(`/book?origin=Cubao&destination=Daet&date=${getTodayPH()}&serviceClass=REGULAR+AIRCON`)}&notice=login_required`} 
+                                className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2"
+                            >
                                 Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
                             </Link>
                         </div>
@@ -327,7 +360,10 @@ export default function Home() {
                             </div>
                             <h4 className="font-bold text-lg text-white">PITX ➔ Daet</h4>
                             <p className="text-xs text-zinc-400">43 Seats • Onboard Restroom & Direct SLEX Route</p>
-                            <Link href={`/book?origin=PITX&destination=Daet&date=${getTodayPH()}&serviceClass=SUPER+DELUXE`} className="inline-flex items-center text-xs font-bold text-amber-400 hover:underline pt-2">
+                            <Link 
+                                href={user ? `/book?origin=PITX&destination=Daet&date=${getTodayPH()}&serviceClass=SUPER+DELUXE` : `/login?redirect=${encodeURIComponent(`/book?origin=PITX&destination=Daet&date=${getTodayPH()}&serviceClass=SUPER+DELUXE`)}&notice=login_required`} 
+                                className="inline-flex items-center text-xs font-bold text-amber-400 hover:underline pt-2"
+                            >
                                 Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
                             </Link>
                         </div>
@@ -339,7 +375,10 @@ export default function Home() {
                             </div>
                             <h4 className="font-bold text-lg text-white">Cubao ➔ Daet</h4>
                             <p className="text-xs text-zinc-400">41 Seats • Premier Sleeper Recliner with Restroom</p>
-                            <Link href={`/book?origin=Cubao&destination=Daet&date=${getTodayPH()}&serviceClass=FIRST+CLASS`} className="inline-flex items-center text-xs font-bold text-purple-400 hover:underline pt-2">
+                            <Link 
+                                href={user ? `/book?origin=Cubao&destination=Daet&date=${getTodayPH()}&serviceClass=FIRST+CLASS` : `/login?redirect=${encodeURIComponent(`/book?origin=Cubao&destination=Daet&date=${getTodayPH()}&serviceClass=FIRST+CLASS`)}&notice=login_required`} 
+                                className="inline-flex items-center text-xs font-bold text-purple-400 hover:underline pt-2"
+                            >
                                 Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
                             </Link>
                         </div>

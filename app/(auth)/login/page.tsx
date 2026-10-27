@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -32,6 +32,10 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    // Redirect & Reservation Requirement States
+    const [redirectTarget, setRedirectTarget] = useState("/dashboard");
+    const [isReservationAuth, setIsReservationAuth] = useState(false);
+
     // Form States
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -46,6 +50,20 @@ export default function LoginPage() {
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
     const supabase = createClient();
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            const redir = params.get("redirect");
+            const notice = params.get("notice");
+            if (redir) {
+                setRedirectTarget(redir);
+            }
+            if (notice === "login_required" || redir?.includes("/book")) {
+                setIsReservationAuth(true);
+            }
+        }
+    }, []);
 
     const handleStaffGateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -107,7 +125,7 @@ export default function LoginPage() {
             } catch {}
 
             router.refresh();
-            router.push("/dashboard");
+            router.push(redirectTarget || "/dashboard");
         } catch (err: any) {
             console.error("Passenger Login Error:", err);
             setError(err?.message || "An unexpected error occurred during login.");
@@ -120,10 +138,14 @@ export default function LoginPage() {
         setError(null);
         setIsLoading(true);
         try {
+            const callbackTarget = redirectTarget && redirectTarget !== "/dashboard"
+                ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTarget)}`
+                : `${window.location.origin}/auth/callback`;
+
             const { error: oauthError } = await supabase.auth.signInWithOAuth({
                 provider: "google",
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: callbackTarget,
                 },
             });
             if (oauthError) {
@@ -277,6 +299,20 @@ export default function LoginPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-5 p-6 sm:p-8">
+                                {isReservationAuth && (
+                                    <div className="rounded-xl border border-amber-500/50 bg-amber-950/40 p-4 text-xs text-amber-200 flex items-start gap-3 shadow-lg shadow-amber-950/30">
+                                        <ShieldCheck className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+                                        <div className="space-y-1">
+                                            <p className="font-black text-sm text-amber-300">
+                                                Kailangan Mag-login Bago Mag-reserve
+                                            </p>
+                                            <p className="text-zinc-300 leading-relaxed">
+                                                Mangyaring mag-sign in muna o lumikha ng account upang mai-save nang ligtas ang iyong napiling bus schedule, upuan, at official digital QR ticket.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <form onSubmit={handleEmailLogin} className="space-y-4">
                                     {error && (
                                         <div className="rounded-xl bg-red-950/70 border border-red-800 p-3.5 text-xs text-red-200 flex items-start gap-2.5 shadow-inner">
@@ -384,7 +420,7 @@ export default function LoginPage() {
 
                                 <div className="pt-2 text-center text-xs text-zinc-400">
                                     <span>Don&apos;t have a passenger account yet? </span>
-                                    <Link href="/register" className="font-bold text-red-400 hover:text-red-300 transition-colors hover:underline">
+                                    <Link href={redirectTarget && redirectTarget !== "/dashboard" ? `/register?redirect=${encodeURIComponent(redirectTarget)}` : "/register"} className="font-bold text-red-400 hover:text-red-300 transition-colors hover:underline">
                                         Create an Account
                                     </Link>
                                 </div>
