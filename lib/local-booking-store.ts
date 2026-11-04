@@ -109,6 +109,9 @@ export interface CachedBooking {
         departure_time: string;
         bus_number: string;
     };
+    receipt_image_url?: string;
+    email_dispatched?: boolean;
+    email_dispatched_at?: string;
     refund_info?: RefundRecord;
     rebooking_info?: RebookingRecord;
 }
@@ -203,6 +206,16 @@ export function getLocalBookingByQrToken(qrToken: string): CachedBooking | undef
     const cleanToken = qrToken.trim().toUpperCase();
     const list = getLocalBookings();
     return list.find(b => b.qr_token && b.qr_token.trim().toUpperCase() === cleanToken);
+}
+
+export function getLocalBookingByGcashRef(ref: string): CachedBooking | undefined {
+    if (!ref) return undefined;
+    const clean = ref.trim().replace(/^GCASH-/i, "").toLowerCase();
+    const list = getLocalBookings();
+    return list.find(b => {
+        const bRef = (b.transaction_ref || "").replace(/^GCASH-/i, "").toLowerCase();
+        return bRef === clean || bRef.includes(clean);
+    });
 }
 
 export function updateLocalTicketStatus(

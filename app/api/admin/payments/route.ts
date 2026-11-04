@@ -90,6 +90,7 @@ export async function GET(req: NextRequest) {
                 qr_token: t?.qr_token || t?.qr_code || `TKT-${b.id.slice(0, 8).toUpperCase()}`,
                 booking_source: b.booking_source || "ONLINE",
                 booking_terminal_id: b.booking_terminal_id || null,
+                receipt_image_url: p?.receipt_image_url || p?.receipt_url || b.receipt_image_url || null,
                 trip: {
                     id: b.trip_id || b.trip?.id,
                     bus_id: b.trip?.bus_id || b.trip?.bus?.id,
@@ -123,6 +124,7 @@ export async function GET(req: NextRequest) {
                 qr_token: t?.qr_code || t?.qr_token || `TKT-${r.id.slice(0, 8).toUpperCase()}`,
                 booking_source: r.booking_source || "WALK_IN",
                 booking_terminal_id: r.terminal_id || null,
+                receipt_image_url: p?.receipt_image_url || p?.receipt_url || r.receipt_image_url || null,
                 trip: {
                     id: r.trip_id || r.trip?.id,
                     bus_id: r.trip?.bus_id || r.trip?.bus?.id,
@@ -223,6 +225,32 @@ export async function POST(req: NextRequest) {
             // Update tickets
             await supabase.from("tickets").update({ ticket_status: "VALID" }).eq("booking_id", bookingId);
             await supabase.from("tickets").update({ ticket_status: "VALID" }).eq("reservation_id", bookingId);
+
+            // Auto-dispatch confirmed e-ticket email to passenger if email is available
+            try {
+                const targetBooking = getLocalBookings().find(b => b.id === bookingId);
+                const passengerEmail = targetBooking?.passenger_email;
+                if (passengerEmail) {
+                    const originUrl = req.nextUrl?.origin || "http://localhost:3000";
+                    fetch(`${originUrl}/api/tickets/send-ticket-email`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            booking_id: bookingId,
+                            recipient_email: passengerEmail,
+                            passenger_name: targetBooking.passenger_name,
+                            trip: targetBooking.trip,
+                            seat_number: targetBooking.seat_number,
+                            seat_numbers: targetBooking.seat_numbers,
+                            total_price: targetBooking.total_price,
+                            qr_token: targetBooking.qr_token,
+                            gcash_ref: targetBooking.transaction_ref,
+                        }),
+                    }).catch(e => console.warn("Email dispatch on approval notice:", e));
+                }
+            } catch (mailErr) {
+                console.warn("Failed to trigger confirmation email:", mailErr);
+            }
 
             return NextResponse.json({
                 success: true,

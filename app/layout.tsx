@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { GlobalHeader } from "@/components/global-header";
+import { GlobalFooter } from "@/components/global-footer";
 import { AnnouncementPanel } from "@/components/announcement-panel";
+import { AcademicDisclaimerModal } from "@/components/academic-disclaimer-modal";
+import { DataPrivacyModal } from "@/components/data-privacy-modal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,11 +43,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col justify-between`}
       >
+        <AcademicDisclaimerModal />
+        <DataPrivacyModal />
         <AnnouncementPanel />
         <GlobalHeader />
-        <main>{children}</main>
+        <main className="flex-1">{children}</main>
+        <GlobalFooter />
       </body>
     </html>
   );

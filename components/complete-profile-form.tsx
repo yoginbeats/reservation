@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Phone, Mail, Calendar, MapPin, Lock, Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Phone, Mail, Calendar, MapPin, Lock, Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle2, ArrowLeft, Trash2 } from "lucide-react";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
+import { DeleteAccountModal } from "@/components/delete-account-modal";
 
 interface CompleteProfileFormProps {
     user: any;
@@ -62,6 +63,7 @@ export function CompleteProfileForm({
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     // Calculate age automatically when birthdate changes
     const handleBirthdateChange = (val: string) => {
@@ -431,6 +433,40 @@ export function CompleteProfileForm({
                         </CardFooter>
                     </form>
                 </Card>
+
+                {/* Danger Zone: Account Deletion */}
+                <div className="mt-6 rounded-2xl border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20 p-5 shadow-xs">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <h3 className="text-sm font-bold text-red-900 dark:text-red-200 flex items-center gap-2">
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                                Danger Zone: Delete Passenger Account
+                            </h3>
+                            <p className="text-xs text-red-700/80 dark:text-red-300/80">
+                                Once deleted, your passenger profile, saved address, phone number, and access to digital tickets will be permanently removed.
+                            </p>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowDeleteModal(true)}
+                            className="shrink-0 border-red-300 dark:border-red-800 text-red-600 hover:bg-red-600 hover:text-white dark:hover:bg-red-700 font-bold text-xs transition-colors"
+                        >
+                            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                            Delete Account
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Delete Account Modal Dialog */}
+                <DeleteAccountModal
+                    isOpen={showDeleteModal}
+                    onClose={() => setShowDeleteModal(false)}
+                    userId={user.id}
+                    userEmail={userEmail}
+                    userName={`${firstName} ${lastName}`.trim()}
+                />
             </div>
         </div>
     );

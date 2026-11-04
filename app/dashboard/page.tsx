@@ -183,24 +183,7 @@ export default async function ClientDashboard() {
             />
 
             {/* Quick Actions */}
-            <div className="grid gap-4 md:grid-cols-3">
-                <Link href="/book" className="block">
-                    <Card className="group h-full cursor-pointer transition-all hover:border-red-500 hover:shadow-md">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div className="rounded-full bg-red-100 p-3 dark:bg-red-900/30">
-                                    <CalendarCheck className="h-6 w-6 text-red-600" />
-                                </div>
-                                <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <CardTitle className="mb-2">New Reservation</CardTitle>
-                            <CardDescription>Book a new trip for your upcoming travel via PayMongo.</CardDescription>
-                        </CardContent>
-                    </Card>
-                </Link>
-
+            <div className="grid gap-4 md:grid-cols-2">
                 <Link href="/my-tickets" className="block">
                     <Card className="group h-full cursor-pointer transition-all hover:border-emerald-500 hover:shadow-md">
                         <CardHeader>
@@ -298,8 +281,8 @@ export default async function ClientDashboard() {
                                 <p className="text-xs text-muted-foreground max-w-xs mt-1">
                                     You haven&apos;t made any reservations yet. Start your journey today!
                                 </p>
-                                <Button variant="link" asChild className="mt-2 text-red-600">
-                                    <Link href="/book">Book Now</Link>
+                                <Button variant="link" asChild className="mt-2 text-red-600 font-bold">
+                                    <Link href="/">Book on Home Page &rarr;</Link>
                                 </Button>
                             </div>
                         )}

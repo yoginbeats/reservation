@@ -1,16 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SYSTEM_CREDENTIALS, findSystemCredential } from "@/lib/constants/credentials";
 import { createClient } from "@/lib/supabase/server";
+import { enforceRateLimit } from "@/lib/rate-limiter";
+import { validateAndSanitizeEmail, sanitizeString } from "@/lib/validators";
+import { SESSION_MAX_AGE_SECONDS } from "@/lib/session-config";
 
 export async function POST(req: NextRequest) {
+    // 🔒 Rate Limiting: Max 10 login attempts per 15 minutes per IP (Brute-force protection)
+    const rateLimitResponse = await enforceRateLimit(req, "auth_login", 10, 15 * 60 * 1000);
+    if (rateLimitResponse) return rateLimitResponse;
+
     try {
         const body = await req.json();
-        const email = (body.email || "").trim().toLowerCase();
+        const rawEmail = body.email || "";
         const password = (body.password || "").trim();
 
-        if (!email || !password) {
+        // 🔒 Strict Email Sanitization and Validation
+        const emailValidation = validateAndSanitizeEmail(rawEmail);
+        if (!emailValidation.isValid) {
             return NextResponse.json(
-                { success: false, error: "Please enter both email and password." },
+                { success: false, error: emailValidation.error || "Please enter a valid email address." },
+                { status: 400 }
+            );
+        }
+
+        const email = emailValidation.sanitized;
+
+        if (!password) {
+            return NextResponse.json(
+                { success: false, error: "Please enter your password." },
                 { status: 400 }
             );
         }
@@ -56,7 +74,7 @@ export async function POST(req: NextRequest) {
                 redirectUrl: matched.portalUrl,
             });
 
-            // Set system session cookies (available to Middleware and Server/Client Components)
+            // Set system session cookies with strict 15-minute maxAge timeout
             const sessionPayload = JSON.stringify({
                 user: sessionUser,
                 role: matched.role,
@@ -67,15 +85,17 @@ export async function POST(req: NextRequest) {
             response.cookies.set("superlines_auth_session", sessionPayload, {
                 path: "/",
                 sameSite: "lax",
-                httpOnly: false,
-                maxAge: 60 * 60 * 24 * 7, // 7 days
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                maxAge: SESSION_MAX_AGE_SECONDS, // 15-minute timeout
             });
 
             response.cookies.set("superlines_user_role", matched.role, {
                 path: "/",
                 sameSite: "lax",
-                httpOnly: false,
-                maxAge: 60 * 60 * 24 * 7,
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                maxAge: SESSION_MAX_AGE_SECONDS, // 15-minute timeout
             });
 
             if (matched.terminal?.name) {
@@ -151,8 +171,9 @@ export async function POST(req: NextRequest) {
             response.cookies.set("superlines_auth_session", sessionPayload, {
                 path: "/",
                 sameSite: "lax",
-                httpOnly: false,
-                maxAge: 60 * 60 * 24 * 7,
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                maxAge: SESSION_MAX_AGE_SECONDS, // 15-minute timeout
             });
 
             return response;

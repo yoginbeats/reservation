@@ -116,6 +116,67 @@ export async function GET(req: NextRequest) {
                 console.warn("Supabase ticket query encountered error:", err);
             }
 
+            // Step A2: Check Supabase reservations fallback
+            if (!matchedTicket) {
+                try {
+                    const { data: resTicket } = await supabase
+                        .from("tickets")
+                        .select(`
+                            id,
+                            qr_code,
+                            created_at,
+                            reservation:reservations(
+                                id,
+                                passenger_name,
+                                seat_number,
+                                total_price,
+                                status,
+                                trip:trips(
+                                    id,
+                                    departure_time,
+                                    bus:buses(bus_number),
+                                    route:routes(
+                                        origin:origin_terminal_id(name),
+                                        destination:destination_terminal_id(name)
+                                    )
+                                )
+                            )
+                        `)
+                        .or(`qr_token.ilike.${cleanToken},qr_code.ilike.${cleanToken}`)
+                        .maybeSingle();
+
+                    if (resTicket) {
+                        const r = resTicket.reservation as any;
+                        const trip = r?.trip as any;
+                        matchedTicket = {
+                            id: resTicket.id,
+                            qr_token: (resTicket as any).qr_code || (resTicket as any).qr_token || cleanToken,
+                            ticket_status: (resTicket as any).status || (resTicket as any).ticket_status || "VALID",
+                            created_at: resTicket.created_at,
+                            passenger_name: r?.passenger_name || "Passenger",
+                            passenger_contact: "",
+                            seat_number: r?.seat_number || 1,
+                            seat_numbers: [r?.seat_number || 1],
+                            total_price: Number(r?.total_price || 850),
+                            booking_status: r?.status || "CONFIRMED",
+                            payment_status: "PAID",
+                            booking_source: "ONLINE",
+                            is_discounted: false,
+                            discounted_passengers: [],
+                            trip: {
+                                id: trip?.id || "",
+                                origin: trip?.route?.origin?.name || "Cubao",
+                                destination: trip?.route?.destination?.name || "Daet",
+                                departure_time: trip?.departure_time || new Date().toISOString(),
+                                bus_number: trip?.bus?.bus_number || "Superlines Express",
+                            },
+                        };
+                    }
+                } catch (resErr) {
+                    console.warn("Supabase reservations ticket fallback note:", resErr);
+                }
+            }
+
             // Step B: Check Local Store Fallback (or enrich discount info)
             const localBooking = getLocalBookingByQrToken(cleanToken);
             if (localBooking) {
@@ -221,6 +282,34 @@ export async function GET(req: NextRequest) {
                 console.warn("Error querying trip bookings:", err);
             }
 
+            if (manifestBookings.length === 0) {
+                try {
+                    const { data: dbRes, error: resErr } = await supabase
+                        .from("reservations")
+                        .select("id, passenger_name, seat_number, total_price, status, created_at")
+                        .eq("trip_id", tripId)
+                        .not("status", "in", '("CANCELLED","REJECTED")');
+
+                    if (!resErr && dbRes) {
+                        manifestBookings = dbRes.map((r: any) => ({
+                            id: r.id,
+                            seat_number: r.seat_number,
+                            passenger_name: r.passenger_name,
+                            passenger_contact: "",
+                            booking_source: "ONLINE",
+                            booking_status: r.status || "CONFIRMED",
+                            payment_status: "PAID",
+                            ticket_status: "VALID",
+                            qr_token: `TKT-${r.id.slice(0, 8).toUpperCase()}`,
+                            created_at: r.created_at,
+                            discounted_passengers: [],
+                        }));
+                    }
+                } catch (resErr) {
+                    console.warn("Error querying trip reservations for manifest:", resErr);
+                }
+            }
+
             // Fetch trip details to ensure accurate trip-level matching
             let tripMeta: any = null;
             try {
@@ -303,68 +392,12 @@ export async function POST(req: NextRequest) {
         const { token, action, trip_id, bus_number, bus_type, trip_status } = body || {};
         const supabase = await createClient();
 
-        // 1. DYNAMIC BUS UNIT REASSIGNMENT (On-the-fly bus change by Conductor/Dispatcher)
+        // 1. DYNAMIC BUS UNIT REASSIGNMENT RESTRICTION
         if (action === "UPDATE_BUS_UNIT") {
-            if (!trip_id || !bus_number) {
-                return NextResponse.json({ error: "Missing trip_id or bus_number parameter." }, { status: 400 });
-            }
-
-            const cleanBusNum = bus_number.trim().toUpperCase();
-            const cleanBusType = (bus_type || "REGULAR AIRCON").trim().toUpperCase();
-            let busId: string | null = null;
-
-            try {
-                // Check if bus exists in fleet
-                const { data: existingBus } = await supabase
-                    .from("buses")
-                    .select("id")
-                    .ilike("bus_number", cleanBusNum)
-                    .maybeSingle();
-
-                if (existingBus) {
-                    busId = existingBus.id;
-                } else {
-                    // Register dynamic bus unit into fleet
-                    const { data: newBus } = await supabase
-                        .from("buses")
-                        .insert({
-                            bus_number: cleanBusNum,
-                            bus_type: cleanBusType,
-                            capacity: 45,
-                        })
-                        .select("id")
-                        .single();
-
-                    if (newBus) busId = newBus.id;
-                }
-            } catch (bErr) {
-                console.warn("Could not query or register bus unit in buses table:", bErr);
-            }
-
-            let tripUpdated = false;
-            try {
-                const updatePayload: any = {};
-                if (busId) updatePayload.bus_id = busId;
-                if (trip_status) updatePayload.status = trip_status;
-
-                const { error: tripErr } = await supabase
-                    .from("trips")
-                    .update(updatePayload)
-                    .eq("id", trip_id);
-
-                if (!tripErr) tripUpdated = true;
-            } catch (tErr) {
-                console.warn("Could not update trip bus_id:", tErr);
-            }
-
-            return NextResponse.json({
-                success: true,
-                message: `Bus unit "${cleanBusNum}" assigned to trip successfully.`,
-                bus_number: cleanBusNum,
-                bus_type: cleanBusType,
-                trip_status: trip_status || "SCHEDULED",
-                database_synced: tripUpdated,
-            });
+            return NextResponse.json(
+                { success: false, error: "Access Denied: Modifying and assigning bus units is restricted exclusively to the Administrator." },
+                { status: 403 }
+            );
         }
 
         // 2. CONFIRM PASSENGER BOARDING (Mark ticket as USED)
@@ -386,7 +419,7 @@ export async function POST(req: NextRequest) {
                 .update({ ticket_status: "USED" })
                 .ilike("qr_token", cleanToken)
                 .select("id, booking:bookings(trip_id)")
-                .single();
+                .maybeSingle();
 
             if (!tktErr && ticketRecord) {
                 dbUpdated = true;
@@ -401,6 +434,28 @@ export async function POST(req: NextRequest) {
                         status: "SUCCESS",
                         reason: "Verified and Boarded via Conductor Scanner",
                     });
+                }
+            } else {
+                // Fallback for reservation tickets with qr_code
+                const { data: rTkt, error: rErr } = await supabase
+                    .from("tickets")
+                    .update({ status: "USED" })
+                    .ilike("qr_code", cleanToken)
+                    .select("id, reservation:reservations(trip_id)")
+                    .maybeSingle();
+
+                if (!rErr && rTkt) {
+                    dbUpdated = true;
+                    const tripId = (rTkt.reservation as any)?.trip_id;
+                    if (user && tripId) {
+                        await supabase.from("ticket_verifications").insert({
+                            ticket_id: rTkt.id,
+                            conductor_id: user.id,
+                            trip_id: tripId,
+                            status: "SUCCESS",
+                            reason: "Verified and Boarded via Conductor Scanner",
+                        });
+                    }
                 }
             }
         } catch (dbErr) {

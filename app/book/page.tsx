@@ -33,7 +33,9 @@ import {
     Info,
     Calculator,
     RefreshCw,
-    Search
+    Search,
+    AlertTriangle,
+    X
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
@@ -70,6 +72,46 @@ function BookTripContent() {
     const [customQrUrl, setCustomQrUrl] = useState<string | null>(null);
     const [copied, setCopied] = useState<string | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<"gcash_qr" | "paymongo">("gcash_qr");
+    const [receiptImage, setReceiptImage] = useState<string | null>(null);
+    const [receiptFileName, setReceiptFileName] = useState<string>("");
+    const [holdSeconds, setHoldSeconds] = useState(15 * 60); // 15-minute hold timer
+
+    // 15-Minute Seat Hold Countdown
+    useEffect(() => {
+        if (step !== 3) {
+            setHoldSeconds(15 * 60);
+            return;
+        }
+        const timer = setInterval(() => {
+            setHoldSeconds((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    alert("⚠️ Ang inyong 15-minutong reservation hold ay nag-expire na. Pakipili ulit ang inyong upuan.");
+                    setStep(2);
+                    return 15 * 60;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [step]);
+
+    const formatHoldTime = (sec: number) => {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return `${m}:${s < 10 ? "0" : ""}${s}`;
+    };
+
+    const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setReceiptFileName(file.name);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setReceiptImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    };
 
     const supabase = createClient();
     const router = useRouter();
@@ -384,6 +426,7 @@ function BookTripContent() {
                     discountedPassengers: activeDiscountedList,
                     discountIdNumber: discountIdSummary,
                     gcashRefNumber: gcashRef.trim(),
+                    receiptImageUrl: receiptImage || "",
                     trip: {
                         id: selectedTrip.id,
                         origin: selectedTrip.origin || selectedTrip.route?.origin?.name || "Cubao",
@@ -470,10 +513,19 @@ function BookTripContent() {
                 body: JSON.stringify({
                     tripId: selectedTrip.id,
                     seatNumber: effectiveSeat,
+                    seatNumbers: selectedSeats.length > 0 ? selectedSeats : [effectiveSeat],
+                    seatCount,
                     passengerName,
                     passengerContact,
                     passengerEmail,
                     totalPrice: finalFare,
+                    originalPrice: totalBaseFare,
+                    passengerType: primaryPassengerType,
+                    discountAmount: totalDiscountAmount,
+                    discountCount: effectiveDiscountCount,
+                    discountedPassengers: activeDiscountedList,
+                    discountIdNumber: discountIdSummary,
+                    trip: selectedTrip,
                 }),
             });
 
@@ -491,9 +543,18 @@ function BookTripContent() {
                         passenger_name: passengerName,
                         passenger_contact: passengerContact,
                         passenger_email: passengerEmail,
-                        seat_number: selectedSeat,
-                        total_price: selectedTrip.fare_amount || 850,
+                        passenger_type: primaryPassengerType,
+                        discount_amount: totalDiscountAmount,
+                        discount_count: effectiveDiscountCount,
+                        discounted_passengers: activeDiscountedList,
+                        discount_id: discountIdSummary,
+                        seat_number: effectiveSeat,
+                        seat_numbers: selectedSeats.length > 0 ? selectedSeats : [effectiveSeat],
+                        seat_count: seatCount,
+                        total_price: finalFare,
+                        original_price: totalBaseFare,
                         trip: selectedTrip,
+                        payment_method: "PAYMONGO",
                         created_at: new Date().toISOString()
                     };
                     localStorage.setItem(`superlines_booking_${result.booking_id}`, JSON.stringify(pendingTicket));
@@ -797,6 +858,32 @@ function BookTripContent() {
                         </Button>
                     </div>
 
+                    {/* 15-MINUTE SEAT HOLD COUNTDOWN BANNER */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-amber-950/70 via-zinc-900 to-amber-950/70 border-2 border-amber-500/60 p-4 text-white shadow-lg backdrop-blur-md">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex-shrink-0 animate-pulse">
+                                <Clock className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-500 text-zinc-950">
+                                        Temporary Hold Active
+                                    </span>
+                                    <span className="text-xs text-amber-300/80 font-bold">Anti-Double Booking Protected</span>
+                                </div>
+                                <p className="text-xs text-zinc-300 mt-1">
+                                    Your selected seat is temporarily reserved. Complete payment before the timer expires.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center sm:flex-col items-end justify-between border-t sm:border-t-0 sm:border-l border-amber-500/20 pt-2 sm:pt-0 sm:pl-4">
+                            <span className="text-[10px] uppercase tracking-wider text-amber-400 font-bold">Hold Expires In</span>
+                            <span className="font-mono text-2xl font-black text-amber-300 tracking-tight">
+                                {formatHoldTime(holdSeconds)}
+                            </span>
+                        </div>
+                    </div>
+
                     {/* Trip Summary Card */}
                     <Card className="bg-red-50/50 dark:bg-red-950/20 border-red-200">
                         <CardContent className="p-4 space-y-2 text-sm">
@@ -824,467 +911,260 @@ function BookTripContent() {
                         </CardContent>
                     </Card>
 
-                    {/* Payment Mode Selector Tabs */}
-                    <div className="flex rounded-lg bg-zinc-100 dark:bg-zinc-800 p-1">
-                        <button
-                            type="button"
-                            onClick={() => setPaymentMethod("gcash_qr")}
-                            className={`flex-1 py-2 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-2 ${
-                                paymentMethod === "gcash_qr"
-                                    ? "bg-blue-600 text-white shadow"
-                                    : "text-muted-foreground hover:text-foreground"
-                            }`}
-                        >
-                            <QrCode className="h-4 w-4" />
-                            Direct GCash QR (Instant)
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setPaymentMethod("paymongo")}
-                            className={`flex-1 py-2 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-2 ${
-                                paymentMethod === "paymongo"
-                                    ? "bg-blue-600 text-white shadow"
-                                    : "text-muted-foreground hover:text-foreground"
-                            }`}
-                        >
-                            <Wallet className="h-4 w-4" />
-                            PayMongo Checkout Link
-                        </button>
-                    </div>
-
-                    {paymentMethod === "gcash_qr" ? (
-                        <form onSubmit={handleConfirmDirectGcash} className="space-y-6">
-                            {/* Passenger Details */}
-                            <div className="space-y-4 rounded-xl border p-4 bg-card">
-                                <h3 className="font-bold text-sm text-foreground">1. Passenger Information</h3>
+                    {/* Official PayMongo GCash Gateway Payment Form */}
+                    <form onSubmit={handleProceedToCheckout} className="space-y-6">
+                        {/* 1. Passenger Details */}
+                        <div className="space-y-4 rounded-xl border p-4 bg-card">
+                            <div className="flex items-center justify-between border-b pb-2">
+                                <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+                                    <User className="h-4 w-4 text-blue-600" />
+                                    <span>1. Passenger Contact & Ticket Delivery Information</span>
+                                </h3>
+                                <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                                    Required for Boarding Pass
+                                </span>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="pName">Passenger Full Name (Lead Passenger) *</Label>
+                                <Input
+                                    id="pName"
+                                    required
+                                    placeholder="Juan Dela Cruz"
+                                    value={passengerName}
+                                    onChange={(e) => setPassengerName(e.target.value)}
+                                    className="bg-white dark:bg-zinc-800 font-medium"
+                                />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="pName">Passenger Full Name *</Label>
+                                    <Label htmlFor="pContact">Mobile Phone Number *</Label>
                                     <Input
-                                        id="pName"
+                                        id="pContact"
                                         required
-                                        placeholder="Juan Dela Cruz"
-                                        value={passengerName}
-                                        onChange={(e) => setPassengerName(e.target.value)}
+                                        placeholder="09171234567"
+                                        value={passengerContact}
+                                        onChange={(e) => setPassengerContact(e.target.value)}
+                                        className="bg-white dark:bg-zinc-800 font-mono"
                                     />
+                                    <p className="text-[10px] text-muted-foreground">Used for trip updates and terminal dispatch verification.</p>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="pContact">Mobile Number *</Label>
-                                        <Input
-                                            id="pContact"
-                                            required
-                                            placeholder="09171234567"
-                                            value={passengerContact}
-                                            onChange={(e) => setPassengerContact(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="pEmail">Email Address (for receipt) *</Label>
-                                        <Input
-                                            id="pEmail"
-                                            type="email"
-                                            required
-                                            placeholder="juan@gmail.com"
-                                            value={passengerEmail}
-                                            onChange={(e) => setPassengerEmail(e.target.value)}
-                                        />
-                                    </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="pEmail">Email Address (for e-Ticket Delivery) *</Label>
+                                    <Input
+                                        id="pEmail"
+                                        type="email"
+                                        required
+                                        placeholder="juan@gmail.com"
+                                        value={passengerEmail}
+                                        onChange={(e) => setPassengerEmail(e.target.value)}
+                                        className="bg-white dark:bg-zinc-800 font-medium"
+                                    />
+                                    <p className="text-[10px] text-muted-foreground">Digital QR Boarding Pass and official receipt will be sent here.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 2. 20% Statutory Discount Options (Senior, Student, PWD) */}
+                        <div className="space-y-4 rounded-xl border p-4 bg-card">
+                            <div className="flex items-center justify-between border-b pb-2">
+                                <div className="flex items-center gap-2">
+                                    <GraduationCap className="h-4 w-4 text-purple-600" />
+                                    <h3 className="font-bold text-sm text-foreground">2. Special Statutory Discounts (20% Off)</h3>
+                                </div>
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                    RA 9994 / RA 10754 / RA 11314
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border">
+                                <div className="space-y-0.5">
+                                    <Label className="text-xs font-bold text-foreground">
+                                        Are any of the {seatCount} passenger(s) eligible for 20% discount?
+                                    </Label>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        Applicable to Senior Citizens, Students, and PWDs upon presentation of valid ID.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant={isDiscounted ? "default" : "outline"}
+                                        onClick={() => handleToggleDiscount(true)}
+                                        className={isDiscounted ? "bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs" : "text-xs font-semibold"}
+                                    >
+                                        Yes, Apply 20%
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant={!isDiscounted ? "default" : "outline"}
+                                        onClick={() => handleToggleDiscount(false)}
+                                        className={!isDiscounted ? "bg-zinc-800 text-white font-bold text-xs" : "text-xs font-semibold"}
+                                    >
+                                        Regular Fare
+                                    </Button>
                                 </div>
                             </div>
 
-                            {/* 2. Passenger Classification & Automatic Discount */}
-                            <div className="space-y-4 rounded-xl border p-4 bg-card">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h3 className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                                            <Percent className="h-4 w-4 text-emerald-600" />
-                                            2. Passenger Classification & Automatic Discount
-                                        </h3>
-                                        <p className="text-xs text-muted-foreground">
-                                            Statutory 20% discount for Senior Citizens (RA 9994), Students (RA 11314), and PWDs (RA 10754).
-                                        </p>
+                            {isDiscounted && (
+                                <div className="space-y-4 pt-1">
+                                    <div className="flex items-center justify-between text-xs bg-purple-50 dark:bg-purple-950/30 p-2.5 rounded-lg border border-purple-200 dark:border-purple-800">
+                                        <span className="font-bold text-purple-900 dark:text-purple-200">
+                                            Number of Discounted Passenger(s):
+                                        </span>
+                                        <select
+                                            value={effectiveDiscountCount}
+                                            onChange={(e) => handleSetDiscountCount(parseInt(e.target.value, 10))}
+                                            className="font-bold text-xs bg-white dark:bg-zinc-800 border rounded px-2 py-1"
+                                        >
+                                            {Array.from({ length: seatCount }, (_, i) => i + 1).map((num) => (
+                                                <option key={num} value={num}>
+                                                    {num} Passenger{num > 1 ? "s" : ""} (20% Off)
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
-                                    {isDiscounted ? (
-                                        <span className="text-xs font-extrabold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                                            {effectiveDiscountCount}x 20% DISCOUNT APPLIED
-                                        </span>
-                                    ) : (
-                                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                                            Regular Fares
-                                        </span>
-                                    )}
+
+                                    {discountPersons.slice(0, effectiveDiscountCount).map((p, idx) => (
+                                        <div key={p.id || idx} className="rounded-xl border border-purple-300 dark:border-purple-800 bg-purple-50/40 dark:bg-purple-950/20 p-3.5 space-y-3">
+                                            <div className="flex items-center justify-between font-bold text-xs text-purple-900 dark:text-purple-200">
+                                                <span>Discount Details for Passenger #{idx + 1}</span>
+                                                <span className="text-emerald-600 font-extrabold">-₱{discountPerPassenger}.00 (20%)</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <Label className="text-[11px] font-semibold text-muted-foreground">Classification Type *</Label>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {[
+                                                        { id: "SENIOR", label: "Senior Citizen", sub: "RA 9994", icon: User },
+                                                        { id: "STUDENT", label: "Student", sub: "RA 11314", icon: GraduationCap },
+                                                        { id: "PWD", label: "PWD", sub: "RA 10754", icon: Accessibility },
+                                                    ].map((item) => {
+                                                        const isSelected = p.classification === item.id;
+                                                        const IconComp = item.icon;
+                                                        return (
+                                                            <button
+                                                                key={item.id}
+                                                                type="button"
+                                                                onClick={() => handleUpdateDiscountPerson(idx, "classification", item.id as any)}
+                                                                className={`p-2 rounded-lg border text-left transition-all flex flex-col items-center text-center ${
+                                                                    isSelected
+                                                                        ? "border-purple-600 bg-purple-600 text-white font-bold shadow-sm"
+                                                                        : "border-border bg-card text-muted-foreground hover:bg-muted/50"
+                                                                }`}
+                                                            >
+                                                                <IconComp className="h-4 w-4 mb-1" />
+                                                                <span className="text-xs font-extrabold leading-tight">{item.label}</span>
+                                                                <span className={`text-[10px] ${isSelected ? "text-purple-100" : "text-muted-foreground"}`}>{item.sub}</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs font-bold text-foreground">Discounted Passenger Full Legal Name *</Label>
+                                                <Input
+                                                    required
+                                                    placeholder="e.g. Maria Clara Santos"
+                                                    value={p.name}
+                                                    onChange={(e) => handleUpdateDiscountPerson(idx, "name", e.target.value)}
+                                                    className="bg-white dark:bg-zinc-800 text-xs"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs font-bold text-foreground">Official ID Number *</Label>
+                                                <Input
+                                                    required
+                                                    placeholder="e.g. OSCA-2024-5544 or School ID"
+                                                    value={p.idNumber}
+                                                    onChange={(e) => handleUpdateDiscountPerson(idx, "idNumber", e.target.value)}
+                                                    className="bg-white dark:bg-zinc-800 font-mono text-xs uppercase"
+                                                />
+                                                <p className="text-[10px] text-muted-foreground">* Valid physical ID must be presented upon boarding.</p>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
+                            )}
 
-                                {/* Option: Ilan ang i-didiscount (Number of Discounted Passengers) */}
-                                <div className="space-y-2 pt-1 border-t">
-                                    <div className="flex items-center justify-between">
-                                        <Label className="text-xs font-bold text-foreground">
-                                            How many passengers to discount? (Ilan ang i-didiscount):
-                                        </Label>
-                                        <span className="text-xs font-extrabold text-purple-600 dark:text-purple-400">
-                                            {effectiveDiscountCount} of {seatCount} Seat{seatCount > 1 ? "s" : ""} Discounted
-                                        </span>
+                            {/* Realtime Fare Breakdown */}
+                            <div className="rounded-xl border-2 border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 space-y-2.5">
+                                <div className="flex items-center justify-between border-b border-emerald-200/60 dark:border-emerald-900/60 pb-2">
+                                    <div className="flex items-center gap-1.5 font-black text-xs text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                                        <Calculator className="h-4 w-4" />
+                                        <span>Automatic Fare Calculation</span>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {Array.from({ length: seatCount + 1 }).map((_, count) => (
-                                            <button
-                                                key={count}
-                                                type="button"
-                                                onClick={() => handleSetDiscountCount(count)}
-                                                className={`px-3 py-2 rounded-xl text-xs font-extrabold transition-all border ${
-                                                    discountCount === count
-                                                        ? "bg-purple-600 text-white border-purple-600 shadow-md ring-2 ring-purple-500/20"
-                                                        : "bg-background text-muted-foreground border-border hover:bg-muted/50"
-                                                }`}
-                                            >
-                                                {count === 0 ? "0 (All Regular)" : `${count} Discounted (-20%)`}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Form per Discounted Person */}
-                                {effectiveDiscountCount === 0 ? (
-                                    <div className="p-3 rounded-xl bg-muted/30 border border-dashed text-xs text-muted-foreground text-center">
-                                        No discount selected. Standard regular fare (₱{unitFare}.00 per seat) applies.
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3 pt-1">
-                                        {discountPersons.slice(0, effectiveDiscountCount).map((p, idx) => (
-                                            <div
-                                                key={p.id || idx}
-                                                className="rounded-xl border-2 border-purple-200 dark:border-purple-900/60 bg-purple-50/30 dark:bg-purple-950/20 p-4 space-y-3"
-                                            >
-                                                <div className="flex items-center justify-between border-b border-purple-100 dark:border-purple-900 pb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="h-5 w-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-black">
-                                                            {idx + 1}
-                                                        </span>
-                                                        <h4 className="font-extrabold text-xs text-foreground uppercase tracking-wider">
-                                                            Discounted Passenger #{idx + 1}
-                                                        </h4>
-                                                    </div>
-                                                    <span className="text-[11px] font-extrabold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950 px-2 py-0.5 rounded-full">
-                                                        -20% Fare Deduction
-                                                    </span>
-                                                </div>
-
-                                                {/* Classification Discount */}
-                                                <div className="space-y-1.5">
-                                                    <Label className="text-xs font-bold text-foreground">
-                                                        Discount Classification *
-                                                    </Label>
-                                                    <div className="grid grid-cols-3 gap-2">
-                                                        {[
-                                                            { id: "SENIOR", label: "Senior Citizen", sub: "RA 9994", icon: HeartHandshake },
-                                                            { id: "STUDENT", label: "Student", sub: "RA 11314", icon: GraduationCap },
-                                                            { id: "PWD", label: "PWD", sub: "RA 10754", icon: Accessibility },
-                                                        ].map((item) => {
-                                                            const isSelected = p.classification === item.id;
-                                                            const IconComp = item.icon;
-                                                            return (
-                                                                <button
-                                                                    key={item.id}
-                                                                    type="button"
-                                                                    onClick={() => handleUpdateDiscountPerson(idx, "classification", item.id as any)}
-                                                                    className={`p-2 rounded-lg border text-left transition-all flex flex-col items-center text-center ${
-                                                                        isSelected
-                                                                            ? "border-purple-600 bg-purple-600 text-white font-bold shadow-sm"
-                                                                            : "border-border bg-card text-muted-foreground hover:bg-muted/50"
-                                                                    }`}
-                                                                >
-                                                                    <IconComp className="h-4 w-4 mb-1" />
-                                                                    <span className="text-xs font-extrabold leading-tight">{item.label}</span>
-                                                                    <span className={`text-[10px] ${isSelected ? "text-purple-100" : "text-muted-foreground"}`}>{item.sub}</span>
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-
-                                                {/* Discounted Passenger Legal Name */}
-                                                <div className="space-y-1.5">
-                                                    <Label className="text-xs font-bold text-foreground">
-                                                        Discounted Passenger Name (Full Legal Name) *
-                                                    </Label>
-                                                    <Input
-                                                        required
-                                                        placeholder={
-                                                            p.classification === "SENIOR"
-                                                                ? "e.g. Juan Dela Cruz Sr."
-                                                                : p.classification === "STUDENT"
-                                                                ? "e.g. Maria Clara Santos"
-                                                                : "e.g. Pedro Reyes"
-                                                        }
-                                                        value={p.name}
-                                                        onChange={(e) => handleUpdateDiscountPerson(idx, "name", e.target.value)}
-                                                        className="bg-white dark:bg-zinc-800 text-xs"
-                                                    />
-                                                </div>
-
-                                                {/* ID No. */}
-                                                <div className="space-y-1.5">
-                                                    <Label className="text-xs font-bold text-foreground">
-                                                        {p.classification === "SENIOR"
-                                                            ? "OSCA Senior Citizen ID Number *"
-                                                            : p.classification === "STUDENT"
-                                                            ? "Student School ID Number / Registration Ref *"
-                                                            : "PWD ID Card Number *"}
-                                                    </Label>
-                                                    <Input
-                                                        required
-                                                        placeholder={
-                                                            p.classification === "SENIOR"
-                                                                ? "e.g. OSCA-2024-5544"
-                                                                : p.classification === "STUDENT"
-                                                                ? "e.g. 2024-ST-99881"
-                                                                : "e.g. PWD-05-16-0023"
-                                                        }
-                                                        value={p.idNumber}
-                                                        onChange={(e) => handleUpdateDiscountPerson(idx, "idNumber", e.target.value)}
-                                                        className="bg-white dark:bg-zinc-800 font-mono text-xs uppercase"
-                                                    />
-                                                    <p className="text-[10px] text-muted-foreground">
-                                                        * Valid physical {p.classification} ID must be presented upon boarding per Superlines terms.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Realtime Fare & Discount Calculation Breakdown */}
-                                <div className="rounded-xl border-2 border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 space-y-3">
-                                    <div className="flex items-center justify-between border-b border-emerald-200/60 dark:border-emerald-900/60 pb-2">
-                                        <div className="flex items-center gap-1.5 font-black text-xs text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
-                                            <Calculator className="h-4 w-4" />
-                                            <span>Automatic Fare & Discount Calculation</span>
-                                        </div>
-                                        <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-full">
-                                            Auto-Calculated
-                                        </span>
-                                    </div>
-
-                                    <div className="space-y-1.5 text-xs">
-                                        <div className="flex justify-between items-center text-muted-foreground">
-                                            <span>Fare ({seatCount} seat{seatCount > 1 ? "s" : ""} × ₱{unitFare}.00):</span>
-                                            <span className="font-mono font-bold text-foreground">₱{totalBaseFare}.00</span>
-                                        </div>
-
-                                        {effectiveDiscountCount > 0 ? (
-                                            <div className="space-y-1 pt-1 border-t border-dashed border-emerald-200 dark:border-emerald-900">
-                                                <div className="flex justify-between items-center font-bold text-emerald-600 dark:text-emerald-400">
-                                                    <span>20% Statutory Discount ({effectiveDiscountCount} passenger{effectiveDiscountCount > 1 ? "s" : ""} × ₱{discountPerPassenger}.00):</span>
-                                                    <span className="font-mono">-₱{totalDiscountAmount}.00</span>
-                                                </div>
-                                                {discountPersons.slice(0, effectiveDiscountCount).map((p, idx) => (
-                                                    <div key={p.id || idx} className="flex justify-between text-[11px] text-muted-foreground pl-3">
-                                                        <span>• #{idx + 1} {p.name || `Passenger ${idx + 1}`} ({p.classification} 20%):</span>
-                                                        <span className="font-mono">-₱{discountPerPassenger}.00</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="flex justify-between text-muted-foreground text-[11px] italic">
-                                                <span>20% Statutory Discount:</span>
-                                                <span className="font-mono">₱0.00 (No discount applied)</span>
-                                            </div>
-                                        )}
-
-                                        {/* Formula Callout Example */}
-                                        <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-800 flex flex-wrap items-center justify-between text-xs font-semibold gap-1 mt-2">
-                                            <span className="text-muted-foreground">Calculation Formula:</span>
-                                            <div className="font-mono flex items-center gap-1.5 text-xs">
-                                                <span className="text-foreground">₱{totalBaseFare}.00 <span className="text-[10px] text-muted-foreground">(Fare)</span></span>
-                                                <span className="text-emerald-600 font-bold">-</span>
-                                                <span className="text-emerald-600 font-bold">₱{totalDiscountAmount}.00 <span className="text-[10px] text-emerald-700 dark:text-emerald-300">(Discount)</span></span>
-                                                <span className="font-black text-foreground">=</span>
-                                                <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">₱{finalFare}.00 <span className="text-[10px] text-foreground font-normal">(Total)</span></span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex justify-between items-center font-black text-sm pt-2 border-t text-foreground">
-                                            <div className="flex flex-col">
-                                                <span>Total Amount to Pay via GCash:</span>
-                                                <span className="text-[10px] font-normal text-muted-foreground">Exact amount to be transferred to merchant</span>
-                                            </div>
-                                            <span className="font-mono text-emerald-600 dark:text-emerald-400 text-xl font-black">₱{finalFare}.00</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 3. Direct GCash QR Card */}
-                            <div className="rounded-2xl border-2 border-blue-500/40 bg-gradient-to-b from-blue-50/60 to-white dark:from-blue-950/30 dark:to-zinc-900 p-5 space-y-5 shadow-sm">
-                                <div className="flex items-center justify-between border-b border-blue-100 dark:border-blue-900/50 pb-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-sm">
-                                            G
-                                        </div>
-                                        <div>
-                                            <h3 className="font-extrabold text-blue-950 dark:text-blue-100 text-base leading-tight">3. GCash Scan to Pay</h3>
-                                            <p className="text-xs text-blue-700 dark:text-blue-300">Official Merchant / Ticket Payment</p>
-                                        </div>
-                                    </div>
-                                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-600 text-white flex items-center gap-1">
-                                        <ShieldCheck className="h-3.5 w-3.5" />
-                                        Verified
+                                    <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-full">
+                                        Auto-Computed
                                     </span>
                                 </div>
-
-                                {/* Calculation Summary Highlight Bar */}
-                                <div className="rounded-xl bg-blue-100/70 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 p-3.5 text-xs space-y-1.5">
-                                    <div className="flex justify-between items-center text-blue-900 dark:text-blue-200">
-                                        <span className="font-bold">Trip Base Fare:</span>
-                                        <span className="font-mono font-bold">₱{totalBaseFare}.00</span>
+                                <div className="space-y-1.5 text-xs">
+                                    <div className="flex justify-between items-center text-muted-foreground">
+                                        <span>Fare ({seatCount} seat{seatCount > 1 ? "s" : ""} × ₱{unitFare}.00):</span>
+                                        <span className="font-mono font-bold text-foreground">₱{totalBaseFare}.00</span>
                                     </div>
-                                    {totalDiscountAmount > 0 && (
-                                        <div className="flex justify-between items-center text-emerald-700 dark:text-emerald-300 font-bold">
+                                    {effectiveDiscountCount > 0 && (
+                                        <div className="flex justify-between items-center font-bold text-emerald-600 dark:text-emerald-400">
                                             <span>20% Statutory Discount ({effectiveDiscountCount} passenger{effectiveDiscountCount > 1 ? "s" : ""}):</span>
                                             <span className="font-mono">-₱{totalDiscountAmount}.00</span>
                                         </div>
                                     )}
-                                    <div className="flex justify-between items-center pt-1.5 border-t border-blue-200 dark:border-blue-800">
-                                        <div className="font-black text-sm text-blue-950 dark:text-blue-100 flex items-center gap-1">
-                                            <span>Total to Send via GCash:</span>
-                                        </div>
-                                        <span className="font-mono text-xl font-black text-blue-600 dark:text-blue-400">
-                                            ₱{finalFare}.00
-                                        </span>
+                                    <div className="flex justify-between items-center font-black text-sm pt-2 border-t text-foreground">
+                                        <span>Total Amount to Pay via GCash:</span>
+                                        <span className="font-mono text-emerald-600 dark:text-emerald-400 text-xl font-black">₱{finalFare}.00</span>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
 
-                                {/* QR Code Display */}
-                                <div className="flex flex-col items-center justify-center space-y-3">
-                                    <div className="relative group">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={customQrUrl || process.env.NEXT_PUBLIC_GCASH_QR_URL || "/gcash-qr.jpg"}
-                                            alt="GCash QR Code"
-                                            className="max-h-80 w-auto rounded-xl border-2 border-blue-400 shadow-md bg-white p-1 object-contain"
-                                        />
+                        {/* 3. Official PayMongo GCash Payment Card (No Personal QR Required) */}
+                        <div className="rounded-2xl border-2 border-blue-500/50 bg-gradient-to-b from-blue-50/70 via-white to-blue-50/30 dark:from-blue-950/40 dark:via-zinc-900 dark:to-zinc-950 p-5 space-y-4 shadow-md">
+                            <div className="flex items-center justify-between border-b border-blue-200/80 dark:border-blue-900/60 pb-3">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-base shadow-sm">
+                                        G
                                     </div>
-
-                                    {/* Action links */}
-                                    <div className="flex items-center gap-4 text-xs font-semibold">
-                                        <a
-                                            href={customQrUrl || process.env.NEXT_PUBLIC_GCASH_QR_URL || "/gcash-qr.jpg"}
-                                            download="gcash-qr-superlines.jpg"
-                                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 underline"
-                                        >
-                                            Save / Download QR
-                                        </a>
-                                        <span>•</span>
-                                        <label htmlFor="qrUploadInput" className="cursor-pointer inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 underline">
-                                            <Upload className="h-3.5 w-3.5" />
-                                            {customQrUrl ? "Change QR Image" : "Upload QR Image"}
-                                        </label>
-                                        <input
-                                            id="qrUploadInput"
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleQrUpload}
-                                            className="hidden"
-                                        />
+                                    <div>
+                                        <h3 className="font-extrabold text-blue-950 dark:text-blue-100 text-base leading-tight">
+                                            3. GCash Online Payment (via PayMongo Gateway)
+                                        </h3>
+                                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                                            Official BSP-Supervised Automated Payment Gateway
+                                        </p>
                                     </div>
                                 </div>
+                                <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-600 text-white flex items-center gap-1.5 shadow-sm">
+                                    <ShieldCheck className="h-4 w-4" />
+                                    100% Automated &amp; Instant
+                                </span>
+                            </div>
 
-                                {/* Account Details Card */}
-                                <div className="rounded-xl bg-white dark:bg-zinc-800 p-4 border space-y-2.5 text-xs">
-                                    <div className="flex items-center justify-between py-1 border-b">
-                                        <span className="text-muted-foreground">Account Name:</span>
-                                        <span className="font-extrabold text-foreground tracking-wide">
-                                            {process.env.NEXT_PUBLIC_GCASH_NAME || "PHOEBE MARGARET MAGO"}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between py-1 border-b">
-                                        <span className="text-muted-foreground">GCash Mobile:</span>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="font-mono font-black text-sm text-blue-600">
-                                                {process.env.NEXT_PUBLIC_GCASH_NUMBER || "0993 317 6559"}
-                                            </span>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-6 w-6 p-0"
-                                                onClick={() => handleCopy(process.env.NEXT_PUBLIC_GCASH_NUMBER || "09933176559", "number")}
-                                                title="Copy GCash Number"
-                                            >
-                                                {copied === "number" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between py-1">
-                                        <div className="flex flex-col">
-                                            <span className="text-muted-foreground font-bold">Total Amount to Send via GCash:</span>
-                                            {totalDiscountAmount > 0 && (
-                                                <span className="text-[10px] text-emerald-600 font-medium">
-                                                    (Fare ₱{totalBaseFare}.00 - Discount ₱{totalDiscountAmount}.00)
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="font-black text-lg text-emerald-600 font-mono">
-                                                ₱{finalFare}.00
-                                            </span>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-7 px-2 text-xs font-bold text-blue-600 hover:text-blue-700"
-                                                onClick={() => handleCopy(String(finalFare), "amount")}
-                                                title="Copy Exact Amount"
-                                            >
-                                                {copied === "amount" ? (
-                                                    <span className="flex items-center gap-1 text-emerald-600">
-                                                        <Check className="h-3 w-3" /> Copied
-                                                    </span>
-                                                ) : (
-                                                    <span className="flex items-center gap-1">
-                                                        <Copy className="h-3 w-3" /> Copy ₱{finalFare}
-                                                    </span>
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Step Instructions */}
-                                <div className="space-y-1.5 text-xs text-blue-900 dark:text-blue-200 bg-blue-50/70 dark:bg-blue-950/40 p-3.5 rounded-lg border border-blue-200">
-                                    <p className="font-bold text-sm">How to Pay via GCash:</p>
-                                    <p>1. Open your GCash app and select <strong>QR (Scan)</strong> to scan the code above, or tap <strong>Send Money</strong> to <strong>{process.env.NEXT_PUBLIC_GCASH_NUMBER || "0993 317 6559"}</strong>.</p>
-                                    <p>
-                                        2. Enter the exact calculated total of <strong>₱{finalFare}.00</strong>
-                                        {totalDiscountAmount > 0 ? ` (Base Fare ₱${totalBaseFare}.00 minus Statutory Discount ₱${totalDiscountAmount}.00)` : ""}.
-                                    </p>
-                                    <p>3. Copy the <strong>13-digit Reference Number</strong> from your GCash confirmation receipt or SMS and enter it below.</p>
-                                </div>
-
-                                {/* Reference Number Input */}
-                                <div className="space-y-2 pt-1">
-                                    <Label htmlFor="refNumber" className="font-bold text-sm flex items-center justify-between">
-                                        <span>GCash Reference Number *</span>
-                                        <span className="text-xs font-normal text-muted-foreground">Found on GCash receipt / SMS</span>
-                                    </Label>
-                                    <Input
-                                        id="refNumber"
-                                        required
-                                        placeholder="e.g. 1002 9845 2311 (13-digit Reference No.)"
-                                        value={gcashRef}
-                                        onChange={(e) => setGcashRef(e.target.value)}
-                                        className="font-mono text-base tracking-wider bg-white dark:bg-zinc-800 border-2 focus-visible:ring-blue-500"
-                                    />
+                            {/* Gateway Information Banner */}
+                            <div className="rounded-xl bg-blue-100/70 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 p-4 space-y-2 text-xs">
+                                <p className="font-bold text-blue-950 dark:text-blue-100 flex items-center gap-1.5">
+                                    <Sparkles className="h-4 w-4 text-blue-600 shrink-0" />
+                                    <span>Zero Manual Reference Verification:</span>
+                                </p>
+                                <p className="text-blue-900/90 dark:text-blue-200/90 leading-relaxed">
+                                    Hindi mo na kailangang mag-type ng Reference Number o mag-upload ng screenshot ng resibo. Pag-click ng <strong>&ldquo;Proceed to GCash Payment&rdquo;</strong>, ididirekta ka sa opisyal na PayMongo portal kung saan automatic na magbubukas ang iyong GCash app o opisyal na Dynamic QR code.
+                                </p>
+                                <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] font-semibold text-blue-800 dark:text-blue-300">
+                                    <span>• Instant QR Boarding Pass</span>
+                                    <span>• Automatic Audit &amp; Direct Admin Report</span>
+                                    <span>• PCI-DSS Level 1 Encrypted</span>
                                 </div>
                             </div>
 
-                            {/* 4. Superlines Official Passenger Terms & Conditions */}
+                            {/* Official Terms & Conditions */}
                             <div className="rounded-xl border p-4 bg-card space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <FileText className="h-4 w-4 text-blue-600" />
                                         <h4 className="font-bold text-xs uppercase tracking-wide">
-                                            Passenger Terms & Conditions
+                                            Passenger Terms &amp; Conditions
                                         </h4>
                                     </div>
                                     <button
@@ -1301,43 +1181,21 @@ function BookTripContent() {
                                     <div className="space-y-3 text-xs bg-muted/40 p-4 rounded-xl border max-h-72 overflow-y-auto leading-relaxed text-muted-foreground">
                                         <div className="text-center font-bold text-foreground border-b pb-2">
                                             SUPERLINES TRANSPORTATION CO., INC. and DAET AUTO EXPRESS TRANSIT, INC.
-                                            <p className="text-[11px] font-normal text-muted-foreground">PASSENGER TERMS & CONDITIONS</p>
+                                            <p className="text-[11px] font-normal text-muted-foreground">PASSENGER TERMS &amp; CONDITIONS</p>
                                         </div>
-
                                         <div className="space-y-1">
                                             <p className="font-bold text-foreground">1. Ticketing, Rebooking, and Cancellations</p>
                                             <p>• <strong>Reservation Policy:</strong> Tickets are valid only for the specific date and trip indicated.</p>
-                                            <p>• <strong>Arrival Time:</strong> Passengers must be at the terminal at least one (1) hour before the scheduled departure.</p>
-                                            <p>• <strong>Penalty Fees:</strong> Effective November 03, 2023, a 20% penalty fee of the total ticket price will be charged for Re-scheduling/Rebooking and advance reservation.</p>
-                                            <p>• <strong>Cancellations/Refunds:</strong> To process a rebooking or cancellation, the passenger must present the physical ticket at the terminal office.</p>
+                                            <p>• <strong>Arrival Time:</strong> Passengers must be at the terminal at least one (1) hour before departure.</p>
+                                            <p>• <strong>Penalty Fees:</strong> 20% penalty fee of the ticket price will be charged for rebooking.</p>
                                         </div>
-
                                         <div className="space-y-1 pt-1 border-t">
-                                            <p className="font-bold text-foreground">2. Pet Policy (Pet-Friendly Bus)</p>
-                                            <p>Small pets are allowed on designated trips (9:30 AM, 8:00 PM, and 9:30 PM) subject to:</p>
-                                            <p>• <strong>Containment:</strong> Pets must be kept inside a cage or pet bag.</p>
-                                            <p>• <strong>Hygiene:</strong> Pets must wear a diaper at all times.</p>
-                                            <p>• <strong>Fare:</strong> A full regular fare must be paid for the pet as it occupies one (1) seat.</p>
-                                            <p>• <strong>Size Restriction:</strong> Large dogs/animals are strictly prohibited.</p>
-                                        </div>
-
-                                        <div className="space-y-1 pt-1 border-t">
-                                            <p className="font-bold text-foreground">3. Discounts and Baggage</p>
-                                            <p>• <strong>Eligibility:</strong> To avail of discounted fares, valid identification must be presented.</p>
-                                            <p>• <strong>Senior Citizen / PWD:</strong> Government-issued ID required.</p>
-                                            <p>• <strong>Student:</strong> Validated School ID for the current school year or Certificate of Enrollment/Registration.</p>
-                                            <p>• <strong>Baggage:</strong> Hand-carry items are free and remain the responsibility of the passenger. Excess baggage will be subject to additional charges.</p>
-                                        </div>
-
-                                        <div className="space-y-1 pt-1 border-t">
-                                            <p className="font-bold text-foreground">4. Safety and Code of Conduct</p>
-                                            <p>• <strong>Bawal ang Bastos:</strong> In compliance with LTFRB Memorandum Circular No. 016 (Safe Spaces Act), any form of sexual harassment or disrespectful behavior toward passengers or staff is strictly prohibited.</p>
-                                            <p>• <strong>Reporting:</strong> Violations can be reported to the LTFRB via Hotline (1342) or email (complaints@ltfrb.gov.ph).</p>
+                                            <p className="font-bold text-foreground">2. Safety and Code of Conduct</p>
+                                            <p>• In compliance with LTFRB Safe Spaces Act (Bawal ang Bastos), disrespectful behavior is strictly prohibited.</p>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Terms Acceptance Checkbox */}
                                 <div className="flex items-start gap-2.5 pt-1">
                                     <input
                                         id="termsCheckbox"
@@ -1347,79 +1205,30 @@ function BookTripContent() {
                                         className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                     />
                                     <label htmlFor="termsCheckbox" className="text-xs text-foreground cursor-pointer select-none leading-normal">
-                                        I have read and agree to the <strong>Superlines Passenger Terms & Conditions</strong> regarding Travel, Safety, and Conduct.
+                                        I have read and agree to the <strong>Superlines Passenger Terms &amp; Conditions</strong> regarding Travel, Safety, and Conduct.
                                     </label>
                                 </div>
                             </div>
 
+                            {/* Submit Button */}
                             <Button
                                 type="submit"
                                 size="lg"
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-base shadow-lg shadow-blue-500/20 py-6"
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-base shadow-lg shadow-blue-500/25 py-6 rounded-xl"
                                 disabled={submitting}
                             >
-                                {submitting ? "Verifying GCash Payment..." : (
+                                {submitting ? "Redirecting to PayMongo GCash Gateway..." : (
                                     <span className="flex items-center justify-center gap-2">
-                                        <CheckCircle2 className="h-5 w-5" />
-                                        Confirm GCash Payment & Issue Ticket (₱{finalFare}.00)
-                                    </span>
-                                )}
-                            </Button>
-                        </form>
-                    ) : (
-                        <form onSubmit={handleProceedToCheckout} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="pName2">Passenger Full Name *</Label>
-                                <Input
-                                    id="pName2"
-                                    required
-                                    placeholder="Juan Dela Cruz"
-                                    value={passengerName}
-                                    onChange={(e) => setPassengerName(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="pContact2">Mobile Number *</Label>
-                                <Input
-                                    id="pContact2"
-                                    required
-                                    placeholder="09171234567"
-                                    value={passengerContact}
-                                    onChange={(e) => setPassengerContact(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="pEmail2">Email Address *</Label>
-                                <Input
-                                    id="pEmail2"
-                                    type="email"
-                                    required
-                                    placeholder="juan@gmail.com"
-                                    value={passengerEmail}
-                                    onChange={(e) => setPassengerEmail(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="rounded-lg bg-zinc-100 dark:bg-zinc-800 p-3 text-xs text-muted-foreground space-y-1">
-                                <p className="font-semibold text-foreground">PayMongo Hosted Gateway:</p>
-                                <p>• Requires an approved & active PayMongo merchant account with enabled GCash.</p>
-                            </div>
-
-                            <Button
-                                type="submit"
-                                size="lg"
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
-                                disabled={submitting}
-                            >
-                                {submitting ? "Redirecting to PayMongo..." : (
-                                    <span className="flex items-center gap-2">
                                         <Wallet className="h-5 w-5" />
-                                        Pay via PayMongo Hosted Link (₱{finalFare}.00)
+                                        Proceed to Pay with GCash (₱{finalFare}.00) &rarr;
                                     </span>
                                 )}
                             </Button>
-                        </form>
-                    )}
+                            <p className="text-[11px] text-center text-muted-foreground">
+                                ✉️ Official Confirmation: Once paid via GCash, your verified QR Boarding Pass will be issued automatically and synced immediately to Superlines Admin Reports.
+                            </p>
+                        </div>
+                    </form>
                 </div>
             )}
         </div>

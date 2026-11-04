@@ -51,19 +51,14 @@ export default function TellerWalkInBookingPage() {
         setLoading(true);
         let rawData: any[] = [];
 
-        const { data, error } = await supabase
-            .from('trips')
-            .select('*, bus:buses(bus_number, bus_type)')
-            .order('departure_time', { ascending: true });
-
-        if (error) {
-            const { data: fallbackData } = await supabase
-                .from('trips')
-                .select('*')
-                .order('departure_time', { ascending: true });
-            if (fallbackData) rawData = fallbackData;
-        } else if (data) {
-            rawData = data;
+        try {
+            const res = await fetch("/api/admin/trips");
+            const data = await res.json();
+            if (data.success && Array.isArray(data.trips)) {
+                rawData = data.trips;
+            }
+        } catch (e) {
+            console.warn("Could not fetch admin scheduled trips:", e);
         }
 
         const normalizedTrips = rawData.map((t: any) => ({
@@ -74,8 +69,8 @@ export default function TellerWalkInBookingPage() {
                 destination: { name: t.destination || t.route?.destination?.name || "Daet" }
             },
             bus: t.bus || {
-                bus_number: "Superlines Express",
-                bus_type: "REGULAR AIRCON"
+                bus_number: t.bus_number || "Superlines Express",
+                bus_type: t.bus_type || "REGULAR AIRCON"
             }
         }));
 

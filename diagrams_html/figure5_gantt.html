@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; }
+  body { background: #ffffff; padding: 30px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  .diagram-container { width: 1450px; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 32px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
+  .header { text-align: center; margin-bottom: 24px; }
+  .header h1 { font-size: 22px; color: #0f172a; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .header p { font-size: 13px; color: #64748b; margin-top: 4px; }
+
+  /* Gantt Table */
+  .gantt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .gantt-table th, .gantt-table td { border: 1px solid #e2e8f0; padding: 8px 10px; }
+  .th-act { width: 380px; text-align: left; background: #0f172a; color: #ffffff; font-weight: 700; }
+  .th-week { width: 50px; text-align: center; background: #1e293b; color: #cbd5e1; font-weight: 600; font-size: 11px; }
+
+  .act-row:nth-child(even) { background: #f8fafc; }
+  .act-name { font-weight: 600; color: #1e293b; }
+  .phase-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-right: 6px; text-transform: uppercase; }
+  
+  .tag-inc { background: #dcfce7; color: #166534; }
+  .tag-ela { background: #dbeafe; color: #1e40af; }
+  .tag-con { background: #fef08a; color: #854d0e; }
+  .tag-tra { background: #f3e8ff; color: #6b21a8; }
+
+  /* Gantt Bars */
+  .bar { height: 16px; border-radius: 4px; margin: auto; }
+  .b-green { background: #22c55e; }
+  .b-blue { background: #3b82f6; }
+  .b-amber { background: #f59e0b; }
+  .b-purple { background: #a855f7; }
+  .b-rose { background: #f43f5e; }
+
+  .milestone-badge { background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 10px; padding: 2px 4px; border-radius: 3px; border: 1px solid #f87171; text-align: center; }
+
+  .caption { text-align: center; margin-top: 24px; font-size: 14px; font-weight: 600; color: #334155; }
+</style>
+</head>
+<body>
+
+<div class="diagram-container">
+  <div class="header">
+    <h1>Project Schedule of Activities (Gantt Chart Timeline)</h1>
+    <p>Iterative Development and Evaluation Roadmap for Superlines Reservation & Ticketing System</p>
+  </div>
+
+  <table class="gantt-table">
+    <thead>
+      <tr>
+        <th class="th-act">Research & Development Activities</th>
+        <th class="th-week">W1</th><th class="th-week">W2</th><th class="th-week">W3</th><th class="th-week">W4</th>
+        <th class="th-week">W5</th><th class="th-week">W6</th><th class="th-week">W7</th><th class="th-week">W8</th>
+        <th class="th-week">W9</th><th class="th-week">W10</th><th class="th-week">W11</th><th class="th-week">W12</th>
+        <th class="th-week">W13</th><th class="th-week">W14</th><th class="th-week">W15</th><th class="th-week">W16</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- INCEPTION -->
+      <tr class="act-row">
+        <td><span class="phase-tag tag-inc">Inception</span><span class="act-name">Daet Terminal Field Observation & Problem Analysis</span></td>
+        <td style="background: #ecfdf5;"><div class="bar b-green"></div></td>
+        <td style="background: #ecfdf5;"><div class="bar b-green"></div></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+      </tr>
+      <tr class="act-row">
+        <td><span class="phase-tag tag-inc">Inception</span><span class="act-name">Stakeholder Interviews & System Scope Definition</span></td>
+        <td></td>
+        <td style="background: #ecfdf5;"><div class="bar b-green"></div></td>
+        <td style="background: #ecfdf5;"><div class="bar b-green"></div></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+      </tr>
+
+      <!-- ELABORATION -->
+      <tr class="act-row">
+        <td><span class="phase-tag tag-ela">Elaboration</span><span class="act-name">Architectural Design, DFD & Relational ERD Modeling</span></td>
+        <td></td><td></td>
+        <td style="background: #eff6ff;"><div class="bar b-blue"></div></td>
+        <td style="background: #eff6ff;"><div class="bar b-blue"></div></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+      </tr>
+      <tr class="act-row">
+        <td><span class="phase-tag tag-ela">Elaboration</span><span class="act-name">UI/UX Wireframes & Database Concurrency Proof-of-Concept</span></td>
+        <td></td><td></td><td></td>
+        <td style="background: #eff6ff;"><div class="bar b-blue"></div></td>
+        <td style="background: #eff6ff;"><div class="bar b-blue"></div></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+      </tr>
+
+      <!-- CONSTRUCTION -->
+      <tr class="act-row">
+        <td><span class="phase-tag tag-con">Sprint 1</span><span class="act-name">Next.js Core Engine, Visual Bus Seat Map & Auth</span></td>
+        <td></td><td></td><td></td><td></td>
+        <td style="background: #fefce8;"><div class="bar b-amber"></div></td>
+        <td style="background: #fefce8;"><div class="bar b-amber"></div></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+      </tr>
+      <tr class="act-row">
+        <td><span class="phase-tag tag-con">Sprint 2</span><span class="act-name">PayMongo Gateway, GCash QR & Encrypted E-Ticketing</span></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td>
+        <td style="background: #fefce8;"><div class="bar b-amber"></div></td>
+        <td style="background: #fefce8;"><div class="bar b-amber"></div></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+      </tr>
+      <tr class="act-row">
+        <td><span class="phase-tag tag-con">Sprint 3</span><span class="act-name">Teller POS (20% Discount) & Conductor Mobile Scanner</span></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        <td style="background: #fefce8;"><div class="bar b-amber"></div></td>
+        <td style="background: #fefce8;"><div class="bar b-amber"></div></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td>
+      </tr>
+      <tr class="act-row">
+        <td><span class="phase-tag tag-con">Sprint 4</span><span class="act-name">Bound Turnaround Dispatching & Z-Reading Cash Remittance</span></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        <td style="background: #fefce8;"><div class="bar b-amber"></div></td>
+        <td style="background: #fefce8;"><div class="bar b-amber"></div></td>
+        <td></td><td></td><td></td><td></td>
+      </tr>
+
+      <!-- TRANSITION -->
+      <tr class="act-row">
+        <td><span class="phase-tag tag-tra">Transition</span><span class="act-name">User Acceptance Testing (UAT) with 50 Respondents</span></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        <td style="background: #faf5ff;"><div class="bar b-purple"></div></td>
+        <td style="background: #faf5ff;"><div class="bar b-purple"></div></td>
+        <td></td><td></td>
+      </tr>
+      <tr class="act-row">
+        <td><span class="phase-tag tag-tra">Transition</span><span class="act-name">Terminal Staff Training & System Documentation Manual</span></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        <td style="background: #faf5ff;"><div class="bar b-purple"></div></td>
+        <td style="background: #faf5ff;"><div class="bar b-purple"></div></td>
+        <td></td>
+      </tr>
+      <tr class="act-row">
+        <td><span class="phase-tag tag-tra">Transition</span><span class="act-name">Final Capstone Defense & Academic Presentation</span></td>
+        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        <td style="background: #fff1f2;"><div class="milestone-badge">DEFENSE</div></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="caption">
+    Figure 5. Project Schedule of Activities and Development Timeline (Gantt Chart)
+  </div>
+</div>
+
+</body>
+</html>

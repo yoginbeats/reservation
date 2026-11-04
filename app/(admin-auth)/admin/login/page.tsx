@@ -359,12 +359,9 @@ export default function AdminLoginPage() {
                             </div>
 
                             <div className="pt-2 text-center text-xs text-zinc-400 border-t border-zinc-800/80 flex flex-col gap-2.5">
-                                <div className="flex items-center justify-center gap-1.5">
-                                    <span>Need an administrator account? </span>
-                                    <Link href="/admin/register" className="font-bold text-red-400 hover:text-red-300 transition-colors hover:underline flex items-center gap-1">
-                                        <span>Create Admin Account</span>
-                                        <ArrowRight className="h-3.5 w-3.5" />
-                                    </Link>
+                                <div className="flex items-center justify-center gap-1.5 text-zinc-400 text-[11px] leading-tight">
+                                    <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+                                    <span>Admin credentials are provisioned strictly by Developers. Tellers &amp; Conductors receive credentials from the Administrator.</span>
                                 </div>
                                 <div className="text-[11px] text-zinc-500">
                                     <span>Looking to book a trip or check your tickets? </span>

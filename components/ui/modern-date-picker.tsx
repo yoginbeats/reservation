@@ -73,6 +73,21 @@ export function ModernDatePicker({
     const [viewMonth, setViewMonth] = useState<number>(parsedValue ? parsedValue.month : today.getMonth());
     const [isYearPickerOpen, setIsYearPickerOpen] = useState(false);
     const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+    const [openUpward, setOpenUpward] = useState(false);
+
+    // Detect if popover should open upward when near bottom of viewport
+    useEffect(() => {
+        if (isOpen && containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            if (spaceBelow < 380 && spaceAbove > 360) {
+                setOpenUpward(true);
+            } else {
+                setOpenUpward(false);
+            }
+        }
+    }, [isOpen]);
 
     // Auto-scroll year picker container to current viewYear when opened
     useEffect(() => {
@@ -259,7 +274,9 @@ export function ModernDatePicker({
                 <div
                     className={`absolute ${
                         align === "right" ? "right-0" : "left-0"
-                    } top-full mt-2 w-[310px] sm:w-[325px] z-50 rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white/98 dark:bg-zinc-950/98 backdrop-blur-xl shadow-2xl p-4 animate-in fade-in zoom-in-95 duration-150`}
+                    } ${
+                        openUpward ? "bottom-full mb-2" : "top-full mt-2"
+                    } w-[310px] sm:w-[325px] z-[999] rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl p-4 animate-in fade-in zoom-in-95 duration-150`}
                 >
                     {/* Header Controls: Month, Year, Arrows */}
                     <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800/80">

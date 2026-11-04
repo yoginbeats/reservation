@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ import {
     RefreshCw,
     AlertCircle,
     Link as LinkIcon,
+    Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getBusFare } from "@/lib/constants/bus-layouts";
@@ -87,43 +89,35 @@ export default function AdminTripsPage() {
 
     const fetchTripsAndBookings = async () => {
         setLoading(true);
-        let rawData: any[] = [];
+        let normalizedTrips: TripItem[] = [];
 
-        // 1. Fetch Trips
-        const { data, error } = await supabase
-            .from('trips')
-            .select('*, bus:buses(id, bus_number, bus_type, seat_capacity)')
-            .order('departure_time', { ascending: true });
-
-        if (error) {
-            const { data: fallbackData } = await supabase
-                .from('trips')
-                .select('*')
-                .order('departure_time', { ascending: true });
-            if (fallbackData) rawData = fallbackData;
-        } else if (data) {
-            rawData = data;
-        }
-
-        const normalizedTrips: TripItem[] = rawData.map((t: any) => ({
-            id: t.id,
-            origin: t.origin || t.route?.origin?.name || "Cubao",
-            destination: t.destination || t.route?.destination?.name || "Daet",
-            departure_time: t.departure_time,
-            fare_amount: t.fare_amount ?? t.price ?? getBusFare(t.bus?.bus_type || t.bus_type),
-            status: t.status || 'SCHEDULED',
-            bus_id: t.bus_id || t.bus?.id,
-            route_id: t.route_id,
-            route: {
-                origin: { name: t.origin || t.route?.origin?.name || "Cubao" },
-                destination: { name: t.destination || t.route?.destination?.name || "Daet" }
-            },
-            bus: t.bus || {
-                bus_number: "Superlines Express",
-                bus_type: "REGULAR_AIRCON",
-                seat_capacity: 45,
+        try {
+            const res = await fetch("/api/admin/trips");
+            const data = await res.json();
+            if (data?.success && Array.isArray(data.trips)) {
+                normalizedTrips = data.trips.map((t: any) => ({
+                    id: t.id,
+                    origin: t.origin || t.route?.origin?.name || "Cubao",
+                    destination: t.destination || t.route?.destination?.name || "Daet",
+                    departure_time: t.departure_time,
+                    fare_amount: t.fare_amount ?? t.price ?? getBusFare(t.bus?.bus_type || t.bus_type),
+                    status: t.status || 'SCHEDULED',
+                    bus_id: t.bus_id || t.bus?.id,
+                    route_id: t.route_id,
+                    route: {
+                        origin: { name: t.origin || t.route?.origin?.name || "Cubao" },
+                        destination: { name: t.destination || t.route?.destination?.name || "Daet" }
+                    },
+                    bus: t.bus || {
+                        bus_number: t.bus_number || "Superlines Express",
+                        bus_type: t.bus_type || "REGULAR_AIRCON",
+                        seat_capacity: t.seat_capacity || 45,
+                    }
+                }));
             }
-        }));
+        } catch (e) {
+            console.warn("Could not fetch trips from /api/admin/trips:", e);
+        }
 
         setTrips(normalizedTrips);
 
@@ -167,67 +161,89 @@ export default function AdminTripsPage() {
         e.preventDefault();
         if (!busId || !departureTime) return;
 
-        const { data: { user } } = await supabase.auth.getUser();
-        const adminId = user?.id || null;
-
         const selectedRoute = routes.find(r => r.id === routeId);
         const originName = selectedRoute?.origin?.name || "Cubao";
         const destName = selectedRoute?.destination?.name || "Daet";
 
         const selectedBus = buses.find(b => b.id === busId);
         const capacity = selectedBus?.seat_capacity || 45;
+        const busNum = selectedBus?.bus_number || "Superlines Express";
+        const busType = selectedBus?.bus_type || "REGULAR AIRCON";
 
-        // 1. Insert Outbound Trip with Admin ID & Route ID
-        const { data: newOutbound } = await supabase.from('trips').insert({
-            bus_id: busId,
-            route_id: routeId || null,
-            origin: originName,
-            destination: destName,
-            departure_time: new Date(departureTime).toISOString(),
-            fare_amount: Number(fareAmount),
-            price: Number(fareAmount),
-            created_by: adminId,
-            created_at: new Date().toISOString()
-        }).select().single();
-
-        if (newOutbound) {
-            const seatsToInsert = Array.from({ length: capacity }, (_, i) => ({
-                trip_id: newOutbound.id,
-                seat_number: i + 1,
-                is_available: true,
-            }));
-            await supabase.from('trip_seats').insert(seatsToInsert);
-        }
+        // 1. Post Outbound Trip to central /api/admin/trips
+        await fetch("/api/admin/trips", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                origin: originName,
+                destination: destName,
+                departure_time: new Date(departureTime).toISOString(),
+                fare_amount: Number(fareAmount),
+                price: Number(fareAmount),
+                bus_id: busId,
+                bus_number: busNum,
+                bus_type: busType,
+                seat_capacity: capacity,
+                route_id: routeId || null,
+            })
+        });
 
         // 2. Automatically bind and insert Inbound Return Trip if enabled
         if (autoCreateReturn && returnDepartureTime) {
-            // Find reverse route if available
-            const reverseRoute = routes.find(r => r.origin?.name === destName && r.destination?.name === originName);
-
-            const { data: newInbound } = await supabase.from('trips').insert({
-                bus_id: busId, // Same Bus Unit
-                route_id: reverseRoute?.id || null,
-                origin: destName, // Return reverse direction
-                destination: originName,
-                departure_time: new Date(returnDepartureTime).toISOString(),
-                fare_amount: Number(fareAmount),
-                price: Number(fareAmount),
-                created_by: adminId,
-                created_at: new Date().toISOString()
-            }).select().single();
-
-            if (newInbound) {
-                const seatsToInsert = Array.from({ length: capacity }, (_, i) => ({
-                    trip_id: newInbound.id,
-                    seat_number: i + 1,
-                    is_available: true,
-                }));
-                await supabase.from('trip_seats').insert(seatsToInsert);
-            }
+            await fetch("/api/admin/trips", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    origin: destName,
+                    destination: originName,
+                    departure_time: new Date(returnDepartureTime).toISOString(),
+                    fare_amount: Number(fareAmount),
+                    price: Number(fareAmount),
+                    bus_id: busId,
+                    bus_number: busNum,
+                    bus_type: busType,
+                    seat_capacity: capacity,
+                    route_id: routeId || null,
+                })
+            });
         }
 
         setOpenModal(false);
         fetchTripsAndBookings();
+    };
+
+    const handleDeleteTrip = async (tripId: string, label: string) => {
+        if (!confirm(`Are you sure you want to delete scheduled departure: ${label}?`)) return;
+        try {
+            const res = await fetch(`/api/admin/trips?id=${encodeURIComponent(tripId)}`, {
+                method: "DELETE",
+            });
+            const data = await res.json();
+            if (data.success) {
+                fetchTripsAndBookings();
+            } else {
+                alert(data.error || "Failed to delete trip");
+            }
+        } catch (err: any) {
+            alert(err.message || "Failed to delete trip");
+        }
+    };
+
+    const handleClearAllTrips = async () => {
+        if (!confirm("Are you sure you want to REMOVE ALL scheduled trips? This will leave the schedule completely clean across all portals (Admin, Teller, Conductor, Passenger) until new departures are added.")) return;
+        try {
+            const res = await fetch("/api/admin/trips?all=true", {
+                method: "DELETE",
+            });
+            const data = await res.json();
+            if (data.success) {
+                fetchTripsAndBookings();
+            } else {
+                alert(data.error || "Failed to clear trips");
+            }
+        } catch (err: any) {
+            alert(err.message || "Failed to clear trips");
+        }
     };
 
     // Helper: Find bookings bound to a specific trip
@@ -278,7 +294,18 @@ export default function AdminTripsPage() {
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Link href="/admin/daily-schedules">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs font-bold border-amber-300 bg-amber-50/50 hover:bg-amber-100/60 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+                        >
+                            <Clock className="mr-1.5 h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                            Edit Daily Schedules (/schedules)
+                        </Button>
+                    </Link>
+
                     <Button
                         variant="outline"
                         size="sm"
@@ -289,6 +316,18 @@ export default function AdminTripsPage() {
                         <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
                         Refresh
                     </Button>
+
+                    {trips.length > 0 && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleClearAllTrips}
+                            className="text-xs font-bold border-red-300 bg-red-50/50 hover:bg-red-100/60 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300"
+                        >
+                            <Trash2 className="mr-1.5 h-3.5 w-3.5 text-red-600" />
+                            Clear All Trips
+                        </Button>
+                    )}
 
                     <Dialog open={openModal} onOpenChange={setOpenModal}>
                         <DialogTrigger asChild>
@@ -555,15 +594,27 @@ export default function AdminTripsPage() {
 
                                                 {/* Action */}
                                                 <td className="py-3.5 px-4 text-right">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="text-xs font-bold border-blue-500/40 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950"
-                                                        onClick={() => setSelectedTripForManifest(t)}
-                                                    >
-                                                        <Users className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
-                                                        View Bound Manifest
-                                                    </Button>
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-xs font-bold border-blue-500/40 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950"
+                                                            onClick={() => setSelectedTripForManifest(t)}
+                                                        >
+                                                            <Users className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                                                            View Bound Manifest
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-xs font-bold border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
+                                                            onClick={() => handleDeleteTrip(t.id, `${t.origin} ➔ ${t.destination} (${new Date(t.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`)}
+                                                            title="Delete scheduled departure"
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                            <span className="sr-only sm:not-sr-only sm:ml-1">Delete</span>
+                                                        </Button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );

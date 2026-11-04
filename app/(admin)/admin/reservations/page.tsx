@@ -26,6 +26,8 @@ import {
     ArrowLeftRight,
     Link as LinkIcon,
     Plus,
+    Image as ImageIcon,
+    ExternalLink,
 } from "lucide-react";
 import { AdminNewReservationDialog } from "@/components/admin-new-reservation-dialog";
 
@@ -39,6 +41,7 @@ export default function AdminReservationsPage() {
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [copiedRef, setCopiedRef] = useState<string | null>(null);
     const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
+    const [viewingReceipt, setViewingReceipt] = useState<any | null>(null);
     const [stats, setStats] = useState({
         total_collected: 0,
         pending_count: 0,
@@ -748,6 +751,15 @@ export default function AdminReservationsPage() {
                                                                             <Button
                                                                                 variant="outline"
                                                                                 size="sm"
+                                                                                className="h-6 px-1.5 text-[10px] text-blue-600 hover:bg-blue-50 border-blue-200 dark:border-blue-800"
+                                                                                onClick={() => setViewingReceipt(b)}
+                                                                                title="View GCash Payment Receipt"
+                                                                            >
+                                                                                <ImageIcon className="h-3 w-3 mr-1" /> Receipt
+                                                                            </Button>
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                size="sm"
                                                                                 className="h-6 px-1.5 text-[10px]"
                                                                                 onClick={() => setSelectedTicket(b)}
                                                                             >
@@ -887,17 +899,27 @@ export default function AdminReservationsPage() {
 
                                                     {/* GCash Reference Number */}
                                                     <td className="py-3.5 px-4">
-                                                        <div className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 px-2 py-1 rounded-md">
-                                                            <span className="font-mono font-bold text-blue-700 dark:text-blue-300 tracking-wider">
-                                                                {cleanRef}
-                                                            </span>
+                                                        <div className="flex flex-col gap-1 items-start">
+                                                            <div className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 px-2 py-1 rounded-md">
+                                                                <span className="font-mono font-bold text-blue-700 dark:text-blue-300 tracking-wider">
+                                                                    {cleanRef}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleCopy(cleanRef, b.id)}
+                                                                    className="text-blue-600 hover:text-blue-800"
+                                                                    title="Copy Ref Number"
+                                                                >
+                                                                    {copiedRef === b.id ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                                                                </button>
+                                                            </div>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => handleCopy(cleanRef, b.id)}
-                                                                className="text-blue-600 hover:text-blue-800"
-                                                                title="Copy Ref Number"
+                                                                onClick={() => setViewingReceipt(b)}
+                                                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline"
                                                             >
-                                                                {copiedRef === b.id ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                                                                <ImageIcon className="h-3 w-3 text-blue-500" />
+                                                                {b.receipt_image_url ? "View Screenshot" : "Verify Payment"}
                                                             </button>
                                                         </div>
                                                     </td>
@@ -935,6 +957,16 @@ export default function AdminReservationsPage() {
 
                                                     {/* Actions */}
                                                     <td className="py-3.5 px-4 text-right whitespace-nowrap space-x-1">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-7 px-2 text-xs text-blue-600 hover:bg-blue-50 border-blue-200 dark:border-blue-800"
+                                                            onClick={() => setViewingReceipt(b)}
+                                                            title="Inspect GCash Receipt & Reference"
+                                                        >
+                                                            <ImageIcon className="h-3.5 w-3.5 mr-1" />
+                                                            Receipt
+                                                        </Button>
                                                         {isPending && (
                                                             <Button
                                                                 size="sm"
@@ -1090,6 +1122,175 @@ export default function AdminReservationsPage() {
                             <Button variant="outline" className="w-full" onClick={() => setSelectedTicket(null)}>
                                 Close
                             </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* GCash Receipt / Payment Verification Modal */}
+            {viewingReceipt && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="w-full max-w-lg bg-card rounded-2xl border-2 border-blue-500 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between bg-blue-600 text-white px-5 py-3.5">
+                            <div className="flex items-center gap-2">
+                                <ImageIcon className="h-5 w-5" />
+                                <div>
+                                    <h3 className="font-extrabold text-sm uppercase tracking-wide">GCash Payment Verification</h3>
+                                    <p className="text-[11px] text-blue-100 font-mono">Ref: {viewingReceipt.transaction_ref?.replace("GCASH-", "") || viewingReceipt.transaction_ref}</p>
+                                </div>
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-white hover:bg-blue-700 rounded-full"
+                                onClick={() => setViewingReceipt(null)}
+                            >
+                                ✕
+                            </Button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-5 overflow-y-auto space-y-4">
+                            {/* Receipt Image if available */}
+                            {viewingReceipt.receipt_image_url ? (
+                                <div className="space-y-2">
+                                    <div className="relative rounded-xl overflow-hidden border bg-zinc-950 flex items-center justify-center max-h-72">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={viewingReceipt.receipt_image_url}
+                                            alt="GCash Payment Receipt"
+                                            className="w-full h-auto object-contain max-h-72"
+                                        />
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <a
+                                            href={viewingReceipt.receipt_image_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline"
+                                        >
+                                            <ExternalLink className="h-3.5 w-3.5" /> Open Full-Res Image
+                                        </a>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-center space-y-2">
+                                    <div className="h-10 w-10 mx-auto rounded-full bg-blue-100 dark:bg-blue-900/60 flex items-center justify-center text-blue-600">
+                                        <ShieldCheck className="h-6 w-6" />
+                                    </div>
+                                    <p className="text-xs font-bold text-foreground">Reference Number Direct Tracking</p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                        Passenger submitted GCash Reference Number below for cashier cross-verification.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Payment & Passenger Details Card */}
+                            <div className="rounded-xl border bg-muted/30 p-4 space-y-3 text-xs">
+                                <div className="flex items-center justify-between border-b pb-2">
+                                    <span className="text-muted-foreground">GCash Reference No:</span>
+                                    <div className="flex items-center gap-1.5 font-mono font-black text-sm text-blue-600 dark:text-blue-400">
+                                        <span>{viewingReceipt.transaction_ref?.replace("GCASH-", "")}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCopy(viewingReceipt.transaction_ref?.replace("GCASH-", ""), "modal")}
+                                            className="p-1 hover:bg-muted rounded"
+                                            title="Copy Reference Number"
+                                        >
+                                            {copiedRef === "modal" ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">Passenger:</span>
+                                    <span className="font-bold text-foreground">{viewingReceipt.passenger_name}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">Contact / Email:</span>
+                                    <span className="font-mono text-foreground">{viewingReceipt.passenger_contact || viewingReceipt.passenger_email || "N/A"}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">Trip Route:</span>
+                                    <span className="font-semibold text-foreground">
+                                        {viewingReceipt.trip?.origin} ➔ {viewingReceipt.trip?.destination} ({viewingReceipt.trip?.bus_number})
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">Seat(s):</span>
+                                    <span className="font-mono font-bold text-foreground">
+                                        {viewingReceipt.seat_numbers && viewingReceipt.seat_numbers.length > 1
+                                            ? viewingReceipt.seat_numbers.map((s: number) => `#${s < 10 ? `0${s}` : s}`).join(", ")
+                                            : `#${viewingReceipt.seat_number < 10 ? `0${viewingReceipt.seat_number}` : viewingReceipt.seat_number}`}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center justify-between border-t pt-2">
+                                    <span className="font-bold text-muted-foreground uppercase text-[10px]">Total Amount Paid:</span>
+                                    <span className="font-mono font-black text-base text-emerald-600">₱{viewingReceipt.total_price}.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer Actions */}
+                        <div className="p-4 bg-muted/40 border-t flex flex-wrap items-center justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setViewingReceipt(null)}
+                            >
+                                Close
+                            </Button>
+
+                            {viewingReceipt.payment_status === "PENDING_VERIFICATION" || viewingReceipt.booking_status === "PENDING_VERIFICATION" ? (
+                                <>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-600 hover:bg-red-50"
+                                        disabled={processingId === viewingReceipt.id}
+                                        onClick={() => {
+                                            handleAction(viewingReceipt.id, "reject");
+                                            setViewingReceipt(null);
+                                        }}
+                                    >
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        Reject
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                                        disabled={processingId === viewingReceipt.id}
+                                        onClick={() => {
+                                            handleAction(viewingReceipt.id, "approve");
+                                            setViewingReceipt(null);
+                                        }}
+                                    >
+                                        <Check className="h-4 w-4 mr-1" />
+                                        {processingId === viewingReceipt.id ? "Approving..." : "Verify & Release Ticket"}
+                                    </Button>
+                                </>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                                        <CheckCircle2 className="h-3.5 w-3.5" /> Already Verified
+                                    </span>
+                                    <Button
+                                        size="sm"
+                                        variant="default"
+                                        onClick={() => {
+                                            setSelectedTicket(viewingReceipt);
+                                            setViewingReceipt(null);
+                                        }}
+                                    >
+                                        <QrCode className="h-3.5 w-3.5 mr-1" /> View Ticket
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

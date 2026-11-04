@@ -52,19 +52,10 @@ export default function ConductorDashboardPage() {
         let rawData: any[] = [];
 
         try {
-            const { data, error } = await supabase
-                .from('trips')
-                .select('*, bus:buses(bus_number, bus_type)')
-                .order('departure_time', { ascending: true });
-
-            if (!error && data) {
-                rawData = data;
-            } else {
-                const { data: fallbackData } = await supabase
-                    .from('trips')
-                    .select('*')
-                    .order('departure_time', { ascending: true });
-                if (fallbackData) rawData = fallbackData;
+            const res = await fetch("/api/admin/trips");
+            const data = await res.json();
+            if (data.success && Array.isArray(data.trips)) {
+                rawData = data.trips;
             }
         } catch (err) {
             console.error("Error loading trips:", err);
@@ -78,33 +69,10 @@ export default function ConductorDashboardPage() {
                 origin: { name: t.origin || t.route?.origin?.name || "Cubao" },
                 destination: { name: t.destination || t.route?.destination?.name || "Daet" }
             },
-            bus: t.bus || { bus_number: "Superlines Express", bus_type: "REGULAR AIRCON" }
+            bus: t.bus || { bus_number: t.bus_number || "Superlines Express", bus_type: t.bus_type || "REGULAR AIRCON" }
         }));
 
-        let finalTrips = normalizedTrips;
-        if (finalTrips.length === 0) {
-            try {
-                const res = await fetch("/api/trips/available");
-                const availData = await res.json();
-                if (availData?.trips && Array.isArray(availData.trips)) {
-                    finalTrips = availData.trips.map((t: any) => ({
-                        ...t,
-                        fare_amount: t.fare_amount ?? 850,
-                        status: "SCHEDULED",
-                        route: {
-                            origin: { name: t.origin || "Cubao" },
-                            destination: { name: t.destination || "Daet" }
-                        },
-                        bus: {
-                            bus_number: t.bus_number || "SL-401 (Superlines Aircon)",
-                            bus_type: t.bus_type || "REGULAR AIRCON"
-                        }
-                    }));
-                }
-            } catch {}
-        }
-
-        setTrips(finalTrips);
+        setTrips(normalizedTrips);
         setLoading(false);
     };
 
@@ -251,14 +219,14 @@ export default function ConductorDashboardPage() {
                 </div>
             </div>
 
-            {/* Operational Guidance Card for Dynamic Bus Assignment */}
+            {/* Operational Guidance Card */}
             <div className="rounded-2xl border-2 border-red-900/30 bg-gradient-to-br from-zinc-950 via-zinc-900/90 to-zinc-950 p-4 sm:p-5 shadow-xl text-zinc-300 space-y-2.5">
                 <div className="flex items-center gap-2 text-white font-bold text-sm">
                     <Info className="h-4 w-4 text-red-500 shrink-0" />
-                    <span>How Conductors Locate Their Trip Manifest & Assigned Vehicle</span>
+                    <span>Conductor Manifest &amp; Passenger Boarding Terminal</span>
                 </div>
                 <p className="text-xs leading-relaxed text-zinc-400">
-                    In Superlines operations, passenger seat reservations, GCash tickets, and QR tokens are permanently bound to the <strong className="text-zinc-200">Trip Schedule (Route & Departure Time)</strong>. Because physical bus chassis change depending on maintenance and terminal bay availability, conductors should select their trip by <strong className="text-red-400">Departure Time & Route</strong>. You can view the live manifest immediately, or click <strong className="text-zinc-200">&ldquo;Assign / Swap Bus Unit&rdquo;</strong> on any schedule to designate which physical vehicle is running that trip.
+                    Trip schedules and assigned bus units are strictly managed and configured by the Superlines Administrator and Bay Dispatch. Conductors use this terminal to review passenger seat manifests and process QR boarding validation.
                 </p>
             </div>
 
@@ -352,15 +320,6 @@ export default function ConductorDashboardPage() {
                                         </div>
 
                                         <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => handleOpenAssignModal(t)}
-                                                className="bg-white text-black hover:bg-zinc-100 hover:text-black font-bold border-zinc-300 text-xs h-8"
-                                            >
-                                                <Edit className="h-3.5 w-3.5 mr-1 text-red-600" />
-                                                Assign / Swap Bus
-                                            </Button>
                                             <Button
                                                 size="sm"
                                                 variant="outline"

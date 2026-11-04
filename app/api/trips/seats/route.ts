@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getLocalBookings } from "@/lib/local-booking-store";
+import { slotHoldManager } from "@/lib/slot-hold";
 
 // Cross-Terminal Live Seat Inventory & Anti-Double Booking Guard
 export async function GET(req: NextRequest) {
@@ -115,6 +116,16 @@ export async function GET(req: NextRequest) {
                     });
                 }
             }
+        }
+
+        // 5. Correlate with active temporary slot holds (10-minute hold window)
+        const activeHolds = slotHoldManager.getActiveHoldsForTrip(tripId);
+        for (const hold of activeHolds) {
+            occupiedSet.add(hold.seatNumber);
+            if (!terminalBreakdown["Temporarily Held (Pending)"]) {
+                terminalBreakdown["Temporarily Held (Pending)"] = [];
+            }
+            terminalBreakdown["Temporarily Held (Pending)"].push(hold.seatNumber);
         }
 
         const occupiedArray = Array.from(occupiedSet).sort((a, b) => a - b);

@@ -25,6 +25,10 @@ import {
     User,
     Info,
     ExternalLink,
+    Mail,
+    Search,
+    QrCode,
+    Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDatePH, formatTimePH, formatDateTimePH } from "@/lib/date-utils";
@@ -146,6 +150,124 @@ function TicketsContent() {
     // Printable Slips State
     const [viewingRefundSlip, setViewingRefundSlip] = useState<any | null>(null);
     const [viewingBoardingPass, setViewingBoardingPass] = useState<UserTicket | null>(null);
+
+    // Claim Ticket by GCash Ref State
+    const refParam = searchParams.get("ref");
+    const [claimRefInput, setClaimRefInput] = useState(refParam || "");
+    const [claimContactInput, setClaimContactInput] = useState("");
+    const [claimSearching, setClaimSearching] = useState(false);
+    const [claimError, setClaimError] = useState<string | null>(null);
+    const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
+    const [showClaimBox, setShowClaimBox] = useState(Boolean(refParam));
+    const [emailingTicketId, setEmailingTicketId] = useState<string | null>(null);
+    const [emailSuccessMsg, setEmailSuccessMsg] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (refParam) {
+            setClaimRefInput(refParam);
+            setShowClaimBox(true);
+        }
+    }, [refParam]);
+
+    const handleClaimByRef = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setClaimSearching(true);
+        setClaimError(null);
+        setClaimSuccess(null);
+        try {
+            const res = await fetch("/api/tickets/claim-by-ref", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    gcashRefNumber: claimRefInput,
+                    contactNumber: claimContactInput,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success || !data.booking) {
+                throw new Error(data.error || "No ticket found for this GCash reference.");
+            }
+            const b = data.booking;
+            const newTicket: UserTicket = {
+                id: b.id,
+                qr_token: b.qr_token,
+                ticket_status: b.ticket_status || "VALID",
+                created_at: b.created_at,
+                booking: {
+                    id: b.id,
+                    passenger_name: b.passenger_name,
+                    passenger_type: b.passenger_type,
+                    discount_amount: b.discount_amount,
+                    seat_number: b.seat_number,
+                    seat_numbers: b.seat_numbers,
+                    total_price: b.total_price,
+                    booking_source: "ONLINE",
+                    trip: {
+                        id: b.trip?.id,
+                        departure_time: b.trip?.departure_time,
+                        bus: { bus_number: b.trip?.bus_number || "Superlines Express" },
+                        route: {
+                            origin: { name: b.trip?.origin || "Cubao" },
+                            destination: { name: b.trip?.destination || "Daet" },
+                        },
+                    },
+                },
+            };
+            setTickets((prev) => {
+                const exists = prev.some((t) => t.id === newTicket.id || t.qr_token === newTicket.qr_token);
+                if (exists) return prev;
+                return [newTicket, ...prev];
+            });
+            setClaimSuccess(`Found verified ticket for ${b.passenger_name} (${b.trip?.origin} ➔ ${b.trip?.destination})! Ticket added below.`);
+            try {
+                localStorage.setItem(`superlines_booking_${b.id}`, JSON.stringify(b));
+            } catch {}
+        } catch (err: any) {
+            setClaimError(err.message || "Failed to find ticket.");
+        } finally {
+            setClaimSearching(false);
+        }
+    };
+
+    const handleSendEmailForTicket = async (ticket: UserTicket, targetEmail?: string) => {
+        const defaultEmail = (ticket.booking as any)?.passenger_email || "passenger@gmail.com";
+        const email = targetEmail || prompt("Enter email address to send digital ticket to:", defaultEmail);
+        if (!email) return;
+        setEmailingTicketId(ticket.id);
+        setEmailSuccessMsg(null);
+        try {
+            const res = await fetch("/api/tickets/send-ticket-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    booking_id: ticket.booking?.id || ticket.id,
+                    recipient_email: email,
+                    passenger_name: ticket.booking?.passenger_name,
+                    trip: {
+                        origin: ticket.booking?.trip?.route?.origin?.name || "Cubao",
+                        destination: ticket.booking?.trip?.route?.destination?.name || "Daet",
+                        departure_time: ticket.booking?.trip?.departure_time,
+                        bus_number: ticket.booking?.trip?.bus?.bus_number || "Superlines Express",
+                    },
+                    seat_number: ticket.booking?.seat_number,
+                    seat_numbers: ticket.booking?.seat_numbers,
+                    total_price: ticket.booking?.total_price,
+                    qr_token: ticket.qr_token,
+                    gcash_ref: (ticket.booking as any)?.transaction_ref || "",
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setEmailSuccessMsg(`e-Ticket boarding pass successfully sent to ${email}!`);
+            } else {
+                alert(data.error || "Failed to send email");
+            }
+        } catch (e: any) {
+            alert(e.message || "Failed to send email");
+        } finally {
+            setEmailingTicketId(null);
+        }
+    };
 
     const fetchTickets = async () => {
         setLoading(true);
@@ -558,7 +680,20 @@ function TicketsContent() {
                         Manage your trips, rebook departures, or file GCash refund claims with live tracking.
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                        variant={showClaimBox ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setShowClaimBox(!showClaimBox)}
+                        className={`text-xs font-bold transition ${
+                            showClaimBox
+                                ? "bg-blue-600 text-white"
+                                : "border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                        }`}
+                    >
+                        <Search className="mr-1.5 h-3.5 w-3.5" />
+                        {showClaimBox ? "Close Claim Tool" : "Claim Ticket via GCash Ref"}
+                    </Button>
                     <Button
                         variant="outline"
                         size="sm"
@@ -571,6 +706,89 @@ function TicketsContent() {
                     </Button>
                 </div>
             </div>
+
+            {/* EMAIL SUCCESS BANNER */}
+            {emailSuccessMsg && (
+                <div className="flex items-center justify-between p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 text-emerald-800 dark:text-emerald-300 text-xs font-bold animate-in fade-in">
+                    <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        <span>{emailSuccessMsg}</span>
+                    </div>
+                    <button onClick={() => setEmailSuccessMsg(null)} className="p-1 hover:text-black">
+                        <X className="h-3.5 w-3.5" />
+                    </button>
+                </div>
+            )}
+
+            {/* CLAIM TICKET VIA GCASH REFERENCE PANEL */}
+            {showClaimBox && (
+                <Card className="border-2 border-blue-500/50 bg-gradient-to-br from-blue-50/60 to-white dark:from-blue-950/30 dark:to-zinc-900 shadow-xl animate-in fade-in duration-200">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base font-extrabold flex items-center gap-2 text-blue-950 dark:text-blue-100">
+                            <Search className="h-4 w-4 text-blue-600" />
+                            Claim / Retrieve Ticket via GCash Reference
+                        </CardTitle>
+                        <CardDescription className="text-xs text-muted-foreground">
+                            Naisara mo ba ang browser matapos mag-send ng bayad sa GCash? Ilagay dito ang inyong <strong>13-digit GCash Reference Number</strong> mula sa SMS o resibo upang ma-load at ma-download agad ang inyong QR boarding pass.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleClaimByRef} className="space-y-4">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-black uppercase text-foreground">
+                                        13-Digit GCash Ref No. *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="Hal. 6046 4478 16228"
+                                        value={claimRefInput}
+                                        onChange={(e) => setClaimRefInput(e.target.value)}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border-2 font-mono text-sm bg-background text-foreground border-blue-300 dark:border-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-black uppercase text-foreground">
+                                        Mobile Number (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Hal. 09279432311"
+                                        value={claimContactInput}
+                                        onChange={(e) => setClaimContactInput(e.target.value)}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border font-mono text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
+
+                            {claimError && (
+                                <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-300 text-xs text-red-600 dark:text-red-300 font-semibold flex items-center gap-2">
+                                    <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                                    <span>{claimError}</span>
+                                </div>
+                            )}
+
+                            {claimSuccess && (
+                                <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 text-xs text-emerald-800 dark:text-emerald-300 font-semibold flex items-center gap-2">
+                                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-600" />
+                                    <span>{claimSuccess}</span>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-2">
+                                <Button
+                                    type="submit"
+                                    disabled={claimSearching}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-500/20"
+                                >
+                                    {claimSearching ? "Searching Records..." : "Find & Retrieve My Ticket"}
+                                </Button>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Waiting for Cashier Approval Banner */}
             {isWaitingForApproval && (
@@ -596,11 +814,56 @@ function TicketsContent() {
 
             {/* Payment Verified & Confirmed Banner */}
             {paymentVerified && (
-                <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-400 shadow-sm">
-                    <CheckCircle2 className="h-6 w-6 flex-shrink-0 text-emerald-600" />
-                    <div>
-                        <p className="font-bold">Payment Verified & Ticket Issued!</p>
-                        <p className="text-sm">Your booking #{bookingId?.slice(0, 8)} has been confirmed and your digital ticket is now active for boarding.</p>
+                <div className="relative overflow-hidden rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent p-5 sm:p-6 shadow-xl backdrop-blur-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-start gap-3.5">
+                            <div className="h-12 w-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-600/30">
+                                <CheckCircle2 className="h-7 w-7" />
+                            </div>
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <h3 className="text-base sm:text-lg font-black text-emerald-950 dark:text-emerald-100">
+                                        Payment Verified & Boarding Pass Ready!
+                                    </h3>
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-emerald-200 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100 border border-emerald-400">
+                                        <Sparkles className="h-3 w-3" /> Confirmed
+                                    </span>
+                                </div>
+                                <p className="text-xs sm:text-sm text-muted-foreground">
+                                    Your booking <strong className="text-foreground font-mono">#{bookingId ? bookingId.slice(0, 8).toUpperCase() : "SUCCESS"}</strong> has been confirmed. Present your digital QR code upon terminal boarding.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 sm:flex-shrink-0 flex-wrap">
+                            <Button
+                                size="sm"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 text-xs sm:text-sm py-2 px-4 flex items-center gap-2 rounded-xl"
+                                onClick={() => {
+                                    const match = (bookingId && tickets.find(t => t.id === bookingId || t.booking?.id === bookingId)) || tickets[0];
+                                    if (match) {
+                                        setViewingBoardingPass(match);
+                                    } else {
+                                        document.getElementById("tickets-grid")?.scrollIntoView({ behavior: "smooth" });
+                                    }
+                                }}
+                            >
+                                <QrCode className="h-4 w-4" />
+                                View QR Boarding Pass
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs font-semibold border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/60 rounded-xl"
+                                onClick={() => {
+                                    const match = (bookingId && tickets.find(t => t.id === bookingId || t.booking?.id === bookingId)) || tickets[0];
+                                    if (match) handleSendEmailForTicket(match);
+                                }}
+                            >
+                                <Mail className="h-3.5 w-3.5 mr-1" />
+                                Email Pass
+                            </Button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -612,7 +875,7 @@ function TicketsContent() {
                     <p className="text-sm font-medium">Loading your Superlines tickets...</p>
                 </div>
             ) : tickets.length > 0 ? (
-                <div className="grid gap-6 md:grid-cols-2">
+                <div id="tickets-grid" className="grid gap-6 md:grid-cols-2">
                     {tickets.map((t) => {
                         const booking = t.booking;
                         const trip = booking?.trip;
@@ -925,16 +1188,29 @@ function TicketsContent() {
                                         </div>
                                     )}
 
-                                    {/* Print Boarding Pass Button */}
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="w-full text-xs font-semibold text-muted-foreground hover:text-foreground"
-                                        onClick={() => setViewingBoardingPass(t)}
-                                    >
-                                        <Printer className="mr-1.5 h-3.5 w-3.5" />
-                                        Print Boarding Pass / Thermal Stub
-                                    </Button>
+                                    {/* Action Buttons: Email Ticket & Print Stub */}
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="flex-1 text-xs font-bold border-blue-400/60 text-blue-600 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                                            disabled={emailingTicketId === t.id}
+                                            onClick={() => handleSendEmailForTicket(t)}
+                                        >
+                                            <Mail className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                                            {emailingTicketId === t.id ? "Sending Email..." : "Send to Email"}
+                                        </Button>
+
+                                        <Button
+                                            variant="default"
+                                            size="sm"
+                                            className="flex-1 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                                            onClick={() => setViewingBoardingPass(t)}
+                                        >
+                                            <QrCode className="mr-1.5 h-3.5 w-3.5" />
+                                            QR Boarding Pass
+                                        </Button>
+                                    </div>
                                 </CardContent>
                             </Card>
                         );

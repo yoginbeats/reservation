@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { LogOut, User, Menu, X, Ticket, Calendar, Home, ShieldCheck, Clock } from "lucide-react";
+import { LogOut, User, Menu, X, Ticket, Calendar, Home, ShieldCheck, Clock, GraduationCap } from "lucide-react";
 
 export function GlobalHeader() {
     const pathname = usePathname();
@@ -132,11 +132,16 @@ export function GlobalHeader() {
 
     const navLinks = [
         { href: "/", label: "Home", icon: Home, active: pathname === "/" },
-        { href: "/book", label: "Search & Book", icon: Calendar, active: pathname?.startsWith("/book") },
-        { href: "/schedules", label: "Daily Schedules", icon: Clock, active: pathname === "/schedules" },
-        { href: "/my-tickets", label: "My Tickets", icon: Ticket, active: pathname?.startsWith("/my-tickets") },
         ...(user
-            ? [{ href: "/dashboard", label: "My Account", icon: User, active: pathname?.startsWith("/dashboard") }]
+            ? [{ href: "/book", label: "Search & Book", icon: Calendar, active: pathname?.startsWith("/book") }]
+            : []
+        ),
+        { href: "/schedules", label: "Daily Schedules", icon: Clock, active: pathname === "/schedules" },
+        ...(user
+            ? [
+                { href: "/my-tickets", label: "My Tickets", icon: Ticket, active: pathname?.startsWith("/my-tickets") },
+                { href: "/dashboard", label: "My Account", icon: User, active: pathname?.startsWith("/dashboard") },
+              ]
             : []
         ),
     ];
@@ -197,6 +202,24 @@ export function GlobalHeader() {
                             {link.label}
                         </Link>
                     ))}
+                    <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new CustomEvent("open-academic-disclaimer"))}
+                        className="text-xs font-semibold text-zinc-600 hover:text-red-700 transition-colors flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-red-50 border border-transparent hover:border-red-200"
+                        title="Academic Project Disclaimer"
+                    >
+                        <GraduationCap className="h-3.5 w-3.5 text-red-600" />
+                        <span className="hidden xl:inline">Notice</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new CustomEvent("open-privacy-policy"))}
+                        className="text-xs font-semibold text-zinc-600 hover:text-emerald-700 transition-colors flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-emerald-50 border border-transparent hover:border-emerald-200"
+                        title="Tingnan ang Data Privacy Notice (R.A. 10173)"
+                    >
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        <span className="hidden xl:inline">Data Privacy</span>
+                    </button>
                 </nav>
 
                 {/* Action Buttons & Mobile Toggle */}
@@ -301,6 +324,28 @@ export function GlobalHeader() {
                                 </Link>
                             );
                         })}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setMobileMenuOpen(false);
+                                window.dispatchEvent(new CustomEvent("open-academic-disclaimer"));
+                            }}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-red-700 hover:bg-red-50 transition-colors text-left"
+                        >
+                            <GraduationCap className="h-4 w-4 text-red-600" />
+                            <span>Academic Project Notice (Paunawa)</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setMobileMenuOpen(false);
+                                window.dispatchEvent(new CustomEvent("open-privacy-policy"));
+                            }}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors text-left"
+                        >
+                            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                            <span>Data Privacy Notice (R.A. 10173)</span>
+                        </button>
                     </nav>
 
                     <div className="pt-2 border-t border-zinc-100">

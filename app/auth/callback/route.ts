@@ -74,15 +74,18 @@ export async function GET(request: Request) {
                     return NextResponse.redirect(`${origin}${next}`);
                 }
 
-                // If profile details are incomplete, redirect them to the completion form!
-                if (!isComplete) {
-                    return NextResponse.redirect(`${origin}/complete-profile?next=${encodeURIComponent(next)}`);
-                }
+                const targetNext = !isComplete
+                    ? `/complete-profile?next=${encodeURIComponent(next)}`
+                    : next;
+
+                // 🔒 REQUIRE 2-STEP DOUBLE VERIFICATION (OTP & SECONDARY GOOGLE ALERT)
+                const verifyUrl = `${origin}/auth/verify-otp?email=${encodeURIComponent(user.email || "")}&next=${encodeURIComponent(targetNext)}`;
+                return NextResponse.redirect(verifyUrl);
             } catch (err) {
                 console.warn('OAuth profile sync warning:', err);
             }
 
-            return NextResponse.redirect(`${origin}${next}`);
+            return NextResponse.redirect(`${origin}/auth/verify-otp?email=${encodeURIComponent(user.email || "")}&next=${encodeURIComponent(next)}`);
         }
     }
 

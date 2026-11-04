@@ -17,7 +17,8 @@ import {
     Check,
     Upload,
     X,
-    AlertCircle
+    AlertCircle,
+    Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
+import { DeleteAccountModal } from "@/components/delete-account-modal";
 
 interface FacebookProfileCardProps {
     userId: string;
@@ -88,6 +90,7 @@ export function FacebookProfileCard({
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     // Sync state when props change
     useEffect(() => {
@@ -718,12 +721,25 @@ export function FacebookProfileCard({
 
                             {/* Modal Footer Actions */}
                             <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                                <Link
-                                    href="/complete-profile"
-                                    className="text-[11px] font-bold text-zinc-500 hover:text-red-600 underline"
-                                >
-                                    Open Full Page Editor &rarr;
-                                </Link>
+                                <div className="flex items-center gap-3">
+                                    <Link
+                                        href="/complete-profile"
+                                        className="text-[11px] font-bold text-zinc-500 hover:text-red-600 underline"
+                                    >
+                                        Full Settings &rarr;
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsEditModalOpen(false);
+                                            setShowDeleteModal(true);
+                                        }}
+                                        className="text-[11px] font-bold text-red-600 hover:text-red-700 hover:underline flex items-center gap-1"
+                                    >
+                                        <Trash2 className="h-3 w-3" />
+                                        Delete Account
+                                    </button>
+                                </div>
                                 <div className="flex items-center gap-2">
                                     <Button
                                         type="button"
@@ -748,6 +764,15 @@ export function FacebookProfileCard({
                     </div>
                 </div>
             )}
+
+            {/* Delete Account Modal Dialog */}
+            <DeleteAccountModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                userId={userId}
+                userEmail={email}
+                userName={currentFullName}
+            />
         </div>
     );
 }

@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
             if (!error && data) tripsList = data;
         } catch {}
 
-        // 4. Fetch Bookings
+        // 4. Fetch Bookings & Reservations
         let rawBookings: any[] = [];
         try {
             const { data, error } = await supabase
@@ -98,6 +98,29 @@ export async function GET(req: NextRequest) {
                 .order("created_at", { ascending: false });
             if (!error && data) rawBookings = data;
         } catch {}
+
+        if (rawBookings.length === 0) {
+            try {
+                const { data: resData, error: resErr } = await supabase
+                    .from("reservations")
+                    .select("*, trip:trips(*, bus:buses(*))")
+                    .order("created_at", { ascending: false });
+                if (!resErr && resData) {
+                    rawBookings = resData.map((r: any) => ({
+                        id: r.id,
+                        created_at: r.created_at,
+                        passenger_name: r.passenger_name,
+                        passenger_contact: r.passenger_contact || "",
+                        seat_number: r.seat_number,
+                        total_price: Number(r.total_price || 850),
+                        booking_source: r.booking_source || "WALK_IN",
+                        booking_status: r.status || "CONFIRMED",
+                        trip: r.trip,
+                        terminal: { name: r.trip?.origin || "Cubao" }
+                    }));
+                }
+            } catch {}
+        }
 
         // 5. Fetch Payments
         let rawPayments: any[] = [];

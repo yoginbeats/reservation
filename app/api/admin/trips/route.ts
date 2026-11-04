@@ -1,0 +1,130 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getUserWithRoleAndTerminal } from "@/lib/supabase/server";
+import { 
+    getActiveScheduledTrips, 
+    addScheduledTrip, 
+    deleteScheduledTrip, 
+    clearAllScheduledTrips 
+} from "@/lib/trip-store";
+
+// GET /api/admin/trips - Return all active scheduled trips
+export async function GET(req: NextRequest) {
+    try {
+        const trips = getActiveScheduledTrips();
+        return NextResponse.json({
+            success: true,
+            trips,
+            count: trips.length,
+        });
+    } catch (err: any) {
+        console.error("Error fetching scheduled trips:", err);
+        return NextResponse.json(
+            { success: false, error: err?.message || "Failed to fetch scheduled trips." },
+            { status: 500 }
+        );
+    }
+}
+
+// POST /api/admin/trips - Schedule a new trip (Admin only)
+export async function POST(req: NextRequest) {
+    try {
+        const { user, role } = await getUserWithRoleAndTerminal();
+
+        // Security check: Only Admin can schedule trips
+        if (!user || role !== "ADMIN") {
+            return NextResponse.json(
+                { success: false, error: "Access Denied: Only Administrators can create scheduled trips." },
+                { status: 403 }
+            );
+        }
+
+        const body = await req.json();
+        const origin = (body.origin || "Cubao").trim();
+        const destination = (body.destination || "Daet").trim();
+        const departure_time = body.departure_time;
+        const fare_amount = Number(body.fare_amount || body.price || 850);
+        const bus_number = body.bus_number || "Superlines Express";
+        const bus_type = body.bus_type || "REGULAR AIRCON";
+        const seat_capacity = Number(body.seat_capacity || 45);
+
+        if (!departure_time) {
+            return NextResponse.json(
+                { success: false, error: "Please provide a valid departure date and time." },
+                { status: 400 }
+            );
+        }
+
+        const newTrip = addScheduledTrip({
+            origin,
+            destination,
+            departure_time,
+            fare_amount,
+            price: fare_amount,
+            status: "SCHEDULED",
+            bus_id: body.bus_id || null,
+            bus_number,
+            bus_type,
+            seat_capacity,
+            route_id: body.route_id || null,
+            created_by: user.id,
+        });
+
+        return NextResponse.json({
+            success: true,
+            message: `Trip for ${origin} ➔ ${destination} scheduled successfully!`,
+            trip: newTrip,
+        });
+    } catch (err: any) {
+        console.error("Error scheduling trip:", err);
+        return NextResponse.json(
+            { success: false, error: err?.message || "Failed to schedule trip." },
+            { status: 500 }
+        );
+    }
+}
+
+// DELETE /api/admin/trips - Delete single trip or clear all trips (Admin only)
+export async function DELETE(req: NextRequest) {
+    try {
+        const { user, role } = await getUserWithRoleAndTerminal();
+
+        // Security check: Only Admin can delete trips
+        if (!user || role !== "ADMIN") {
+            return NextResponse.json(
+                { success: false, error: "Access Denied: Only Administrators can delete scheduled trips." },
+                { status: 403 }
+            );
+        }
+
+        const { searchParams } = new URL(req.url);
+        const clearAll = searchParams.get("all") === "true";
+        const tripId = searchParams.get("id");
+
+        if (clearAll) {
+            clearAllScheduledTrips();
+            return NextResponse.json({
+                success: true,
+                message: "All scheduled trips have been cleared clean. Zero departures active across all portals.",
+            });
+        }
+
+        if (!tripId) {
+            return NextResponse.json(
+                { success: false, error: "Missing trip ID parameter to delete." },
+                { status: 400 }
+            );
+        }
+
+        deleteScheduledTrip(tripId);
+        return NextResponse.json({
+            success: true,
+            message: `Scheduled trip #${tripId} has been deleted.`,
+        });
+    } catch (err: any) {
+        console.error("Error deleting trip:", err);
+        return NextResponse.json(
+            { success: false, error: err?.message || "Failed to delete trip." },
+            { status: 500 }
+        );
+    }
+}

@@ -1,0 +1,34 @@
+{
+  "activeOtps": {
+    "test@gmail.com": {
+      "email": "test@gmail.com",
+      "secondaryEmail": "other@gmail.com",
+      "otp": "963169",
+      "action": "GOOGLE_SIGNUP",
+      "createdAt": "2026-11-04T03:55:59.719Z",
+      "expiresAt": "2026-11-04T04:05:59.719Z",
+      "verified": true,
+      "attempts": 1,
+      "metadata": {
+        "device": "Web Browser (Chrome/Safari)",
+        "location": "Philippines"
+      }
+    }
+  },
+  "secondaryEmails": {
+    "test@gmail.com": "other@gmail.com"
+  },
+  "alertLogs": [
+    {
+      "id": "SEC-1793764559726-430",
+      "timestamp": "2026-11-04T03:55:59.719Z",
+      "primaryEmail": "test@gmail.com",
+      "secondaryEmail": "other@gmail.com",
+      "action": "GOOGLE_SIGNUP",
+      "status": "DISPATCHED",
+      "deviceInfo": "Web Browser (Desktop / Mobile)",
+      "subject": "Security Alert: New Google Sign-In & Two-Step Verification for test@gmail.com",
+      "otp": "963169"
+    }
+  ]
+}

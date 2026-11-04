@@ -51,4 +51,6 @@ clean_deploy/
 release_src/
 node_modules_old/
 
-!release/*.zip
+# deployment archives
+release/
+*.zip

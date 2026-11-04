@@ -35,6 +35,7 @@ export default function LoginPage() {
     // Redirect & Reservation Requirement States
     const [redirectTarget, setRedirectTarget] = useState("/dashboard");
     const [isReservationAuth, setIsReservationAuth] = useState(false);
+    const [accountDeletedNotice, setAccountDeletedNotice] = useState(false);
 
     // Form States
     const [email, setEmail] = useState("");
@@ -61,6 +62,9 @@ export default function LoginPage() {
             }
             if (notice === "login_required" || redir?.includes("/book")) {
                 setIsReservationAuth(true);
+            }
+            if (notice === "account_deleted") {
+                setAccountDeletedNotice(true);
             }
         }
     }, []);
@@ -308,6 +312,20 @@ export default function LoginPage() {
                                             </p>
                                             <p className="text-zinc-300 leading-relaxed">
                                                 Mangyaring mag-sign in muna o lumikha ng account upang mai-save nang ligtas ang iyong napiling bus schedule, upuan, at official digital QR ticket.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {accountDeletedNotice && (
+                                    <div className="rounded-xl border border-emerald-500/50 bg-emerald-950/40 p-4 text-xs text-emerald-200 flex items-start gap-3 shadow-lg shadow-emerald-950/30">
+                                        <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                                        <div className="space-y-1">
+                                            <p className="font-black text-sm text-emerald-300">
+                                                Account Successfully Deleted
+                                            </p>
+                                            <p className="text-zinc-300 leading-relaxed">
+                                                Your passenger account, personal details, and sessions have been permanently removed from our system. Thank you for using Superlines!
                                             </p>
                                         </div>
                                     </div>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, MapPin, Bus, Route, Calendar, Users, Ticket, BarChart3, ShieldCheck, Settings, Megaphone, CalendarCheck, Zap, Clock } from "lucide-react";
+import { LayoutDashboard, MapPin, Bus, Route, Calendar, Users, Ticket, BarChart3, ShieldCheck, Settings, Megaphone, CalendarCheck, Zap, Clock, Globe, ExternalLink } from "lucide-react";
 import { AdminLogoutButton } from "@/components/admin-logout-button";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
@@ -137,8 +137,8 @@ export default async function AdminLayout({
                             href="/admin/users"
                             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 transition-colors"
                         >
-                            <Users className="h-4 w-4 text-zinc-500" />
-                            Users & Roles
+                            <Users className="h-4 w-4 text-red-600" />
+                            Staff &amp; Credentials
                         </Link>
                         <Link
                             href="/admin/reports"
@@ -162,7 +162,20 @@ export default async function AdminLayout({
                             Settings
                         </Link>
                     </div>
-                    <div className="border-t border-zinc-200 p-4">
+                    <div className="border-t border-zinc-200 p-4 space-y-2">
+                        <Link
+                            href="/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold text-zinc-700 bg-zinc-50 border border-zinc-200 hover:bg-zinc-100 hover:text-zinc-950 transition-colors shadow-2xs group"
+                            title="Open public passenger portal in new tab"
+                        >
+                            <span className="flex items-center gap-2">
+                                <Globe className="h-4 w-4 text-red-600 group-hover:scale-110 transition-transform" />
+                                View Public Website
+                            </span>
+                            <ExternalLink className="h-3.5 w-3.5 text-zinc-400 group-hover:text-zinc-700" />
+                        </Link>
                         <AdminLogoutButton />
                     </div>
                 </div>

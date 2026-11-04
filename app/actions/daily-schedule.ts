@@ -3,12 +3,33 @@
 import fs from "fs";
 import path from "path";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getUserWithRoleAndTerminal } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { DailyScheduleItem, INITIAL_WHITEBOARD_SCHEDULES } from "@/lib/constants/daily-schedules";
 
 export type { DailyScheduleItem };
 
 const LOCAL_STORAGE_FILE = path.join(process.cwd(), "data", "daily-schedules.json");
+
+/**
+ * Server-side RBAC Guard:
+ * Ensures that only authenticated users with an explicit "ADMIN" role
+ * can mutate (add, edit, delete, or reset) terminal daily departure schedules.
+ */
+async function verifyAdminAuth(): Promise<{ authorized: boolean; error?: string }> {
+    try {
+        const { user, role } = await getUserWithRoleAndTerminal();
+        if (!user) {
+            return { authorized: false, error: "Unauthorized. Please log in to perform this action." };
+        }
+        if (role !== "ADMIN") {
+            return { authorized: false, error: "Forbidden. Only authorized Administrators can modify daily schedules." };
+        }
+        return { authorized: true };
+    } catch (e: any) {
+        return { authorized: false, error: e?.message || "Authentication verification error." };
+    }
+}
 
 function readLocalSchedules(): DailyScheduleItem[] {
     try {
@@ -35,6 +56,10 @@ function writeLocalSchedules(items: DailyScheduleItem[]) {
     }
 }
 
+/**
+ * Public Action: Read daily terminal schedules
+ * Accessible to all visitors and passengers for the /schedules timetable.
+ */
 export async function getDailySchedulesAction(): Promise<{ success: boolean; data: DailyScheduleItem[]; error?: string }> {
     try {
         // 1. Try Supabase query
@@ -56,8 +81,18 @@ export async function getDailySchedulesAction(): Promise<{ success: boolean; dat
     }
 }
 
+/**
+ * Admin Action: Add a new daily schedule
+ * Protected: Requires ADMIN role
+ */
 export async function addDailyScheduleAction(newItem: Omit<DailyScheduleItem, "id">): Promise<{ success: boolean; data?: DailyScheduleItem; error?: string }> {
     try {
+        // 1. Enforce strict Admin-only authorization
+        const auth = await verifyAdminAuth();
+        if (!auth.authorized) {
+            return { success: false, error: auth.error };
+        }
+
         const id = `sched-${Date.now()}`;
         const item: DailyScheduleItem = {
             id,
@@ -83,8 +118,18 @@ export async function addDailyScheduleAction(newItem: Omit<DailyScheduleItem, "i
     }
 }
 
+/**
+ * Admin Action: Update an existing daily schedule
+ * Protected: Requires ADMIN role
+ */
 export async function updateDailyScheduleAction(id: string, updates: Partial<DailyScheduleItem>): Promise<{ success: boolean; error?: string }> {
     try {
+        // 1. Enforce strict Admin-only authorization
+        const auth = await verifyAdminAuth();
+        if (!auth.authorized) {
+            return { success: false, error: auth.error };
+        }
+
         // Try Supabase update
         try {
             await supabaseAdmin.from("daily_terminal_schedules").update(updates).eq("id", id);
@@ -103,8 +148,18 @@ export async function updateDailyScheduleAction(id: string, updates: Partial<Dai
     }
 }
 
+/**
+ * Admin Action: Delete a daily schedule
+ * Protected: Requires ADMIN role
+ */
 export async function deleteDailyScheduleAction(id: string): Promise<{ success: boolean; error?: string }> {
     try {
+        // 1. Enforce strict Admin-only authorization
+        const auth = await verifyAdminAuth();
+        if (!auth.authorized) {
+            return { success: false, error: auth.error };
+        }
+
         // Try Supabase delete
         try {
             await supabaseAdmin.from("daily_terminal_schedules").delete().eq("id", id);
@@ -123,8 +178,18 @@ export async function deleteDailyScheduleAction(id: string): Promise<{ success: 
     }
 }
 
+/**
+ * Admin Action: Reset timetable to default Daet terminal whiteboard
+ * Protected: Requires ADMIN role
+ */
 export async function resetDailySchedulesAction(): Promise<{ success: boolean; data: DailyScheduleItem[]; error?: string }> {
     try {
+        // 1. Enforce strict Admin-only authorization
+        const auth = await verifyAdminAuth();
+        if (!auth.authorized) {
+            return { success: false, error: auth.error, data: INITIAL_WHITEBOARD_SCHEDULES };
+        }
+
         // Clean Supabase table if possible
         try {
             await supabaseAdmin.from("daily_terminal_schedules").delete().neq("id", "none");

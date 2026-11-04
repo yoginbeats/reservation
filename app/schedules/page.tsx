@@ -1,6 +1,8 @@
 import Image from "next/image";
-import { Clock, MapPin, Bus, Phone, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { Clock, MapPin, Bus, Phone, ShieldCheck, Edit3 } from "lucide-react";
 import { getDailySchedulesAction, DailyScheduleItem } from "@/app/actions/daily-schedule";
+import { getUserWithRoleAndTerminal } from "@/lib/supabase/server";
 
 export const metadata = {
     title: "Daily Bus Schedules & Terminal Departures | Superlines Transportation",
@@ -10,6 +12,7 @@ export const metadata = {
 export const revalidate = 0; // Dynamic server rendering to reflect admin updates immediately
 
 export default async function SchedulesPage() {
+    const { role } = await getUserWithRoleAndTerminal();
     const res = await getDailySchedulesAction();
     const schedules: DailyScheduleItem[] = res.success && res.data ? res.data : [];
 
@@ -23,6 +26,30 @@ export default async function SchedulesPage() {
     return (
         <div className="min-h-screen bg-zinc-950 font-sans text-white py-10 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto space-y-8">
+                {/* Admin Quick CMS Edit Banner */}
+                {role === "ADMIN" && (
+                    <div className="rounded-2xl border-2 border-blue-500/50 bg-gradient-to-r from-blue-950/80 to-zinc-900 p-4 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-blue-600 text-white font-bold shrink-0">
+                                <Edit3 className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-white">
+                                    Admin Schedule Editor Mode Active
+                                </p>
+                                <p className="text-xs text-blue-200">
+                                    You can update departure times, change routes, assign bus units, or add departures in real time.
+                                </p>
+                            </div>
+                        </div>
+                        <Link
+                            href="/admin/daily-schedules"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold text-xs text-white shadow-md transition-colors shrink-0"
+                        >
+                            <span>Open Admin Schedule Editor &rarr;</span>
+                        </Link>
+                    </div>
+                )}
                 
                 {/* Header Banner */}
                 <div className="text-center space-y-3">

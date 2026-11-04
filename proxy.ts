@@ -1,16 +1,25 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
+import { createServerClient } from '@supabase/ssr'
 
 // ==============================================================================
-// 🚧 TEMPORARY MAINTENANCE TOGGLE
-// Set to TRUE to turn ON maintenance mode (blocks all traffic, shows 503 page).
-// Set to FALSE when you are ready for Thesis Defense / Testing.
+// 🚧 MAINTENANCE MODE TOGGLE
+// Set to true to display 503 maintenance page on the live public domain.
+// Note: Localhost (127.0.0.1 / localhost) ALWAYS bypasses this so you can develop & test!
 // ==============================================================================
-export const MAINTENANCE_MODE = true;
+export const MAINTENANCE_MODE = true
+
+// ⚠️ BYPASS AUTH: Set to true ONLY for debugging if needed, strictly false for production
+const DEV_BYPASS_AUTH = false
 
 export default async function proxy(request: NextRequest) {
-  if (MAINTENANCE_MODE) {
-    return new NextResponse(
-      `<!doctype html>
+    const host = request.headers.get('host') || ''
+    const isLocal = host.includes('localhost') || host.includes('127.0.0.1')
+
+    // If maintenance mode is active and not on localhost, serve 503 maintenance page
+    if (MAINTENANCE_MODE && !isLocal) {
+        return new NextResponse(
+            `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -89,22 +98,186 @@ export default async function proxy(request: NextRequest) {
     </div>
   </body>
 </html>`,
-      {
-        status: 503,
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "X-Robots-Tag": "noindex, nofollow, noarchive",
-          "Retry-After": "86400",
-        },
-      }
-    );
-  }
+            {
+                status: 503,
+                headers: {
+                    'Content-Type': 'text/html; charset=utf-8',
+                    'X-Robots-Tag': 'noindex, nofollow, noarchive',
+                    'Retry-After': '86400',
+                },
+            }
+        )
+    }
 
-  return NextResponse.next();
+    // Update session for all requests
+    const response = await updateSession(request)
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet')
+
+    // Skip all auth checks if DEV_BYPASS_AUTH is enabled
+    if (DEV_BYPASS_AUTH) {
+        return response
+    }
+
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll() {
+                    return request.cookies.getAll()
+                },
+                setAll(cookiesToSet) {
+                    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+                },
+            },
+        }
+    )
+
+    let user: any = null
+    let role: string = 'PASSENGER'
+
+    // 1. Check system session cookie for instant, zero-delay authentication
+    const systemSessionCookie = request.cookies.get('superlines_auth_session')?.value
+    if (typeof systemSessionCookie === 'string') {
+        try {
+            const parsed = JSON.parse(decodeURIComponent(systemSessionCookie))
+            if (parsed?.user) {
+                user = parsed.user
+                role = parsed.role || user.role || user.user_metadata?.role || 'PASSENGER'
+            }
+        } catch {}
+    }
+
+    // 2. Fallback to Supabase Database Auth if not logged in via system session
+    if (!user) {
+        try {
+            const { data: userData } = await supabase.auth.getUser()
+            user = userData?.user || null
+
+            if (user) {
+                role = user.user_metadata?.role || role
+                const { data: roleData } = await supabase
+                    .from('user_roles')
+                    .select('role')
+                    .eq('user_id', user.id)
+                    .single()
+
+                if (roleData && typeof (roleData as any).role === 'string') {
+                    role = (roleData as any).role
+                }
+            }
+        } catch (err) {
+            console.warn('Supabase Auth connection offline/paused in middleware:', err)
+        }
+    }
+
+    // Default & Standardize role string
+    if (!role) role = 'PASSENGER'
+    if (role === 'admin') role = 'ADMIN'
+    if (role === 'client') role = 'PASSENGER'
+
+    const url = new URL(request.url)
+
+    // Helper to get role home page
+    const getRoleHomePage = (userRole: string) => {
+        switch (userRole) {
+            case 'ADMIN': return '/admin'
+            case 'TELLER': return '/teller/walk-in'
+            case 'CONDUCTOR': return '/conductor'
+            default: return '/dashboard'
+        }
+    }
+
+    // Root page behavior
+    if (url.pathname === '/') {
+        if (user && role === 'ADMIN') {
+            return NextResponse.redirect(new URL('/admin', request.url))
+        }
+        if (user && role === 'TELLER') {
+            return NextResponse.redirect(new URL('/teller/walk-in', request.url))
+        }
+        if (user && role === 'CONDUCTOR') {
+            return NextResponse.redirect(new URL('/conductor', request.url))
+        }
+        return response
+    }
+
+    // Protect /admin routes - require ADMIN role
+    if (url.pathname.startsWith('/admin')) {
+        if (user && role !== 'ADMIN') {
+            return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
+        }
+        if (url.pathname === '/admin/login' || url.pathname === '/admin/register') {
+            if (user && role === 'ADMIN') {
+                return NextResponse.redirect(new URL('/admin', request.url))
+            }
+            return response
+        }
+        if (!user) {
+            return NextResponse.redirect(new URL('/admin/login', request.url))
+        }
+        if (role !== 'ADMIN') {
+            return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
+        }
+    }
+
+    // Protect /api/admin routes - require ADMIN role
+    if (url.pathname.startsWith('/api/admin')) {
+        if (!user || role !== 'ADMIN') {
+            return NextResponse.json({ success: false, error: 'Unauthorized access: Main Admin privileges required.' }, { status: 403 })
+        }
+    }
+
+    // Protect /teller routes - require TELLER or ADMIN role
+    if (url.pathname.startsWith('/teller')) {
+        if (!user) {
+            return NextResponse.redirect(new URL('/admin/login', request.url))
+        }
+        if (role !== 'TELLER' && role !== 'ADMIN') {
+            return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
+        }
+    }
+
+    // Protect /conductor routes - require CONDUCTOR or ADMIN role
+    if (url.pathname.startsWith('/conductor')) {
+        if (!user) {
+            return NextResponse.redirect(new URL('/admin/login', request.url))
+        }
+        if (role !== 'CONDUCTOR' && role !== 'ADMIN') {
+            return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
+        }
+    }
+
+    // Protect passenger routes (/dashboard, /my-tickets, /complete-profile, /book) - require being logged in
+    const passengerRoutes = ['/dashboard', '/my-tickets', '/reservations', '/complete-profile', '/book']
+    if (passengerRoutes.some(p => url.pathname.startsWith(p))) {
+        if (!user) {
+            const redirectUrl = encodeURIComponent(url.pathname + url.search)
+            return NextResponse.redirect(new URL(`/login?redirect=${redirectUrl}&notice=login_required`, request.url))
+        }
+    }
+
+    // Redirect logged-in users away from auth pages to their respective dashboards
+    const authPages = ['/login', '/register']
+    const isAuthPage = authPages.some(path => url.pathname === path || url.pathname.startsWith(path + '/'))
+
+    if (isAuthPage && user) {
+        return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
+    }
+
+    // Helmet Secure HTTP Headers
+    response.headers.set('X-Frame-Options', 'SAMEORIGIN')
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+    response.headers.set('X-DNS-Prefetch-Control', 'on')
+
+    return response
 }
 
-export const middleware = proxy;
-
 export const config = {
-  matcher: ["/:path*"],
-};
+    matcher: [
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    ],
+}

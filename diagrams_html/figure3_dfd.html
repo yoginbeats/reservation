@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; }
+  body { background: #ffffff; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  
+  .canvas-container {
+    width: 1650px;
+    height: 1150px;
+    background: #ffffff;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    position: relative;
+  }
+  .title-block { text-align: center; margin-bottom: 12px; }
+  .title-block h1 { font-size: 22px; font-weight: bold; color: #000000; letter-spacing: 0.5px; }
+  .title-block p { font-size: 13px; color: #475569; margin-top: 2px; }
+
+  svg { width: 100%; height: 1040px; }
+
+  /* Gane & Sarson Process */
+  .proc-box { fill: #ffffff; stroke: #000000; stroke-width: 1.8; }
+  .proc-header { fill: #fef08a; stroke: #000000; stroke-width: 1.8; }
+  .proc-num { font-size: 13px; font-weight: bold; fill: #000000; text-anchor: middle; dominant-baseline: middle; }
+  .proc-name { font-size: 12.5px; font-weight: bold; fill: #000000; text-anchor: middle; dominant-baseline: middle; }
+
+  /* External Entities (Yellow Rectangles) */
+  .entity-box { fill: #fef08a; stroke: #000000; stroke-width: 1.8; }
+  .entity-text { font-size: 13.5px; font-weight: bold; fill: #000000; text-anchor: middle; dominant-baseline: middle; }
+
+  /* Data Stores (Open-ended rectangles with left grey 'D' block) */
+  .ds-d-box { fill: #cbd5e1; stroke: #000000; stroke-width: 1.8; }
+  .ds-d-text { font-size: 12px; font-weight: bold; fill: #000000; text-anchor: middle; dominant-baseline: middle; }
+  .ds-body { fill: #fef08a; stroke: #000000; stroke-width: 1.8; }
+  .ds-text { font-size: 11.5px; font-weight: bold; fill: #000000; dominant-baseline: middle; }
+
+  /* Orthogonal Lines & Arrows */
+  .arrow-line { fill: none; stroke: #000000; stroke-width: 1.5; }
+  .flow-label { font-size: 10px; fill: #000000; background: #ffffff; }
+
+  .caption { text-align: center; margin-top: 8px; font-size: 13.5px; font-weight: bold; color: #000000; }
+</style>
+</head>
+<body>
+
+<div class="canvas-container">
+  <div class="title-block">
+    <h1>Level-1 Data Flow Diagram (DFD) — Gane &amp; Sarson Notation</h1>
+    <p>Superlines Transportation Co. Inc. — Centralized Reservation and Ticketing System</p>
+  </div>
+
+  <svg viewBox="0 0 1600 1000">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#000000" />
+      </marker>
+    </defs>
+
+    <!-- ================================================================= -->
+    <!-- 1. DATA STORES (OPEN-ENDED WITH LEFT GREY 'D' BOX) -->
+    <!-- ================================================================= -->
+
+    <!-- D1: Bus Schedules & Routes (x: 1040, y: 70) -->
+    <g transform="translate(1040, 70)">
+      <rect x="0" y="0" width="35" height="38" class="ds-d-box" />
+      <text x="17" y="19" class="ds-d-text">D1</text>
+      <path d="M 35 0 L 220 0 M 35 38 L 220 38" stroke="#000000" stroke-width="1.8" fill="none" />
+      <rect x="35" y="0" width="185" height="38" class="ds-body" stroke="none" />
+      <line x1="35" y1="0" x2="220" y2="0" stroke="#000000" stroke-width="1.8" />
+      <line x1="35" y1="38" x2="220" y2="38" stroke="#000000" stroke-width="1.8" />
+      <text x="45" y="19" class="ds-text">Bus Schedules &amp; Routes</text>
+    </g>
+
+    <!-- D2: Seat Inventory (trip_seats) (x: 1040, y: 340) -->
+    <g transform="translate(1040, 340)">
+      <rect x="0" y="0" width="35" height="38" class="ds-d-box" />
+      <text x="17" y="19" class="ds-d-text">D2</text>
+      <rect x="35" y="0" width="220" height="38" class="ds-body" stroke="none" />
+      <line x1="35" y1="0" x2="255" y2="0" stroke="#000000" stroke-width="1.8" />
+      <line x1="35" y1="38" x2="255" y2="38" stroke="#000000" stroke-width="1.8" />
+      <text x="45" y="19" class="ds-text">Seat Inventory (trip_seats)</text>
+    </g>
+
+    <!-- D3: Bookings & Payments (x: 680, y: 640) -->
+    <g transform="translate(680, 640)">
+      <rect x="0" y="0" width="35" height="38" class="ds-d-box" />
+      <text x="17" y="19" class="ds-d-text">D3</text>
+      <rect x="35" y="0" width="190" height="38" class="ds-body" stroke="none" />
+      <line x1="35" y1="0" x2="225" y2="0" stroke="#000000" stroke-width="1.8" />
+      <line x1="35" y1="38" x2="225" y2="38" stroke="#000000" stroke-width="1.8" />
+      <text x="45" y="19" class="ds-text">Bookings &amp; Payments</text>
+    </g>
+
+    <!-- D4: Issued Tickets & QR Tokens (x: 1040, y: 640) -->
+    <g transform="translate(1040, 640)">
+      <rect x="0" y="0" width="35" height="38" class="ds-d-box" />
+      <text x="17" y="19" class="ds-d-text">D4</text>
+      <rect x="35" y="0" width="210" height="38" class="ds-body" stroke="none" />
+      <line x1="35" y1="0" x2="245" y2="0" stroke="#000000" stroke-width="1.8" />
+      <line x1="35" y1="38" x2="245" y2="38" stroke="#000000" stroke-width="1.8" />
+      <text x="45" y="19" class="ds-text">Issued Tickets &amp; QR Tokens</text>
+    </g>
+
+    <!-- D5: Boarding Audit Logs (x: 1040, y: 910) -->
+    <g transform="translate(1040, 910)">
+      <rect x="0" y="0" width="35" height="38" class="ds-d-box" />
+      <text x="17" y="19" class="ds-d-text">D5</text>
+      <rect x="35" y="0" width="210" height="38" class="ds-body" stroke="none" />
+      <line x1="35" y1="0" x2="245" y2="0" stroke="#000000" stroke-width="1.8" />
+      <line x1="35" y1="38" x2="245" y2="38" stroke="#000000" stroke-width="1.8" />
+      <text x="45" y="19" class="ds-text">Conductor Boarding Audit</text>
+    </g>
+
+
+    <!-- ================================================================= -->
+    <!-- 2. EXTERNAL ENTITIES (YELLOW RECTANGLES) -->
+    <!-- ================================================================= -->
+
+    <!-- PASSENGER (x: 60, y: 150) -->
+    <rect x="60" y="150" width="180" height="60" class="entity-box" />
+    <text x="150" y="180" class="entity-text">Passenger</text>
+
+    <!-- COUNTER TELLER (x: 60, y: 440) -->
+    <rect x="60" y="440" width="180" height="60" class="entity-box" />
+    <text x="150" y="470" class="entity-text">Counter Teller</text>
+
+    <!-- BUS CONDUCTOR (x: 60, y: 770) -->
+    <rect x="60" y="770" width="180" height="60" class="entity-box" />
+    <text x="150" y="800" class="entity-text">Bus Conductor</text>
+
+    <!-- PAYMENT GATEWAY (x: 1350, y: 200) -->
+    <rect x="1350" y="200" width="200" height="60" class="entity-box" />
+    <text x="1450" y="230" class="entity-text">Payment Gateway</text>
+
+    <!-- SYSTEM ADMINISTRATOR (x: 1350, y: 460) -->
+    <rect x="1350" y="460" width="200" height="60" class="entity-box" />
+    <text x="1450" y="490" class="entity-text">System Administrator</text>
+
+
+    <!-- ================================================================= -->
+    <!-- 3. PROCESSES (GANE & SARSON ROUNDED BOX WITH DIVIDED TOP BAR) -->
+    <!-- ================================================================= -->
+
+    <!-- PROCESS 1: Booking & Seat Allocation (x: 480, y: 140, w: 260, h: 90) -->
+    <g transform="translate(480, 140)">
+      <rect x="0" y="0" width="260" height="90" rx="12" ry="12" class="proc-box" />
+      <path d="M 0 12 Q 0 0 12 0 L 248 0 Q 260 0 260 12 L 260 30 L 0 30 Z" class="proc-header" />
+      <line x1="38" y1="0" x2="38" y2="30" stroke="#000000" stroke-width="1.8" />
+      <text x="19" y="15" class="proc-num">1</text>
+      <text x="130" y="60" class="proc-name">Trip Booking &amp; Seat Allocation</text>
+    </g>
+
+    <!-- PROCESS 2: Payment & Ticketing (x: 480, y: 420, w: 260, h: 90) -->
+    <g transform="translate(480, 420)">
+      <rect x="0" y="0" width="260" height="90" rx="12" ry="12" class="proc-box" />
+      <path d="M 0 12 Q 0 0 12 0 L 248 0 Q 260 0 260 12 L 260 30 L 0 30 Z" class="proc-header" />
+      <line x1="38" y1="0" x2="38" y2="30" stroke="#000000" stroke-width="1.8" />
+      <text x="19" y="15" class="proc-num">2</text>
+      <text x="130" y="60" class="proc-name">Payment Processing &amp; Ticketing</text>
+    </g>
+
+    <!-- PROCESS 3: Conductor Boarding Validation (x: 480, y: 750, w: 260, h: 90) -->
+    <g transform="translate(480, 750)">
+      <rect x="0" y="0" width="260" height="90" rx="12" ry="12" class="proc-box" />
+      <path d="M 0 12 Q 0 0 12 0 L 248 0 Q 260 0 260 12 L 260 30 L 0 30 Z" class="proc-header" />
+      <line x1="38" y1="0" x2="38" y2="30" stroke="#000000" stroke-width="1.8" />
+      <text x="19" y="15" class="proc-num">3</text>
+      <text x="130" y="60" class="proc-name">Boarding Scan &amp; Manifest Check</text>
+    </g>
+
+    <!-- PROCESS 4: Fleet & Remittance Reconciliation (x: 980, y: 460, w: 270, h: 90) -->
+    <g transform="translate(980, 460)">
+      <rect x="0" y="0" width="270" height="90" rx="12" ry="12" class="proc-box" />
+      <path d="M 0 12 Q 0 0 12 0 L 258 0 Q 270 0 270 12 L 270 30 L 0 30 Z" class="proc-header" />
+      <line x1="38" y1="0" x2="38" y2="30" stroke="#000000" stroke-width="1.8" />
+      <text x="19" y="15" class="proc-num">4</text>
+      <text x="145" y="60" class="proc-name">Fleet Dispatch &amp; Cash Remittance</text>
+    </g>
+
+
+    <!-- ================================================================= -->
+    <!-- 4. ORTHOGONAL ARROWS & DATA LABELS (EXACT REFERENCE STYLE) -->
+    <!-- ================================================================= -->
+
+    <!-- Passenger -> Process 1 (Trip Query) -->
+    <line x1="240" y1="165" x2="480" y2="165" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="260" y="158" class="flow-label">route &amp; date query</text>
+
+    <!-- Process 1 -> Passenger (Seat Layout) -->
+    <line x1="480" y1="190" x2="240" y2="190" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="260" y="202" class="flow-label">seat map &amp; trip list</text>
+
+    <!-- Passenger -> Process 1 (Seat Selection) -->
+    <path d="M 180 210 L 180 230 L 480 230" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="220" y="225" class="flow-label">seat selection &amp; passenger details</text>
+
+    <!-- Process 1 -> D1 (Read Schedules) -->
+    <path d="M 740 160 L 1040 160 L 1040 108" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="760" y="152" class="flow-label">query schedule details</text>
+
+    <!-- Process 1 -> D2 (Lock Seat) -->
+    <path d="M 740 190 L 960 190 L 960 360 L 1040 360" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="760" y="205" class="flow-label">lock seat inventory (FK)</text>
+
+    <!-- Process 1 -> Process 2 (Booking Hand-off) -->
+    <line x1="610" y1="230" x2="610" y2="420" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="618" y="325" class="flow-label">confirmed reservation &amp; fare</text>
+
+    <!-- Process 2 -> Payment Gateway -->
+    <path d="M 740 440 L 1400 440 L 1400 260" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="800" y="432" class="flow-label">checkout session request</text>
+
+    <!-- Payment Gateway -> Process 2 -->
+    <path d="M 1350 240 L 780 240 L 780 420" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="810" y="232" class="flow-label">payment confirmation &amp; ref number</text>
+
+    <!-- Process 2 -> D3 (Record Booking & Payment) -->
+    <path d="M 610" y1="510" x2="610" y2="640" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="618" y="580" class="flow-label">store paid booking</text>
+
+    <!-- Process 2 -> D4 (Store QR Token) -->
+    <path d="M 740 480 L 940 480 L 940 660 L 1040 660" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="770" y="472" class="flow-label">issue encrypted QR token</text>
+
+    <!-- Process 2 -> Passenger (Digital E-Ticket) -->
+    <path d="M 480 440 L 340 440 L 340 180 L 240 180" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="270" y="432" class="flow-label">e-ticket with QR pass</text>
+
+    <!-- Counter Teller -> Process 1 (Walk-in info & 20% discount) -->
+    <path d="M 240 455 L 420 455 L 420 220 L 480 220" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="250" y="380" class="flow-label">walk-in booking &amp; discount ID</text>
+
+    <!-- Counter Teller -> Process 2 (Cash Tendered) -->
+    <line x1="240" y1="480" x2="480" y2="480" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="260" y="472" class="flow-label">cash tendered</text>
+
+    <!-- Process 2 -> Counter Teller (Thermal Slip & Change) -->
+    <line x1="480" y1="500" x2="240" y2="500" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="260" y="512" class="flow-label">printed thermal slip &amp; change</text>
+
+    <!-- Process 2 -> Process 3 (Ticket Issued) -->
+    <line x1="610" y1="510" x2="610" y2="750" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="618" y="715" class="flow-label">valid ticket token</text>
+
+    <!-- Bus Conductor -> Process 3 (Camera QR Scan) -->
+    <line x1="240" y1="785" x2="480" y2="785" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="260" y="775" class="flow-label">mobile camera QR scan</text>
+
+    <!-- Process 3 -> D4 (Verify QR Token) -->
+    <path d="M 740 780 L 1000 780 L 1000 660 L 1040 660" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="760" y="772" class="flow-label">verify ticket status</text>
+
+    <!-- Process 3 -> D5 (Log Check-In) -->
+    <path d="M 610 840 L 610 930 L 1040 930" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="630" y="922" class="flow-label">log boarding timestamp &amp; conductor ID</text>
+
+    <!-- Process 3 -> Bus Conductor (Boarding Result & Manifest) -->
+    <line x1="480" y1="815" x2="240" y2="815" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="260" y="828" class="flow-label">valid/used status &amp; manifest</text>
+
+    <!-- Counter Teller -> Process 4 (Shift Cash Remittance) -->
+    <path d="M 200 500 L 200 550 L 980 550" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="230" y="542" class="flow-label">shift bill/coin breakdown</text>
+
+    <!-- Process 4 -> Counter Teller (Z-Reading Remittance Slip) -->
+    <path d="M 980 530 L 220 530 L 220 500" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="230" y="522" class="flow-label">Z-Reading reconciliation slip</text>
+
+    <!-- System Administrator -> Process 4 (Bound Schedules) -->
+    <line x1="1350" y1="490" x2="1250" y2="490" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="1255" y="482" class="flow-label">bound schedules</text>
+
+    <!-- Process 4 -> D1 (Update Fleet Schedules) -->
+    <path d="M 1200 460 L 1200 108" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="1208" y="280" class="flow-label">update bus trips</text>
+
+    <!-- D3 -> Process 4 (Sales Ledger) -->
+    <path d="M 870 650 L 990 650 L 990 550" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="880" y="640" class="flow-label">sales transactions</text>
+
+    <!-- Process 4 -> System Administrator (Audited Reports) -->
+    <path d="M 1250 520 L 1450 520 L 1450 520" class="arrow-line" marker-end="url(#arrow)" />
+    <text x="1260" y="512" class="flow-label">remittance audit &amp; revenue reports</text>
+
+  </svg>
+
+  <div class="caption">
+    Figure 3. Level-1 Data Flow Diagram (DFD) — Gane &amp; Sarson Methodology
+  </div>
+</div>
+
+</body>
+</html>

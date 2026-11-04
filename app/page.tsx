@@ -83,7 +83,7 @@ export default function Home() {
             <AcademicDisclaimerModal />
 
             {/* HERO SECTION WITH SCENIC HIGHWAY BACKGROUND */}
-            <section className="relative min-h-[calc(100vh-120px)] flex items-center justify-center overflow-hidden bg-cover bg-center bg-no-repeat py-12 px-4 sm:px-6"
+            <section className="relative min-h-[calc(100vh-120px)] flex items-center justify-center overflow-visible bg-cover bg-center bg-no-repeat py-12 px-4 sm:px-6 z-20"
                 style={{
                     backgroundImage: `linear-gradient(to bottom, rgba(15, 23, 42, 0.35), rgba(9, 9, 11, 0.8)), url('/scenic_highway_bg.jpg')`
                 }}
@@ -130,8 +130,8 @@ export default function Home() {
                         </div>
 
                         {/* RIGHT COLUMN: REPLICATED BOOKING CARD */}
-                        <div className="lg:col-span-6">
-                            <div className="mx-auto max-w-xl rounded-3xl bg-white p-6 sm:p-8 text-zinc-900 shadow-2xl backdrop-blur-lg">
+                        <div className="lg:col-span-6 relative z-30">
+                            <div className="mx-auto max-w-xl rounded-3xl bg-white p-6 sm:p-8 text-zinc-900 shadow-2xl backdrop-blur-lg relative z-30">
                                 <form onSubmit={handleSearch} className="space-y-5">
                                     
                                     {/* Card Header & Trip Type Toggle */}
@@ -330,7 +330,7 @@ export default function Home() {
             </section>
 
             {/* QUICK ROUTE SECTION */}
-            <section className="py-16 px-4 bg-zinc-900 border-t border-zinc-800">
+            <section className="py-16 px-4 bg-zinc-900 border-t border-zinc-800 relative z-10">
                 <div className="container mx-auto max-w-6xl text-center space-y-8">
                     <div>
                         <span className="text-xs font-bold uppercase tracking-widest text-red-500">Popular Schedules</span>

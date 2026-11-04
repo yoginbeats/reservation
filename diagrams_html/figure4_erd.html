@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+  body { background: #ffffff; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  
+  .canvas-container {
+    width: 1780px;
+    height: 1180px;
+    background: #ffffff;
+    border: 2px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    position: relative;
+  }
+  .title-block { text-align: center; margin-bottom: 6px; }
+  .title-block h1 { font-size: 24px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; }
+  .title-block p { font-size: 13.5px; color: #475569; margin-top: 2px; }
+
+  svg { width: 100%; height: 1060px; }
+
+  /* Entities (Green Rectangles) */
+  .entity-rect { fill: #bbf7d0; stroke: #15803d; stroke-width: 2.2; rx: 4; ry: 4; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.1)); }
+  .entity-text { font-size: 14.5px; font-weight: 700; fill: #0f172a; text-anchor: middle; dominant-baseline: middle; }
+
+  /* Relationships (Blue/Periwinkle Diamonds) */
+  .rel-diamond { fill: #c7d2fe; stroke: #4338ca; stroke-width: 2; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.08)); }
+  .rel-text { font-size: 12px; font-weight: 700; fill: #1e1b4b; text-anchor: middle; dominant-baseline: middle; }
+
+  /* Attributes (Soft Pink/Red Ovals) */
+  .attr-oval { fill: #ffe4e6; stroke: #e11d48; stroke-width: 1.6; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.06)); }
+  .attr-text { font-size: 11px; font-weight: 600; fill: #1e293b; text-anchor: middle; dominant-baseline: middle; }
+  .pk-underline { text-decoration: underline; font-weight: 800; fill: #9f1239; }
+
+  /* Connector lines */
+  .conn-line { fill: none; stroke: #475569; stroke-width: 1.5; }
+  .card-text { font-size: 12px; font-weight: 800; fill: #0f172a; text-anchor: middle; dominant-baseline: middle; }
+
+  /* Legend */
+  .legend-box {
+    position: absolute;
+    bottom: 25px;
+    left: 30px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 11px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+  }
+  .leg-item { display: flex; align-items: center; gap: 6px; }
+  .leg-rect { width: 18px; height: 12px; background: #bbf7d0; border: 1.5px solid #15803d; border-radius: 2px; }
+  .leg-dia { width: 14px; height: 14px; background: #c7d2fe; border: 1.5px solid #4338ca; transform: rotate(45deg); }
+  .leg-oval { width: 22px; height: 12px; background: #ffe4e6; border: 1.5px solid #e11d48; border-radius: 6px; }
+
+  .caption { text-align: center; margin-top: 4px; font-size: 13.5px; font-weight: 600; color: #334155; }
+</style>
+</head>
+<body>
+
+<div class="canvas-container">
+  <div class="title-block">
+    <h1>Entity-Relationship Diagram (ERD) — Chen's Notation</h1>
+    <p>Superlines Transportation Co. Inc. — Entities, Relationships, Cardinalities & Key Attributes</p>
+  </div>
+
+  <div class="legend-box">
+    <div class="leg-item"><div class="leg-rect"></div><span><strong>Entity</strong> (Rectangles)</span></div>
+    <div class="leg-item"><div class="leg-dia"></div><span><strong>Relationship</strong> (Diamonds)</span></div>
+    <div class="leg-item"><div class="leg-oval"></div><span><strong>Attribute</strong> (Ovals / <u>PK</u> Underlined)</span></div>
+  </div>
+
+  <svg viewBox="0 0 1740 1020">
+
+    <!-- ================================================================= -->
+    <!-- CONNECTOR LINES & CARDINALITIES (Underneath shapes) -->
+    <!-- ================================================================= -->
+
+    <!-- PASSENGER - [1] - < Makes > - [N] - BOOKING -->
+    <line x1="280" y1="260" x2="430" y2="260" class="conn-line" />
+    <text x="320" y="250" class="card-text">1</text>
+    <line x1="510" y1="260" x2="660" y2="260" class="conn-line" />
+    <text x="610" y="250" class="card-text">N</text>
+
+    <!-- BOOKING - [N] - < For > - [1] - TRIP -->
+    <line x1="790" y1="260" x2="940" y2="260" class="conn-line" />
+    <text x="830" y="250" class="card-text">N</text>
+    <line x1="1020" y1="260" x2="1170" y2="260" class="conn-line" />
+    <text x="1130" y="250" class="card-text">1</text>
+
+    <!-- TRIP - [N] - < Uses > - [1] - BUS -->
+    <line x1="1300" y1="260" x2="1440" y2="260" class="conn-line" />
+    <text x="1340" y="250" class="card-text">N</text>
+    <line x1="1520" y1="260" x2="1600" y2="260" class="conn-line" />
+    <text x="1560" y="250" class="card-text">1</text>
+
+    <!-- BOOKING - [1] - < Settles > - [1] - PAYMENT -->
+    <line x1="700" y1="285" x2="560" y2="430" class="conn-line" />
+    <text x="670" y="340" class="card-text">1</text>
+    <line x1="560" y1="470" x2="480" y2="600" class="conn-line" />
+    <text x="500" y="550" class="card-text">1</text>
+
+    <!-- BOOKING - [1] - < Issues > - [1] - TICKET -->
+    <line x1="730" y1="285" x2="730" y2="420" class="conn-line" />
+    <text x="745" y="350" class="card-text">1</text>
+    <line x1="730" y1="460" x2="730" y2="600" class="conn-line" />
+    <text x="745" y="540" class="card-text">1</text>
+
+    <!-- BOOKING - [1] - < Locks > - [1] - SEAT -->
+    <line x1="760" y1="285" x2="890" y2="430" class="conn-line" />
+    <text x="800" y="340" class="card-text">1</text>
+    <line x1="890" y1="470" x2="980" y2="600" class="conn-line" />
+    <text x="960" y="540" class="card-text">1</text>
+
+    <!-- TRIP - [1] - < Has > - [N] - SEAT (1 to 45 seats) -->
+    <line x1="1200" y1="285" x2="1080" y2="440" class="conn-line" />
+    <text x="1170" y="350" class="card-text">1</text>
+    <line x1="1060" y1="470" x2="1020" y2="600" class="conn-line" />
+    <text x="1055" y="540" class="card-text">N</text>
+
+    <!-- TRIP - [N] - < Follows > - [1] - ROUTE -->
+    <line x1="1260" y1="285" x2="1350" y2="440" class="conn-line" />
+    <text x="1285" y="350" class="card-text">N</text>
+    <line x1="1370" y1="470" x2="1440" y2="600" class="conn-line" />
+    <text x="1425" y="540" class="card-text">1</text>
+
+    <!-- ROUTE - [N] - < Connects > - [1] - TERMINAL -->
+    <line x1="1480" y1="650" x2="1480" y2="760" class="conn-line" />
+    <text x="1495" y="700" class="card-text">N</text>
+    <line x1="1480" y1="800" x2="1480" y2="900" class="conn-line" />
+    <text x="1495" y="860" class="card-text">1</text>
+
+    <!-- TICKET - [1] - < Validates > - [N] - CONDUCTOR -->
+    <line x1="730" y1="650" x2="730" y2="760" class="conn-line" />
+    <text x="745" y="700" class="card-text">1</text>
+    <line x1="730" y1="800" x2="730" y2="900" class="conn-line" />
+    <text x="745" y="860" class="card-text">N</text>
+
+
+    <!-- ================================================================= -->
+    <!-- ATTRIBUTE LINES & OVALS -->
+    <!-- ================================================================= -->
+
+    <!-- PASSENGER ATTRIBUTES (X: 210, Y: 260) -->
+    <line x1="210" y1="235" x2="120" y2="100" class="conn-line" />
+    <ellipse cx="120" cy="100" rx="60" ry="22" class="attr-oval" />
+    <text x="120" y="100" class="attr-text pk-underline">passenger_id</text>
+
+    <line x1="210" y1="235" x2="260" y2="100" class="conn-line" />
+    <ellipse cx="260" cy="100" rx="52" ry="20" class="attr-oval" />
+    <text x="260" y="100" class="attr-text">full_name</text>
+
+    <line x1="150" y1="250" x2="60" y2="180" class="conn-line" />
+    <ellipse cx="60" cy="180" rx="45" ry="18" class="attr-oval" />
+    <text x="60" y="180" class="attr-text">email</text>
+
+    <line x1="150" y1="270" x2="60" y2="280" class="conn-line" />
+    <ellipse cx="60" cy="280" rx="55" ry="18" class="attr-oval" />
+    <text x="60" y="280" class="attr-text">phone_number</text>
+
+    <!-- BOOKING ATTRIBUTES (X: 725, Y: 260) -->
+    <line x1="680" y1="235" x2="620" y2="95" class="conn-line" />
+    <ellipse cx="620" cy="95" rx="55" ry="20" class="attr-oval" />
+    <text x="620" y="95" class="attr-text pk-underline">booking_id</text>
+
+    <line x1="725" y1="235" x2="735" y2="95" class="conn-line" />
+    <ellipse cx="735" cy="95" rx="50" ry="18" class="attr-oval" />
+    <text x="735" y="95" class="attr-text">total_fare</text>
+
+    <line x1="760" y1="235" x2="840" y2="95" class="conn-line" />
+    <ellipse cx="840" cy="95" rx="52" ry="18" class="attr-oval" />
+    <text x="840" y="95" class="attr-text">booking_source</text>
+
+    <line x1="770" y1="245" x2="900" y2="155" class="conn-line" />
+    <ellipse cx="900" cy="155" rx="48" ry="18" class="attr-oval" />
+    <text x="900" y="155" class="attr-text">status</text>
+
+    <!-- TRIP ATTRIBUTES (X: 1235, Y: 260) -->
+    <line x1="1190" y1="235" x2="1110" y2="100" class="conn-line" />
+    <ellipse cx="1110" cy="100" rx="50" ry="20" class="attr-oval" />
+    <text x="1110" y="100" class="attr-text pk-underline">trip_id</text>
+
+    <line x1="1235" y1="235" x2="1235" y2="100" class="conn-line" />
+    <ellipse cx="1235" cy="100" rx="56" ry="18" class="attr-oval" />
+    <text x="1235" y="100" class="attr-text">departure_time</text>
+
+    <line x1="1270" y1="235" x2="1350" y2="100" class="conn-line" />
+    <ellipse cx="1350" cy="100" rx="50" ry="18" class="attr-oval" />
+    <text x="1350" y="100" class="attr-text">fare_amount</text>
+
+    <!-- BUS ATTRIBUTES (X: 1650, Y: 260) -->
+    <line x1="1650" y1="235" x2="1550" y2="110" class="conn-line" />
+    <ellipse cx="1550" cy="110" rx="48" ry="20" class="attr-oval" />
+    <text x="1550" y="110" class="attr-text pk-underline">bus_id</text>
+
+    <line x1="1650" y1="235" x2="1670" y2="110" class="conn-line" />
+    <ellipse cx="1670" cy="110" rx="52" ry="18" class="attr-oval" />
+    <text x="1670" y="110" class="attr-text">bus_number</text>
+
+    <line x1="1710" y1="250" x2="1710" y2="175" class="conn-line" />
+    <ellipse cx="1710" cy="175" rx="50" ry="18" class="attr-oval" />
+    <text x="1710" y="175" class="attr-text">seat_capacity</text>
+
+    <line x1="1710" y1="270" x2="1710" y2="330" class="conn-line" />
+    <ellipse cx="1710" cy="330" rx="46" ry="18" class="attr-oval" />
+    <text x="1710" y="330" class="attr-text">bus_type</text>
+
+    <!-- PAYMENT ATTRIBUTES (X: 430, Y: 625) -->
+    <line x1="390" y1="600" x2="310" y2="520" class="conn-line" />
+    <ellipse cx="310" cy="520" rx="55" ry="20" class="attr-oval" />
+    <text x="310" y="520" class="attr-text pk-underline">payment_id</text>
+
+    <line x1="360" y1="625" x2="250" y2="600" class="conn-line" />
+    <ellipse cx="250" cy="600" rx="45" ry="18" class="attr-oval" />
+    <text x="250" y="600" class="attr-text">amount</text>
+
+    <line x1="360" y1="640" x2="250" y2="665" class="conn-line" />
+    <ellipse cx="250" cy="665" rx="58" ry="18" class="attr-oval" />
+    <text x="250" y="665" class="attr-text">payment_method</text>
+
+    <line x1="390" y1="650" x2="330" y2="735" class="conn-line" />
+    <ellipse cx="330" cy="735" rx="58" ry="18" class="attr-oval" />
+    <text x="330" y="735" class="attr-text">transaction_ref</text>
+
+    <!-- TICKET ATTRIBUTES (X: 730, Y: 625) -->
+    <line x1="680" y1="650" x2="600" y2="720" class="conn-line" />
+    <ellipse cx="600" cy="720" rx="48" ry="20" class="attr-oval" />
+    <text x="600" y="720" class="attr-text pk-underline">ticket_id</text>
+
+    <line x1="770" y1="650" x2="850" y2="720" class="conn-line" />
+    <ellipse cx="850" cy="720" rx="50" ry="18" class="attr-oval" />
+    <text x="850" y="720" class="attr-text">qr_token</text>
+
+    <line x1="790" y1="625" x2="880" y2="625" class="conn-line" />
+    <ellipse cx="880" cy="625" rx="48" ry="18" class="attr-oval" />
+    <text x="880" y="625" class="attr-text">ticket_status</text>
+
+    <!-- SEAT ATTRIBUTES (X: 1010, Y: 625) -->
+    <line x1="1070" y1="610" x2="1170" y2="570" class="conn-line" />
+    <ellipse cx="1170" cy="570" rx="48" ry="20" class="attr-oval" />
+    <text x="1170" y="570" class="attr-text pk-underline">seat_id</text>
+
+    <line x1="1070" y1="635" x2="1185" y2="640" class="conn-line" />
+    <ellipse cx="1185" cy="640" rx="52" ry="18" class="attr-oval" />
+    <text x="1185" y="640" class="attr-text">seat_number</text>
+
+    <line x1="1040" y1="650" x2="1120" y2="720" class="conn-line" />
+    <ellipse cx="1120" cy="720" rx="52" ry="18" class="attr-oval" />
+    <text x="1120" y="720" class="attr-text">is_available</text>
+
+    <!-- ROUTE ATTRIBUTES (X: 1480, Y: 625) -->
+    <line x1="1540" y1="610" x2="1640" y2="560" class="conn-line" />
+    <ellipse cx="1640" cy="560" rx="48" ry="20" class="attr-oval" />
+    <text x="1640" y="560" class="attr-text pk-underline">route_id</text>
+
+    <line x1="1540" y1="635" x2="1650" y2="635" class="conn-line" />
+    <ellipse cx="1650" cy="635" rx="55" ry="18" class="attr-oval" />
+    <text x="1650" y="635" class="attr-text">distance_km</text>
+
+    <line x1="1530" y1="650" x2="1610" y2="710" class="conn-line" />
+    <ellipse cx="1610" cy="710" rx="56" ry="18" class="attr-oval" />
+    <text x="1610" y="710" class="attr-text">estimated_hours</text>
+
+    <!-- TERMINAL ATTRIBUTES (X: 1480, Y: 925) -->
+    <line x1="1545" y1="910" x2="1635" y2="860" class="conn-line" />
+    <ellipse cx="1635" cy="860" rx="56" ry="20" class="attr-oval" />
+    <text x="1635" y="860" class="attr-text pk-underline">terminal_id</text>
+
+    <line x1="1545" y1="930" x2="1650" y2="930" class="conn-line" />
+    <ellipse cx="1650" cy="930" rx="56" ry="18" class="attr-oval" />
+    <text x="1650" y="930" class="attr-text">terminal_name</text>
+
+    <line x1="1520" y1="950" x2="1600" y2="990" class="conn-line" />
+    <ellipse cx="1600" cy="990" rx="46" ry="18" class="attr-oval" />
+    <text x="1600" y="990" class="attr-text">location</text>
+
+    <!-- CONDUCTOR ATTRIBUTES (X: 730, Y: 925) -->
+    <line x1="660" y1="925" x2="550" y2="925" class="conn-line" />
+    <ellipse cx="550" cy="925" rx="58" ry="20" class="attr-oval" />
+    <text x="550" y="925" class="attr-text pk-underline">conductor_id</text>
+
+    <line x1="670" y1="950" x2="600" y2="990" class="conn-line" />
+    <ellipse cx="600" cy="990" rx="52" ry="18" class="attr-oval" />
+    <text x="600" y="990" class="attr-text">full_name</text>
+
+    <line x1="790" y1="950" x2="860" y2="990" class="conn-line" />
+    <ellipse cx="860" cy="990" rx="45" ry="18" class="attr-oval" />
+    <text x="860" y="990" class="attr-text">role</text>
+
+
+    <!-- ================================================================= -->
+    <!-- RELATIONSHIP DIAMONDS (RHOMBUSES) -->
+    <!-- ================================================================= -->
+
+    <!-- < Makes > between Passenger and Booking (X: 470, Y: 260) -->
+    <polygon points="470,225 510,260 470,295 430,260" class="rel-diamond" />
+    <text x="470" y="260" class="rel-text">Makes</text>
+
+    <!-- < For > between Booking and Trip (X: 980, Y: 260) -->
+    <polygon points="980,225 1020,260 980,295 940,260" class="rel-diamond" />
+    <text x="980" y="260" class="rel-text">For</text>
+
+    <!-- < Uses > between Trip and Bus (X: 1480, Y: 260) -->
+    <polygon points="1480,225 1520,260 1480,295 1440,260" class="rel-diamond" />
+    <text x="1480" y="260" class="rel-text">Uses</text>
+
+    <!-- < Settles > between Booking and Payment (X: 560, Y: 450) -->
+    <polygon points="560,420 595,450 560,480 525,450" class="rel-diamond" />
+    <text x="560" y="450" class="rel-text">Settles</text>
+
+    <!-- < Issues > between Booking and Ticket (X: 730, Y: 440) -->
+    <polygon points="730,410 765,440 730,470 695,440" class="rel-diamond" />
+    <text x="730" y="440" class="rel-text">Issues</text>
+
+    <!-- < Locks > between Booking and Seat (X: 890, Y: 450) -->
+    <polygon points="890,420 925,450 890,480 855,450" class="rel-diamond" />
+    <text x="890" y="450" class="rel-text">Locks</text>
+
+    <!-- < Has > between Trip and Seat (X: 1070, Y: 450) -->
+    <polygon points="1070,420 1105,450 1070,480 1035,450" class="rel-diamond" />
+    <text x="1070" y="450" class="rel-text">Has</text>
+
+    <!-- < Follows > between Trip and Route (X: 1360, Y: 450) -->
+    <polygon points="1360,420 1400,450 1360,480 1320,450" class="rel-diamond" />
+    <text x="1360" y="450" class="rel-text">Follows</text>
+
+    <!-- < Connects > between Route and Terminal (X: 1480, Y: 780) -->
+    <polygon points="1480,750 1520,780 1480,810 1440,780" class="rel-diamond" />
+    <text x="1480" y="780" class="rel-text">Connects</text>
+
+    <!-- < Validates > between Ticket and Conductor (X: 730, Y: 780) -->
+    <polygon points="730,750 770,780 730,810 690,780" class="rel-diamond" />
+    <text x="730" y="780" class="rel-text">Validates</text>
+
+
+    <!-- ================================================================= -->
+    <!-- ENTITIES (GREEN RECTANGLES) -->
+    <!-- ================================================================= -->
+
+    <!-- PASSENGER -->
+    <rect x="150" y="235" width="130" height="50" class="entity-rect" />
+    <text x="215" y="260" class="entity-text">Passenger</text>
+
+    <!-- BOOKING -->
+    <rect x="660" y="235" width="130" height="50" class="entity-rect" />
+    <text x="725" y="260" class="entity-text">Booking</text>
+
+    <!-- TRIP -->
+    <rect x="1170" y="235" width="130" height="50" class="entity-rect" />
+    <text x="1235" y="260" class="entity-text">Trip</text>
+
+    <!-- BUS -->
+    <rect x="1600" y="235" width="110" height="50" class="entity-rect" />
+    <text x="1655" y="260" class="entity-text">Bus</text>
+
+    <!-- PAYMENT -->
+    <rect x="370" y="600" width="125" height="50" class="entity-rect" />
+    <text x="432" y="625" class="entity-text">Payment</text>
+
+    <!-- TICKET -->
+    <rect x="670" y="600" width="120" height="50" class="entity-rect" />
+    <text x="730" y="625" class="entity-text">Ticket</text>
+
+    <!-- SEAT -->
+    <rect x="950" y="600" width="120" height="50" class="entity-rect" />
+    <text x="1010" y="625" class="entity-text">Seat</text>
+
+    <!-- ROUTE -->
+    <rect x="1420" y="600" width="120" height="50" class="entity-rect" />
+    <text x="1480" y="625" class="entity-text">Route</text>
+
+    <!-- TERMINAL -->
+    <rect x="1420" y="900" width="125" height="50" class="entity-rect" />
+    <text x="1482" y="925" class="entity-text">Terminal</text>
+
+    <!-- CONDUCTOR -->
+    <rect x="665" y="900" width="130" height="50" class="entity-rect" />
+    <text x="730" y="925" class="entity-text">Conductor</text>
+
+  </svg>
+
+  <div class="caption">
+    Figure 4. Entity-Relationship Diagram (ERD) — Classic Chen's Notation
+  </div>
+</div>
+
+</body>
+</html>
