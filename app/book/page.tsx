@@ -459,7 +459,16 @@ function BookTripContent() {
             const result = await response.json();
 
             if (!response.ok || !result.success) {
-                throw new Error(result.error || 'Failed to confirm GCash booking.');
+                const msg = result.error || 'Failed to confirm GCash booking.';
+                setError(msg);
+                if (result.slot_already_taken || msg.includes('Slot already taken') || msg.includes('already reserved')) {
+                    if (selectedTrip) {
+                        handleSelectTrip(selectedTrip);
+                    }
+                    setStep(2);
+                }
+                setSubmitting(false);
+                return;
             }
 
             // Cache ticket in localStorage
@@ -552,7 +561,16 @@ function BookTripContent() {
             const result = await response.json();
 
             if (!response.ok || !result.success) {
-                throw new Error(result.error || 'Failed to initiate booking checkout.');
+                const msg = result.error || 'Failed to initiate booking checkout.';
+                setError(msg);
+                if (result.slot_already_taken || msg.includes('Slot already taken') || msg.includes('already reserved')) {
+                    if (selectedTrip) {
+                        handleSelectTrip(selectedTrip);
+                    }
+                    setStep(2);
+                }
+                setSubmitting(false);
+                return;
             }
 
             if (result.checkout_url) {
