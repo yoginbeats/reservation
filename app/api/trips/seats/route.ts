@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
             if (b.booking_status === "CANCELLED" || b.ticket_status === "CANCELLED") continue;
 
             let matches = false;
-            if (tripId && (b.trip?.origin === tripId || b.id === tripId)) {
+            if (tripId && (b.trip_id === tripId || b.trip?.id === tripId || b.id === tripId)) {
                 matches = true;
             }
 

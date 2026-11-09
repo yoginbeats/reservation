@@ -30,6 +30,7 @@ export default function TellerWalkInBookingPage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [terminalTab, setTerminalTab] = useState<"ALL" | "Cubao" | "Daet" | "PITX">("ALL");
 
     // Form inputs
     const [passengerName, setPassengerName] = useState("");
@@ -75,34 +76,8 @@ export default function TellerWalkInBookingPage() {
             }
         }));
 
-        // Centralize: Filter trips based on the logged-in Teller's assigned terminal
-        let terminalFiltered = normalizedTrips;
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user?.id) {
-                const { data: roleData } = await supabase
-                    .from('user_roles')
-                    .select('terminal:terminal_id(id, name)')
-                    .eq('user_id', user.id)
-                    .single();
-
-                const tName = ((roleData as any)?.terminal?.name || "").toLowerCase().replace(/central|terminal|station/g, "").trim();
-                if (tName) {
-                    const matched = normalizedTrips.filter((t: any) => {
-                        const origin = (t.origin || t.route?.origin?.name || "").toLowerCase();
-                        return origin.includes(tName) || tName.includes(origin);
-                    });
-                    if (matched.length > 0) {
-                        terminalFiltered = matched;
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn("Could not load teller terminal filter for walk-in:", e);
-        }
-
-        let finalTrips = terminalFiltered;
-        setTrips(finalTrips);
+        // Centralize: Set all active admin scheduled trips directly
+        setTrips(normalizedTrips);
         if (initialTripId) {
             const found = finalTrips.find((t: any) => t.id === initialTripId);
             if (found) handleSelectTrip(found);

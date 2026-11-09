@@ -156,25 +156,11 @@ function BookTripContent() {
         try {
             const res = await fetch("/api/admin/trips");
             const data = await res.json();
-            if (data?.success && Array.isArray(data.trips) && data.trips.length > 0) {
+            if (data?.success && Array.isArray(data.trips) ) {
                 rawTrips = data.trips;
             }
         } catch (e) {
             console.warn("Could not fetch admin scheduled trips:", e);
-        }
-
-        if (rawTrips.length === 0) {
-            try {
-                const { data: dbTrips } = await supabase
-                    .from('trips')
-                    .select('*, bus:buses(bus_number, bus_type, seat_capacity)')
-                    .order('departure_time', { ascending: true });
-                if (dbTrips && dbTrips.length > 0) {
-                    rawTrips = dbTrips;
-                }
-            } catch (dbErr) {
-                console.warn("Database fallback note:", dbErr);
-            }
         }
 
         const normalized = rawTrips.map((t: any) => {
@@ -739,7 +725,7 @@ function BookTripContent() {
                 </div>
             )}
 
-            {/* STEP 2: SELECT SEAT */}}
+            {/* STEP 2: SELECT SEAT */}
             {step === 2 && selectedTrip && (
                 <div className="space-y-6">
                     <div className="flex items-center justify-between">

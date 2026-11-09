@@ -223,13 +223,18 @@ export default async function proxy(request: NextRequest) {
 
     // Protect /api/admin routes - require ADMIN role for mutations
     // Allow public read GET for trips/routes/buses so passenger and teller portals can read schedules seamlessly
+    // Allow TELLER role to sync counter walk-in sales with /api/admin/payments
     if (url.pathname.startsWith('/api/admin')) {
         const isPublicRead = request.method === 'GET' && (
             url.pathname.startsWith('/api/admin/trips') ||
             url.pathname.startsWith('/api/admin/routes') ||
             url.pathname.startsWith('/api/admin/buses')
         );
-        if (!isPublicRead && (!user || role !== 'ADMIN')) {
+        const isTellerBookingSync = (role === 'TELLER' || role === 'ADMIN') && (
+            url.pathname.startsWith('/api/admin/payments') ||
+            url.pathname.startsWith('/api/admin/bookings')
+        );
+        if (!isPublicRead && !isTellerBookingSync && (!user || role !== 'ADMIN')) {
             return NextResponse.json({ success: false, error: 'Unauthorized access: Main Admin privileges required.' }, { status: 403 })
         }
     }

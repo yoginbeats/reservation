@@ -245,7 +245,7 @@ export default function ConductorDashboardPage() {
                         />
                     </div>
                     <div className="flex gap-1.5 overflow-x-auto">
-                        {(["ALL", "TODAY", "BOARDING", "UNASSIGNED", "ADMIN"] as const).map((cat) => (
+                        {(["ALL", "TODAY", "BOARDING", "UNASSIGNED"] as const).map((cat) => (
                             <button
                                 key={cat}
                                 type="button"

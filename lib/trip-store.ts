@@ -100,6 +100,41 @@ export function addScheduledTrip(trip: Omit<ScheduledTrip, "id" | "created_at"> 
 }
 
 /**
+ * Get a specific scheduled trip by ID.
+ */
+export function getScheduledTripById(tripId: string): ScheduledTrip | null {
+    const trips = getActiveScheduledTrips();
+    return trips.find(t => t.id === tripId) || null;
+}
+
+/**
+ * Update an existing scheduled trip (Admin only).
+ */
+export function updateScheduledTrip(
+    tripId: string,
+    updates: Partial<ScheduledTrip>
+): ScheduledTrip | null {
+    const store = readStore();
+    const index = store.trips.findIndex(t => t.id === tripId);
+    if (index === -1) {
+        return null;
+    }
+
+    const current = store.trips[index];
+    const updated: ScheduledTrip = {
+        ...current,
+        ...updates,
+        fare_amount: updates.fare_amount !== undefined ? Number(updates.fare_amount) : (updates.price !== undefined ? Number(updates.price) : current.fare_amount),
+        price: updates.price !== undefined ? Number(updates.price) : (updates.fare_amount !== undefined ? Number(updates.fare_amount) : current.price),
+        seat_capacity: updates.seat_capacity !== undefined ? Number(updates.seat_capacity) : current.seat_capacity,
+    };
+
+    store.trips[index] = updated;
+    writeStore(store);
+    return updated;
+}
+
+/**
  * Delete a specific scheduled trip by ID (Admin only).
  */
 export function deleteScheduledTrip(tripId: string): boolean {

@@ -3,6 +3,7 @@ import { getUserWithRoleAndTerminal } from "@/lib/supabase/server";
 import { 
     getActiveScheduledTrips, 
     addScheduledTrip, 
+    updateScheduledTrip,
     deleteScheduledTrip, 
     clearAllScheduledTrips 
 } from "@/lib/trip-store";
@@ -78,6 +79,51 @@ export async function POST(req: NextRequest) {
         console.error("Error scheduling trip:", err);
         return NextResponse.json(
             { success: false, error: err?.message || "Failed to schedule trip." },
+            { status: 500 }
+        );
+    }
+}
+
+// PATCH /api/admin/trips - Update an existing scheduled trip (Admin only)
+export async function PATCH(req: NextRequest) {
+    try {
+        const { user, role } = await getUserWithRoleAndTerminal();
+
+        // Security check: Only Admin can modify scheduled trips
+        if (!user || role !== "ADMIN") {
+            return NextResponse.json(
+                { success: false, error: "Access Denied: Only Administrators can update scheduled trips." },
+                { status: 403 }
+            );
+        }
+
+        const body = await req.json();
+        const { id, ...updates } = body;
+
+        if (!id) {
+            return NextResponse.json(
+                { success: false, error: "Missing trip ID parameter to update." },
+                { status: 400 }
+            );
+        }
+
+        const updated = updateScheduledTrip(id, updates);
+        if (!updated) {
+            return NextResponse.json(
+                { success: false, error: `Scheduled trip ${id} not found.` },
+                { status: 404 }
+            );
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: `Trip for ${updated.origin} ➔ ${updated.destination} updated successfully across all portals!`,
+            trip: updated,
+        });
+    } catch (err: any) {
+        console.error("Error updating scheduled trip:", err);
+        return NextResponse.json(
+            { success: false, error: err?.message || "Failed to update trip." },
             { status: 500 }
         );
     }

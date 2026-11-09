@@ -55,7 +55,7 @@ export function TellerDashboardClient({
     const [activeTab, setActiveTab] = useState<"bays" | "lookup" | "issued" | "xreading">("bays");
 
     // Live Bay Status State
-    const [bayBoard, setBayBoard] = useState<any[]>([]);
+    const [bayBoard, setBayBoard] = useState<any[]>(initialTrips || []);
     const [loadingBays, setLoadingBays] = useState(false);
 
     // Ticket Lookup State

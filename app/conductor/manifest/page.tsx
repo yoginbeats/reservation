@@ -75,7 +75,7 @@ function ConductorManifestContent() {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     // Conductor Schedule Selective Filters (Date, Origin, Destination, Departure Time, Classification)
-    const [filterDate, setFilterDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
+    const [filterDate, setFilterDate] = useState<string>("ALL");
     const [filterOrigin, setFilterOrigin] = useState<string>("ALL");
     const [filterDestination, setFilterDestination] = useState<string>("ALL");
     const [filterDepartureTime, setFilterDepartureTime] = useState<string>("ALL");
@@ -458,7 +458,7 @@ function ConductorManifestContent() {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setFilterDate(new Date().toISOString().split("T")[0]);
+                                    setFilterDate("ALL");
                                     setFilterOrigin("ALL");
                                     setFilterDestination("ALL");
                                     setFilterDepartureTime("ALL");

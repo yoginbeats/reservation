@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getScheduledTripById } from "@/lib/trip-store";
 import { getLocalBookingByQrToken, updateLocalTicketStatus, getLocalBookings } from "@/lib/local-booking-store";
 
 export async function GET(req: NextRequest) {
@@ -312,7 +313,7 @@ export async function GET(req: NextRequest) {
             }
 
             // Fetch trip details to ensure accurate trip-level matching
-            let tripMeta: any = null;
+            let tripMeta: any = getScheduledTripById(tripId);
             try {
                 const { data: tData } = await supabase
                     .from("trips")
@@ -324,12 +325,12 @@ export async function GET(req: NextRequest) {
 
             // B: Merge with local cached bookings that belong strictly to this scheduled trip
             const localList = getLocalBookings();
-            const tripOrigin = tripMeta?.route?.origin?.name || tripMeta?.origin || "";
-            const tripDestination = tripMeta?.route?.destination?.name || tripMeta?.destination || "";
+            const tripOrigin = tripMeta?.origin || tripMeta?.route?.origin?.name || "";
+            const tripDestination = tripMeta?.destination || tripMeta?.route?.destination?.name || "";
 
             for (const lb of localList) {
                 // Exact trip ID match or matching Origin/Destination
-                const isExactTrip = lb.trip_id === tripId || lb.trip?.id === tripId;
+                const isExactTrip = lb.trip_id === tripId || lb.trip?.id === tripId || lb.id === tripId;
                 const isMatchingRoute = Boolean(tripOrigin && tripDestination && (
                     lb.trip?.origin?.toLowerCase().includes(tripOrigin.toLowerCase()) &&
                     lb.trip?.destination?.toLowerCase().includes(tripDestination.toLowerCase())

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, getUserWithRoleAndTerminal } from "@/lib/supabase/server";
+import { getActiveScheduledTrips } from "@/lib/trip-store";
 import {
     getLocalBookings,
     getLocalBookingByQrToken,
@@ -302,50 +303,40 @@ export async function GET(req: NextRequest) {
         // 3. LIVE TERMINAL BAY & DEPARTURE BOARD
         // =========================================================================
         if (action === "bay_status") {
-            let tripsData: any[] = [];
-            try {
-                const { data } = await supabase
-                    .from("trips")
-                    .select("*, bus:buses(bus_number, bus_type, capacity), route:routes(origin:origin_terminal_id(name), destination:destination_terminal_id(name))")
-                    .order("departure_time", { ascending: true });
-                if (data && data.length > 0) {
-                    // Extract teller's terminal keyword (e.g., Daet, Cubao, PITX)
-                    const tellerTermKeyword = (termObj?.name || "").toLowerCase().replace(/central|terminal|station/g, "").trim();
-
-                    // Centralized filter: Only show trips matching teller's terminal origin
-                    const terminalFiltered = data.filter((t: any) => {
-                        const tripOrigin = (t.origin || t.route?.origin?.name || "").toLowerCase();
-                        if (!tellerTermKeyword) return true;
-                        return tripOrigin.includes(tellerTermKeyword) || tellerTermKeyword.includes(tripOrigin);
-                    });
-
-                    tripsData = terminalFiltered.length > 0 ? terminalFiltered : data;
-                }
-            } catch (err) {
-                console.warn("Could not query trips for bay board:", err);
-            }
-
-            // Assign terminal bays and compute seat occupancy
+            // Centralized: ONLY trips updated and scheduled by Admin in trip-store appear
+            const scheduledTrips = getActiveScheduledTrips();
             const localList = getLocalBookings();
-            const bayBoard = tripsData.map((t, idx) => {
-                const originName = t.origin || t.route?.origin?.name || "Cubao";
-                const destName = t.destination || t.route?.destination?.name || "Daet";
-                const busNum = t.bus?.bus_number || `BUS-${101 + idx}`;
-                const bayNum = `Bay 0${(idx % 4) + 1}`;
 
-                // Calculate booked seats
-                const localTripSeats = localList.filter((b) => b.booking_status !== "CANCELLED").length;
-                const bookedSeats = Math.min(45, 18 + idx * 7 + (localTripSeats % 10));
-                const remainingSeats = 45 - bookedSeats;
+            const bayBoard = scheduledTrips.map((t, idx) => {
+                const originName = t.origin;
+                const destName = t.destination;
+                const busNum = t.bus_number || `BUS-${101 + idx}`;
+                const bayNum = `Bay 0${(idx % 4) + 1}`;
+                const capacity = t.seat_capacity || 49;
+
+                // Calculate real booked seats for this scheduled departure
+                const tripBookings = localList.filter((b) =>
+                    (b.booking_status !== "CANCELLED" && b.ticket_status !== "CANCELLED") &&
+                    (b.trip_id === t.id || b.trip?.id === t.id || (b.trip?.origin === t.origin && b.trip?.destination === t.destination))
+                );
+                let bookedSeatsCount = 0;
+                for (const b of tripBookings) {
+                    if (b.seat_numbers && b.seat_numbers.length > 0) {
+                        bookedSeatsCount += b.seat_numbers.length;
+                    } else if (b.seat_number) {
+                        bookedSeatsCount += 1;
+                    }
+                }
+                const remainingSeats = Math.max(0, capacity - bookedSeatsCount);
 
                 let boardStatus = t.status || "SCHEDULED";
                 const depTime = new Date(t.departure_time).getTime();
                 const now = Date.now();
                 const minutesUntil = Math.round((depTime - now) / 60000);
 
-                if (minutesUntil <= 30 && minutesUntil > 0) {
+                if (t.status === "SCHEDULED" && minutesUntil <= 30 && minutesUntil > 0) {
                     boardStatus = "BOARDING";
-                } else if (minutesUntil <= 0) {
+                } else if (t.status === "SCHEDULED" && minutesUntil <= 0) {
                     boardStatus = "FINAL CALL";
                 }
 
@@ -356,12 +347,12 @@ export async function GET(req: NextRequest) {
                     origin: originName,
                     destination: destName,
                     bus_number: busNum,
-                    bus_type: t.bus?.bus_type || "REGULAR AIRCON",
+                    bus_type: t.bus_type || "REGULAR AIRCON",
                     departure_time: t.departure_time,
                     fare_amount: t.fare_amount || 850,
                     status: boardStatus,
-                    capacity: 45,
-                    booked_seats: bookedSeats,
+                    capacity: capacity,
+                    booked_seats: bookedSeatsCount,
                     available_seats: remainingSeats,
                     is_almost_full: remainingSeats <= 5,
                     minutes_until: minutesUntil,

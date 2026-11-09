@@ -25,6 +25,7 @@ import {
     AlertCircle,
     Link as LinkIcon,
     Trash2,
+    Edit,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getBusFare } from "@/lib/constants/bus-layouts";
@@ -67,6 +68,14 @@ export default function AdminTripsPage() {
     const [departureTime, setDepartureTime] = useState("");
     const [fareAmount, setFareAmount] = useState("850");
     const [autoCreateReturn, setAutoCreateReturn] = useState(true);
+
+    // Edit Trip Modal State
+    const [editingTrip, setEditingTrip] = useState<TripItem | null>(null);
+    const [editDepartureTime, setEditDepartureTime] = useState("");
+    const [editBusId, setEditBusId] = useState("");
+    const [editFare, setEditFare] = useState<number>(850);
+    const [editStatus, setEditStatus] = useState<"SCHEDULED" | "BOARDING" | "COMPLETED" | "CANCELLED">("SCHEDULED");
+    const [editSubmitting, setEditSubmitting] = useState(false);
     const [returnDepartureTime, setReturnDepartureTime] = useState("");
 
     // Modal for viewing Bound Bus Manifest & Turnaround
@@ -250,6 +259,54 @@ export default function AdminTripsPage() {
 
         setOpenModal(false);
         fetchTripsAndBookings();
+    };
+
+    const handleOpenEditModal = (t: TripItem) => {
+        setEditingTrip(t);
+        const d = new Date(t.departure_time);
+        const pad = (n: number) => n.toString().padStart(2, "0");
+        const localIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        setEditDepartureTime(localIso);
+        setEditBusId(t.bus_id || "");
+        setEditFare(t.fare_amount || t.price || 850);
+        setEditStatus(t.status || "SCHEDULED");
+    };
+
+    const handleSaveEditTrip = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingTrip) return;
+        setEditSubmitting(true);
+
+        const chosenBus = buses.find(b => b.id === editBusId);
+
+        try {
+            const res = await fetch("/api/admin/trips", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: editingTrip.id,
+                    departure_time: new Date(editDepartureTime).toISOString(),
+                    bus_id: chosenBus?.id || editingTrip.bus_id,
+                    bus_number: chosenBus?.bus_number || editingTrip.bus_number,
+                    bus_type: chosenBus?.bus_type || editingTrip.bus_type,
+                    seat_capacity: chosenBus?.capacity || editingTrip.seat_capacity || 49,
+                    fare_amount: Number(editFare),
+                    price: Number(editFare),
+                    status: editStatus,
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setEditingTrip(null);
+                fetchTripsAndBookings();
+            } else {
+                alert(data.error || "Failed to update trip schedule");
+            }
+        } catch (err: any) {
+            alert(err.message || "Failed to update trip schedule");
+        } finally {
+            setEditSubmitting(false);
+        }
     };
 
     const handleDeleteTrip = async (tripId: string, label: string) => {
