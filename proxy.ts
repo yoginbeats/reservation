@@ -7,7 +7,7 @@ import { createServerClient } from '@supabase/ssr'
 // Set to true to display 503 maintenance page on the live public domain.
 // Note: Localhost (127.0.0.1 / localhost) ALWAYS bypasses this so you can develop & test!
 // ==============================================================================
-export const MAINTENANCE_MODE = true
+export const MAINTENANCE_MODE = false
 
 // ⚠️ BYPASS AUTH: Set to true ONLY for debugging if needed, strictly false for production
 const DEV_BYPASS_AUTH = false
