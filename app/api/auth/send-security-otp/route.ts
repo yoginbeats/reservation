@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateSecurityOtp, getSecondaryEmailForUser, setSecondaryEmailForUser } from "@/lib/otp-store";
+import { sendLiveEmail } from "@/lib/email-service";
 
 export async function POST(req: NextRequest) {
     try {
@@ -126,41 +127,26 @@ export async function POST(req: NextRequest) {
 </html>
         `;
 
-        // If RESEND_API_KEY is configured in .env.local, send live email
-        const resendApiKey = process.env.RESEND_API_KEY;
         const recipients = [cleanEmail];
         if (cleanSecondary && cleanSecondary !== cleanEmail) {
             recipients.push(cleanSecondary);
         }
 
-        let emailDispatched = false;
-        if (resendApiKey) {
-            try {
-                const res = await fetch("https://api.resend.com/emails", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${resendApiKey}`,
-                    },
-                    body: JSON.stringify({
-                        from: "Superlines Security <onboarding@resend.dev>",
-                        to: recipients,
-                        subject: subject,
-                        html: emailHtml,
-                    }),
-                });
-                if (res.ok) emailDispatched = true;
-            } catch (mailErr) {
-                console.warn("Live email send attempt note:", mailErr);
-            }
-        }
+        // Send real live email via Gmail SMTP or Resend
+        const emailResult = await sendLiveEmail({
+            to: recipients,
+            subject: subject,
+            html: emailHtml,
+            fromName: "Superlines Security Alert",
+        });
 
         return NextResponse.json({
             success: true,
             email: cleanEmail,
             secondaryEmail: cleanSecondary || null,
             otpPreview: otpRecord.otp, // Available for Capstone Defense offline simulation
-            emailDispatched,
+            emailDispatched: emailResult.success,
+            emailProvider: emailResult.provider,
             recipients,
             expiresAt: otpRecord.expiresAt,
             message: cleanSecondary

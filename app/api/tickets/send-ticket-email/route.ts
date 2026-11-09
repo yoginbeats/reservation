@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLocalBookingById, saveLocalBooking } from "@/lib/local-booking-store";
+import { sendLiveEmail } from "@/lib/email-service";
 
 export async function POST(req: NextRequest) {
     try {
@@ -136,34 +137,14 @@ export async function POST(req: NextRequest) {
 </body>
 </html>`;
 
-        // If RESEND_API_KEY is configured in env, send live email
-        const resendApiKey = process.env.RESEND_API_KEY;
-        let sentLive = false;
-
-        if (resendApiKey) {
-            try {
-                const resendResponse = await fetch("https://api.resend.com/emails", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${resendApiKey}`,
-                    },
-                    body: JSON.stringify({
-                        from: "Superlines Tickets <tickets@resend.dev>",
-                        to: [email],
-                        subject: `Your Superlines Bus e-Ticket & Boarding Pass (${origin} ➔ ${destination})`,
-                        html: emailHtml,
-                    }),
-                });
-                const resendData = await resendResponse.json();
-                console.log("[Ticket Email] Resend API dispatched successfully:", resendData);
-                sentLive = true;
-            } catch (mailErr) {
-                console.warn("[Ticket Email] Resend API attempt warning:", mailErr);
-            }
-        } else {
-            console.log(`[Ticket Email Simulator] Dispatched ticket e-mail to: ${email} for Passenger: ${name} (${token})`);
-        }
+        // Dispatch live e-Ticket via Gmail SMTP or Resend
+        const emailResult = await sendLiveEmail({
+            to: email,
+            subject: `Your Superlines Bus e-Ticket & Boarding Pass (${origin} ➔ ${destination})`,
+            html: emailHtml,
+            fromName: "Superlines Bus Ticketing",
+        });
+        const sentLive = emailResult.success;
 
         // Update local booking store email flag if booking_id is provided
         if (booking_id) {
