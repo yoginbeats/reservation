@@ -428,7 +428,7 @@ export default function TellerWalkInBookingPage() {
                     <h1 className="text-3xl font-black tracking-tight">Terminal Walk-in Reservation</h1>
                     <p className="text-sm text-muted-foreground">Process instant physical cash tickets for passengers at counter.</p>
                 </div>
-                {selectedTrip && (
+                {!completedBooking && selectedTrip && (
                     <Button variant="outline" size="sm" onClick={() => setSelectedTrip(null)}>
                         Change Trip Schedule
                     </Button>
@@ -444,127 +444,138 @@ export default function TellerWalkInBookingPage() {
 
             {/* ISSUED TICKET SUCCESS MODAL VIEW */}
             {completedBooking ? (
-                <Card className="mx-auto max-w-md border-2 border-emerald-500 shadow-xl print:border-none print:shadow-none">
-                    <CardHeader className="bg-emerald-600 text-white text-center rounded-t-xl print:bg-white print:text-black">
-                        <CheckCircle className="mx-auto h-12 w-12 mb-2 print:hidden" />
-                        <CardTitle className="text-xl">TICKET ISSUED SUCCESSFULLY</CardTitle>
-                        <CardDescription className="text-emerald-100 text-xs print:text-black">Superlines Walk-in Ticket Receipt</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-4">
-                        <div className="flex justify-between items-center border-b pb-3 text-sm">
-                            <div>
-                                <p className="text-xs text-muted-foreground">Passenger / Contact</p>
-                                <p className="font-bold text-base">{completedBooking.passenger_name}</p>
+                <div className="py-4">
+                    <Card className="mx-auto max-w-md border-2 border-emerald-500 shadow-2xl rounded-2xl overflow-hidden p-0 gap-0 print:border-none print:shadow-none bg-card">
+                        <CardHeader className="bg-gradient-to-b from-emerald-600 to-emerald-700 text-white text-center p-6 print:bg-white print:text-black">
+                            <CheckCircle className="mx-auto h-12 w-12 mb-2 print:hidden" />
+                            <CardTitle className="text-xl font-black tracking-tight">TICKET ISSUED SUCCESSFULLY</CardTitle>
+                            <CardDescription className="text-emerald-100 text-xs font-semibold print:text-black">Superlines Walk-in Ticket Receipt</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-4">
+                            <div className="flex justify-between items-center border-b pb-3 text-sm">
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Passenger / Contact</p>
+                                    <p className="font-bold text-base">{completedBooking.passenger_name}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-muted-foreground">
+                                        {completedBooking.seat_numbers?.length > 1 ? "Seats" : "Seat"}
+                                    </p>
+                                    <p className="font-mono text-xl font-black text-blue-600">
+                                        {completedBooking.seat_numbers?.length > 1
+                                            ? completedBooking.seat_numbers.map((s: number) => `#${s}`).join(', ')
+                                            : `#${completedBooking.seat_number}`}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="text-right">
-                                <p className="text-xs text-muted-foreground">
-                                    {completedBooking.seat_numbers?.length > 1 ? "Seats" : "Seat"}
-                                </p>
-                                <p className="font-mono text-xl font-black text-blue-600">
-                                    {completedBooking.seat_numbers?.length > 1
-                                        ? completedBooking.seat_numbers.map((s: number) => `#${s}`).join(', ')
-                                        : `#${completedBooking.seat_number}`}
-                                </p>
-                            </div>
-                        </div>
 
-                        <div className="text-xs space-y-1.5">
-                            <p className="text-muted-foreground">Route & Trip</p>
-                            <p className="font-bold text-sm">
-                                {completedBooking.trip.route?.origin?.name} ➔ {completedBooking.trip.route?.destination?.name}
-                            </p>
-                            <div className="grid grid-cols-2 gap-2 pt-1 font-mono">
-                                <div className="bg-muted/40 p-2 rounded-lg border">
-                                    <span className="text-[10px] text-muted-foreground block font-bold uppercase">Bus Unit</span>
-                                    <span className="font-bold text-foreground text-xs">{completedBooking.trip.bus?.bus_number || "Bus TBD (Bay Assignment)"}</span>
+                            <div className="text-xs space-y-1.5">
+                                <p className="text-muted-foreground">Route & Trip</p>
+                                <p className="font-bold text-sm">
+                                    {completedBooking.trip.route?.origin?.name} ➔ {completedBooking.trip.route?.destination?.name}
+                                </p>
+                                <div className="grid grid-cols-2 gap-2 pt-1 font-mono">
+                                    <div className="bg-muted/40 p-2 rounded-lg border">
+                                        <span className="text-[10px] text-muted-foreground block font-bold uppercase">Bus Unit</span>
+                                        <span className="font-bold text-foreground text-xs">{completedBooking.trip.bus?.bus_number || "Bus TBD (Bay Assignment)"}</span>
+                                    </div>
+                                    <div className="bg-muted/40 p-2 rounded-lg border">
+                                        <span className="text-[10px] text-muted-foreground block font-bold uppercase">Bus Classification</span>
+                                        <span className="font-bold text-blue-600 dark:text-blue-400 text-xs">{(completedBooking.trip.bus?.bus_type || "REGULAR AIRCON").replace(/[-_]/g, " ")}</span>
+                                    </div>
                                 </div>
-                                <div className="bg-muted/40 p-2 rounded-lg border">
-                                    <span className="text-[10px] text-muted-foreground block font-bold uppercase">Bus Classification</span>
-                                    <span className="font-bold text-blue-600 dark:text-blue-400 text-xs">{(completedBooking.trip.bus?.bus_type || "REGULAR AIRCON").replace(/[-_]/g, " ")}</span>
-                                </div>
+                                <p className="text-muted-foreground text-[11px] pt-0.5">
+                                    Departure Schedule: {new Date(completedBooking.trip.departure_time).toLocaleString()}
+                                </p>
                             </div>
-                            <p className="text-muted-foreground text-[11px] pt-0.5">
-                                Departure Schedule: {new Date(completedBooking.trip.departure_time).toLocaleString()}
-                            </p>
-                        </div>
 
-                        {/* Discounted Beneficiaries List */}
-                        {completedBooking.discounted_passengers && completedBooking.discounted_passengers.length > 0 && (
-                            <div className="bg-purple-50 dark:bg-purple-950/40 p-3 rounded-lg border border-purple-200 dark:border-purple-800 text-xs space-y-2">
-                                <div className="flex justify-between items-center text-purple-700 dark:text-purple-300 font-bold border-b border-purple-200/50 pb-1">
-                                    <span>20% Statutory Discount ({completedBooking.discounted_passengers.length} Beneficiary)</span>
-                                    <span className="text-[10px] bg-purple-600 text-white px-1.5 py-0.5 rounded font-black">-₱{completedBooking.discount_amount}.00</span>
-                                </div>
-                                <div className="space-y-1.5">
-                                    {completedBooking.discounted_passengers.map((p: any, idx: number) => (
-                                        <div key={idx} className="flex justify-between items-center text-[11px] bg-white dark:bg-zinc-900/60 p-1.5 rounded border border-purple-100 dark:border-purple-900/50">
-                                            <div>
-                                                <span className="font-bold text-foreground">#{idx + 1} {p.name}</span>
-                                                <span className="ml-1 text-[10px] text-purple-600 font-semibold">({p.classification})</span>
+                            {/* Discounted Beneficiaries List */}
+                            {completedBooking.discounted_passengers && completedBooking.discounted_passengers.length > 0 && (
+                                <div className="bg-purple-50 dark:bg-purple-950/40 p-3 rounded-lg border border-purple-200 dark:border-purple-800 text-xs space-y-2">
+                                    <div className="flex justify-between items-center text-purple-700 dark:text-purple-300 font-bold border-b border-purple-200/50 pb-1">
+                                        <span>20% Statutory Discount ({completedBooking.discounted_passengers.length} Beneficiary)</span>
+                                        <span className="text-[10px] bg-purple-600 text-white px-1.5 py-0.5 rounded font-black">-₱{completedBooking.discount_amount}.00</span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {completedBooking.discounted_passengers.map((p: any, idx: number) => (
+                                            <div key={idx} className="flex justify-between items-center text-[11px] bg-white dark:bg-zinc-900/60 p-1.5 rounded border border-purple-100 dark:border-purple-900/50">
+                                                <div>
+                                                    <span className="font-bold text-foreground">#{idx + 1} {p.name}</span>
+                                                    <span className="ml-1 text-[10px] text-purple-600 font-semibold">({p.classification})</span>
+                                                </div>
+                                                <span className="font-mono text-muted-foreground">ID: {p.id_number}</span>
                                             </div>
-                                            <span className="font-mono text-muted-foreground">ID: {p.id_number}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="bg-muted/50 p-2.5 rounded-lg text-xs space-y-1">
-                            <div className="flex justify-between text-muted-foreground">
-                                <span>Base Fare ({completedBooking.seat_numbers?.length || 1} seat/s):</span>
-                                <span>₱{completedBooking.base_fare}.00</span>
-                            </div>
-                            {completedBooking.discount_amount > 0 && (
-                                <div className="flex justify-between text-emerald-600 font-semibold">
-                                    <span>Total Statutory Discount:</span>
-                                    <span>-₱{completedBooking.discount_amount}.00</span>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
-                            <div className="flex justify-between border-t pt-1 font-bold text-sm">
-                                <span>Cash Fare Paid:</span>
-                                <span className="font-mono text-emerald-600">₱{completedBooking.total_price}.00</span>
-                            </div>
-                            {completedBooking.amount_tendered > completedBooking.total_price && (
-                                <div className="flex justify-between text-[11px] text-muted-foreground pt-0.5">
-                                    <span>Tendered: ₱{completedBooking.amount_tendered}.00</span>
-                                    <span className="font-semibold text-emerald-600">Change: ₱{completedBooking.change_amount.toFixed(2)}</span>
-                                </div>
-                            )}
-                        </div>
 
-                        {/* Generated SVG QR Code */}
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-muted p-4 border border-dashed">
-                            <div className="h-28 w-28 bg-white p-2 border rounded">
-                                <svg viewBox="0 0 100 100" className="h-full w-full">
-                                    <rect width="100" height="100" fill="white" />
-                                    <rect x="5" y="5" width="25" height="25" fill="black" />
-                                    <rect x="8" y="8" width="19" height="19" fill="white" />
-                                    <rect x="12" y="12" width="11" height="11" fill="black" />
-                                    <rect x="70" y="5" width="25" height="25" fill="black" />
-                                    <rect x="73" y="8" width="19" height="19" fill="white" />
-                                    <rect x="77" y="12" width="11" height="11" fill="black" />
-                                    <rect x="5" y="70" width="25" height="25" fill="black" />
-                                    <rect x="8" y="73" width="19" height="19" fill="white" />
-                                    <rect x="12" y="77" width="11" height="11" fill="black" />
-                                    <rect x="35" y="10" width="10" height="10" fill="black" />
-                                    <rect x="50" y="20" width="10" height="10" fill="black" />
-                                    <rect x="35" y="35" width="20" height="20" fill="black" />
-                                    <rect x="65" y="35" width="10" height="10" fill="black" />
-                                    <rect x="40" y="65" width="15" height="15" fill="black" />
-                                </svg>
+                            <div className="bg-muted/50 p-2.5 rounded-lg text-xs space-y-1">
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>Base Fare ({completedBooking.seat_numbers?.length || 1} seat/s):</span>
+                                    <span>₱{completedBooking.base_fare}.00</span>
+                                </div>
+                                {completedBooking.discount_amount > 0 && (
+                                    <div className="flex justify-between text-emerald-600 font-semibold">
+                                        <span>Total Statutory Discount:</span>
+                                        <span>-₱{completedBooking.discount_amount}.00</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between border-t pt-1 font-bold text-sm">
+                                    <span>Cash Fare Paid:</span>
+                                    <span className="font-mono text-emerald-600 font-black">₱{completedBooking.total_price}.00</span>
+                                </div>
+                                {completedBooking.amount_tendered > completedBooking.total_price && (
+                                    <div className="flex justify-between text-[11px] text-muted-foreground pt-0.5">
+                                        <span>Tendered: ₱{completedBooking.amount_tendered}.00</span>
+                                        <span className="font-semibold text-emerald-600">Change: ₱{completedBooking.change_amount.toFixed(2)}</span>
+                                    </div>
+                                )}
                             </div>
-                            <p className="mt-2 font-mono text-xs font-bold">{completedBooking.qr_token}</p>
-                        </div>
-                    </CardContent>
-                    <CardFooter className="flex gap-2 print:hidden">
-                        <Button className="w-full" variant="outline" onClick={() => window.print()}>
-                            <Printer className="mr-2 h-4 w-4" /> Print Ticket
-                        </Button>
-                        <Button className="w-full bg-emerald-600 hover:bg-emerald-700" onClick={handleResetForm}>
-                            <RefreshCw className="mr-2 h-4 w-4" /> Next Walk-in
-                        </Button>
-                    </CardFooter>
-                </Card>
+
+                            {/* Generated SVG QR Code */}
+                            <div className="flex flex-col items-center justify-center rounded-lg bg-muted p-4 border border-dashed">
+                                <div className="h-28 w-28 bg-white p-2 border rounded shadow-inner">
+                                    <svg viewBox="0 0 100 100" className="h-full w-full">
+                                        <rect width="100" height="100" fill="white" />
+                                        <rect x="5" y="5" width="25" height="25" fill="black" />
+                                        <rect x="8" y="8" width="19" height="19" fill="white" />
+                                        <rect x="12" y="12" width="11" height="11" fill="black" />
+                                        <rect x="70" y="5" width="25" height="25" fill="black" />
+                                        <rect x="73" y="8" width="19" height="19" fill="white" />
+                                        <rect x="77" y="12" width="11" height="11" fill="black" />
+                                        <rect x="5" y="70" width="25" height="25" fill="black" />
+                                        <rect x="8" y="73" width="19" height="19" fill="white" />
+                                        <rect x="12" y="77" width="11" height="11" fill="black" />
+                                        <rect x="35" y="10" width="10" height="10" fill="black" />
+                                        <rect x="50" y="20" width="10" height="10" fill="black" />
+                                        <rect x="35" y="35" width="20" height="20" fill="black" />
+                                        <rect x="65" y="35" width="10" height="10" fill="black" />
+                                        <rect x="40" y="65" width="15" height="15" fill="black" />
+                                    </svg>
+                                </div>
+                                <p className="mt-2 font-mono text-xs font-bold text-foreground">{completedBooking.qr_token}</p>
+                            </div>
+                        </CardContent>
+                        <CardFooter className="p-6 pt-0 grid grid-cols-2 gap-3 w-full print:hidden">
+                            <Button 
+                                type="button"
+                                className="w-full shrink min-w-0 font-bold border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800" 
+                                variant="outline" 
+                                onClick={() => window.print()}
+                            >
+                                <Printer className="mr-2 h-4 w-4 shrink-0" /> Print Ticket
+                            </Button>
+                            <Button 
+                                type="button"
+                                className="w-full shrink min-w-0 bg-emerald-600 hover:bg-emerald-700 text-white font-black shadow-md shadow-emerald-600/20" 
+                                onClick={handleResetForm}
+                            >
+                                <RefreshCw className="mr-2 h-4 w-4 shrink-0" /> Next Walk-in
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </div>
             ) : !selectedTrip ? (
                 /* STEP 1: SELECT TRIP SCHEDULE */
                 <div className="space-y-4">
