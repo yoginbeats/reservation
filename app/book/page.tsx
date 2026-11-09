@@ -127,7 +127,7 @@ function BookTripContent() {
 
     // Scheduled Trips from Trip & Schedule Management
     const [allScheduledTrips, setAllScheduledTrips] = useState<any[]>([]);
-    const [selectedDate, setSelectedDate] = useState<string>(() => dateParam || "ALL");
+    const [selectedDate, setSelectedDate] = useState<string>(() => dateParam || getTodayPH());
     const [passengerCount, setPassengerCount] = useState(Number(passengersParam) || 1);
 
     useEffect(() => {
@@ -664,7 +664,7 @@ function BookTripContent() {
 
                             {/* Quick Date Pills from Real Scheduled Trips */}
                             {availableDates.map((dStr) => {
-                                const count = allScheduledTrips.filter(t => t.departure_time?.slice(0, 10) === dStr).length;
+                                const count = allScheduledTrips.filter(t => getTripDatePH(t.departure_time) === dStr).length;
                                 return (
                                     <button
                                         key={dStr}
