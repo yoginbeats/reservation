@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Clock, MapPin, Bus, Phone, ShieldCheck, Edit3 } from "lucide-react";
+import { BusClassificationBadge } from "@/components/bus-classification-badge";
 import { getDailySchedulesAction, DailyScheduleItem } from "@/app/actions/daily-schedule";
 import { getUserWithRoleAndTerminal } from "@/lib/supabase/server";
 
@@ -114,15 +115,7 @@ export default async function SchedulesPage() {
                                                 {s.route}
                                             </td>
                                             <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
-                                                <span className={`inline-block px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider ${
-                                                    s.bus_type.includes("FIRST CLASS")
-                                                        ? "bg-purple-950/80 text-purple-300 border border-purple-800/80"
-                                                        : s.bus_type.includes("ORDINARY")
-                                                        ? "bg-zinc-800 text-zinc-300"
-                                                        : "bg-blue-950/80 text-blue-300 border border-blue-800/80"
-                                                }`}>
-                                                    {s.bus_type}
-                                                </span>
+                                                <BusClassificationBadge busType={s.bus_type} size="sm" showFeatures />
                                             </td>
                                             <td className="py-3.5 px-4 sm:px-6 font-mono text-xs font-bold text-zinc-300 whitespace-nowrap">
                                                 {s.bus_number || "—"}
@@ -185,15 +178,7 @@ export default async function SchedulesPage() {
                                                 {s.route}
                                             </td>
                                             <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
-                                                <span className={`inline-block px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider ${
-                                                    s.bus_type.includes("FIRST CLASS")
-                                                        ? "bg-purple-950/80 text-purple-300 border border-purple-800/80"
-                                                        : s.bus_type.includes("W/ CR")
-                                                        ? "bg-amber-950/80 text-amber-300 border border-amber-800/80"
-                                                        : "bg-blue-950/80 text-blue-300 border border-blue-800/80"
-                                                }`}>
-                                                    {s.bus_type}
-                                                </span>
+                                                <BusClassificationBadge busType={s.bus_type} size="sm" showFeatures />
                                             </td>
                                             <td className="py-3.5 px-4 sm:px-6 font-mono text-xs font-bold text-zinc-300 whitespace-nowrap">
                                                 {s.bus_number || "—"}

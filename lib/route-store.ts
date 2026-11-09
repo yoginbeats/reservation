@@ -270,3 +270,4 @@ export function resetDefaultRoutes(): RouteItem[] {
     writeStore(store);
     return store.routes;
 }
+

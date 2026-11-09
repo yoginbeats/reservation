@@ -104,23 +104,6 @@
       "estimated_hours": 1.5,
       "status": "ACTIVE",
       "created_at": "2026-11-09T01:09:22.492Z"
-    },
-    {
-      "id": "route-pitx-cubao",
-      "origin_terminal_id": "term-pitx",
-      "destination_terminal_id": "term-cubao",
-      "origin": {
-        "name": "PITX",
-        "location": "Parañaque Integrated Terminal Exchange"
-      },
-      "destination": {
-        "name": "Cubao",
-        "location": "Superlines Cubao Terminal, EDSA"
-      },
-      "distance_km": 25,
-      "estimated_hours": 1.5,
-      "status": "ACTIVE",
-      "created_at": "2026-11-09T01:09:22.492Z"
     }
   ]
 }

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Printer, FileSpreadsheet, Bus, MapPin, Calendar, Clock } from "lucide-react";
+import { BusClassificationBadge } from "@/components/bus-classification-badge";
 
 interface ManifestBooking {
     id: string;
@@ -106,9 +107,12 @@ export function PassengerManifest({ trip, bookings }: PassengerManifestProps) {
                             <Bus className="h-5 w-5 text-blue-600" />
                             {originName} ➔ {destName}
                         </span>
-                        <span className="font-mono text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full">
-                            {busNum}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full">
+                                {busNum}
+                            </span>
+                            <BusClassificationBadge busType={trip.bus?.bus_type} showFeatures />
+                        </div>
                     </CardTitle>
                     <CardDescription className="flex items-center gap-4 text-xs">
                         <span className="flex items-center gap-1">

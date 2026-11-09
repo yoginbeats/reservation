@@ -28,6 +28,7 @@ import {
     Filter
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { BusClassificationBadge } from "@/components/bus-classification-badge";
 import { 
     SUPERLINES_BUS_CLASSIFICATIONS, 
     getBusClassification, 
@@ -202,10 +203,23 @@ function ConductorManifestContent() {
         setLoading(true);
         let rawData: any[] = [];
 
-        const { data, error } = await supabase
-            .from('trips')
-            .select('*, bus:buses(bus_number, bus_type, seat_capacity)')
-            .order('departure_time', { ascending: true });
+        try {
+            const adminRes = await fetch("/api/admin/trips");
+            const adminJson = await adminRes.json();
+            if (adminJson?.success && Array.isArray(adminJson.trips) && adminJson.trips.length > 0) {
+                rawData = adminJson.trips;
+            }
+        } catch (e) {
+            console.warn("Could not load admin trips:", e);
+        }
+
+        if (rawData.length === 0) {
+            const { data, error } = await supabase
+                .from('trips')
+                .select('*, bus:buses(bus_number, bus_type, seat_capacity)')
+                .order('departure_time', { ascending: true });
+            if (!error && data) rawData = data;
+        }
 
         if (!error && data) {
             rawData = data;

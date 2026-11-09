@@ -22,6 +22,8 @@ import {
     AlertTriangle
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { BusClassificationBadge } from "@/components/bus-classification-badge";
+import { getBusFare } from "@/lib/constants/bus-layouts";
 
 export default function ConductorDashboardPage() {
     const [trips, setTrips] = useState<any[]>([]);
@@ -303,7 +305,7 @@ export default function ConductorDashboardPage() {
                                             <span>{dest}</span>
                                         </CardTitle>
                                         <CardDescription className="text-[11px] font-mono text-zinc-400 flex items-center justify-between">
-                                            <span>Classification: <strong className="text-zinc-200">{busType}</strong></span>
+                                            <div className="flex items-center gap-1.5"><BusClassificationBadge busType={busType} size="xs" showFeatures /></div>
                                             <span className="text-emerald-400 font-bold">Fare: ₱{t.fare_amount || 850}.00</span>
                                         </CardDescription>
                                     </CardHeader>
@@ -328,7 +330,7 @@ export default function ConductorDashboardPage() {
                                             >
                                                 <Link href={`/conductor/manifest?trip_id=${t.id}`} className="text-black">
                                                     <FileText className="h-3.5 w-3.5 mr-1 text-black" />
-                                                    Manifest & 45 Seats
+                                                    Manifest & Roster
                                                 </Link>
                                             </Button>
                                             <Button

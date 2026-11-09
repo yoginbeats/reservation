@@ -50,10 +50,23 @@ export default function TellerManifestPage() {
         setLoading(true);
         let rawData: any[] = [];
 
-        const { data, error } = await supabase
-            .from('trips')
-            .select('*, bus:buses(bus_number, bus_type)')
-            .order('departure_time', { ascending: true });
+        try {
+            const adminRes = await fetch("/api/admin/trips");
+            const adminJson = await adminRes.json();
+            if (adminJson?.success && Array.isArray(adminJson.trips) && adminJson.trips.length > 0) {
+                rawData = adminJson.trips;
+            }
+        } catch (e) {
+            console.warn("Could not load admin trips for teller:", e);
+        }
+
+        if (rawData.length === 0) {
+            const { data, error } = await supabase
+                .from('trips')
+                .select('*, bus:buses(bus_number, bus_type)')
+                .order('departure_time', { ascending: true });
+            if (!error && data) rawData = data;
+        }
 
         if (error) {
             const { data: fallbackData } = await supabase

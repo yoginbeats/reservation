@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { SeatPicker } from "@/components/seat-picker";
 import { Ticket, Bus, ArrowRight, Printer, CheckCircle, AlertCircle, RefreshCw, Calculator } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { BusClassificationBadge } from "@/components/bus-classification-badge";
 
 interface DiscountPerson {
     id: string;
@@ -603,9 +604,9 @@ export default function TellerWalkInBookingPage() {
                             return (
                                 <Card key={t.id} className="cursor-pointer transition-all hover:border-emerald-500 hover:shadow-md" onClick={() => handleSelectTrip(t)}>
                                     <CardHeader className="pb-2">
-                                        <div className="flex justify-between text-xs font-bold text-emerald-600">
-                                            <span>{busNum}</span>
-                                            <span className="text-base font-extrabold text-foreground">₱{t.fare_amount || 850}</span>
+                                        <div className="flex justify-between items-center text-xs font-bold text-emerald-600">
+                                            <span className="font-mono text-sm text-foreground">{busNum}</span>
+                                            <BusClassificationBadge busType={t.bus?.bus_type || t.bus_type} showFeatures />
                                         </div>
                                         <CardTitle className="text-base flex items-center justify-between mt-1">
                                             <span>{origin}</span>

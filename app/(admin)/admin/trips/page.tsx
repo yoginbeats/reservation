@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getBusFare } from "@/lib/constants/bus-layouts";
+import { DEFAULT_BUSES, BusUnit } from "@/lib/constants/bus-units";
+import { BusClassificationBadge } from "@/components/bus-classification-badge";
 
 interface TripItem {
     id: string;
@@ -89,16 +91,39 @@ export default function AdminTripsPage() {
             if (rData && rData.length > 0) routeList = rData;
         }
 
-        const { data: bData } = await supabase.from('buses').select('id, bus_number, bus_type, seat_capacity').order('bus_number');
+        // Fetch Buses: 1st /api/admin/buses, 2nd supabase, 3rd DEFAULT_BUSES
+        let busList: any[] = [];
+        try {
+            const bRes = await fetch("/api/admin/buses");
+            const bData = await bRes.json();
+            if (bData?.success && Array.isArray(bData.buses) && bData.buses.length > 0) {
+                busList = bData.buses;
+            }
+        } catch (e) {
+            console.warn("Could not fetch buses from API:", e);
+        }
+
+        if (busList.length === 0) {
+            const { data: bData } = await supabase.from('buses').select('id, bus_number, bus_type, seat_capacity').order('bus_number');
+            if (bData && bData.length > 0) busList = bData;
+        }
+
+        if (busList.length === 0) {
+            busList = DEFAULT_BUSES;
+        }
 
         if (routeList.length > 0) {
             setRoutes(routeList);
-            setRouteId(routeList[0].id);
+            setRouteId(prev => prev || routeList[0].id);
         }
-        if (bData && bData.length > 0) {
-            setBuses(bData);
-            setBusId(bData[0].id);
-            setFareAmount(String(getBusFare(bData[0].bus_type || bData[0].bus_number)));
+        if (busList.length > 0) {
+            setBuses(busList);
+            setBusId(prev => {
+                if (prev && busList.some((b: any) => b.id === prev)) return prev;
+                return busList[0].id;
+            });
+            const firstBus = busList[0];
+            setFareAmount(prev => prev || String(firstBus.fare || getBusFare(firstBus.bus_type || firstBus.bus_number)));
         }
     };
 
@@ -376,26 +401,90 @@ export default function AdminTripsPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="tBus">Assign Bus Unit Body #</Label>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="tBus" className="font-bold">Assign Bus Unit Body #</Label>
+                                        {(() => {
+                                            const chosen = buses.find((b: any) => b.id === busId);
+                                            return chosen ? (
+                                                <BusClassificationBadge
+                                                    busType={chosen.bus_type}
+                                                    seatCapacity={chosen.seat_capacity}
+                                                    fare={Number(fareAmount)}
+                                                    showFeatures
+                                                />
+                                            ) : null;
+                                        })()}
+                                    </div>
                                     <select
                                         id="tBus"
-                                        className="w-full rounded-md border p-2 bg-background font-mono font-bold text-sm"
+                                        className="w-full rounded-md border p-2.5 bg-background font-mono font-bold text-sm shadow-sm"
                                         value={busId}
                                         onChange={(e) => {
                                             const bId = e.target.value;
                                             setBusId(bId);
-                                            const chosenBus = buses.find(b => b.id === bId);
+                                            const chosenBus = buses.find((b: any) => b.id === bId);
                                             if (chosenBus) {
-                                                setFareAmount(String(getBusFare(chosenBus.bus_type || chosenBus.bus_number)));
+                                                setFareAmount(String(chosenBus.fare || getBusFare(chosenBus.bus_type || chosenBus.bus_number)));
                                             }
                                         }}
                                     >
-                                        {buses.map((b) => (
-                                            <option key={b.id} value={b.id}>
-                                                {b.bus_number} — {b.bus_type ? b.bus_type.replace(/_/g, ' ') : 'REGULAR AIRCON'} ({b.seat_capacity || 45} seats)
-                                            </option>
-                                        ))}
+                                        <optgroup label="🚍 REGULAR AIRCON (49 Seats • ₱850)">
+                                            {buses.filter((b: any) => {
+                                                const t = (b.bus_type || '').toUpperCase();
+                                                return (t.includes('REGULAR') || t.includes('AIRCON')) && !t.includes('SUPER') && !t.includes('FIRST');
+                                            }).map((b: any) => (
+                                                <option key={b.id} value={b.id}>
+                                                    {b.bus_number} • Regular Aircon (49 Seats) — ₱850.00
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                        <optgroup label="🌟 SUPER DELUXE (43 Seats • With CR • ₱950)">
+                                            {buses.filter((b: any) => {
+                                                const t = (b.bus_type || '').toUpperCase();
+                                                return t.includes('SUPER') || t.includes('DELUXE');
+                                            }).map((b: any) => (
+                                                <option key={b.id} value={b.id}>
+                                                    {b.bus_number} • Super Deluxe (43 Seats, CR) — ₱950.00
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                        <optgroup label="👑 FIRST CLASS PREMIER (41 Seats • Sleeper & CR • ₱1,100)">
+                                            {buses.filter((b: any) => {
+                                                const t = (b.bus_type || '').toUpperCase();
+                                                return t.includes('FIRST');
+                                            }).map((b: any) => (
+                                                <option key={b.id} value={b.id}>
+                                                    {b.bus_number} • First Class (41 Seats, Sleeper, CR) — ₱1,100.00
+                                                </option>
+                                            ))}
+                                        </optgroup>
                                     </select>
+
+                                    {/* Live Bus Classification & Amenities Preview */}
+                                    {(() => {
+                                        const chosen = buses.find((b: any) => b.id === busId);
+                                        if (!chosen) return null;
+                                        return (
+                                            <div className="rounded-lg p-3 bg-muted/50 border text-xs space-y-1">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="font-semibold text-muted-foreground">Class &amp; Capacity:</span>
+                                                    <span className="font-bold text-foreground">
+                                                        {(chosen.bus_type || "REGULAR AIRCON").replace(/_/g, " ")} • {chosen.seat_capacity || 49} Total Passenger Seats
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-muted-foreground">
+                                                    <span>Onboard Amenities:</span>
+                                                    <span className="font-semibold text-foreground">
+                                                        {(chosen.bus_type || "").toUpperCase().includes("FIRST")
+                                                            ? "VIP Sleeper Recliner, Restroom (CR), USB Chargers"
+                                                            : (chosen.bus_type || "").toUpperCase().includes("DELUXE") || (chosen.bus_type || "").toUpperCase().includes("SUPER")
+                                                            ? "Deluxe Reclining, Restroom (CR), Mid-Door Stairs"
+                                                            : "Standard 2x2 Reclining Aircon, Audio/Video"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
 
                                 <div className="space-y-2">
@@ -562,14 +651,16 @@ export default function AdminTripsPage() {
                                                     </div>
                                                 </td>
 
-                                                {/* Bus Chassis */}
-                                                <td className="py-3.5 px-4">
-                                                    <span className="font-mono font-black text-blue-700 dark:text-blue-300 block">
-                                                        {t.bus?.bus_number}
+                                                {/* Bus Chassis & Classification Distinction */}
+                                                <td className="py-3.5 px-4 space-y-1">
+                                                    <span className="font-mono font-black text-foreground block text-sm">
+                                                        {t.bus?.bus_number || "Superlines Express"}
                                                     </span>
-                                                    <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                                                        {t.bus?.bus_type ? t.bus.bus_type.replace(/_/g, ' ') : 'REGULAR AIRCON'}
-                                                    </span>
+                                                    <BusClassificationBadge
+                                                        busType={t.bus?.bus_type}
+                                                        seatCapacity={t.bus?.seat_capacity}
+                                                        showFeatures
+                                                    />
                                                 </td>
 
                                                 {/* Booked Seats & Load */}
@@ -685,7 +776,14 @@ export default function AdminTripsPage() {
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                                 <div className="p-3 rounded-xl bg-muted/40 border">
                                     <p className="text-[10px] text-muted-foreground uppercase font-bold">Assigned Bus Unit</p>
-                                    <p className="text-base font-black font-mono text-foreground mt-0.5">{busNum}</p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-base font-black font-mono text-foreground">{busNum}</span>
+                                        <BusClassificationBadge
+                                            busType={selectedTripForManifest.bus?.bus_type}
+                                            seatCapacity={selectedTripForManifest.bus?.seat_capacity}
+                                            showFeatures
+                                        />
+                                    </div>
                                 </div>
                                 <div className="p-3 rounded-xl bg-muted/40 border">
                                     <p className="text-[10px] text-muted-foreground uppercase font-bold">Total Bound Passengers</p>
