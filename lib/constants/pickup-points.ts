@@ -119,3 +119,4 @@ export function getPickupPointsForTrip(origin?: string, destination?: string): P
         },
     ];
 }
+

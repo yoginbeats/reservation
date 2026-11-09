@@ -132,10 +132,7 @@ export function GlobalHeader() {
 
     const navLinks = [
         { href: "/", label: "Home", icon: Home, active: pathname === "/" },
-        ...(user
-            ? [{ href: "/book", label: "Search & Book", icon: Calendar, active: pathname?.startsWith("/book") }]
-            : []
-        ),
+        { href: "/book", label: "Book a Trip", icon: Calendar, active: pathname?.startsWith("/book") },
         { href: "/schedules", label: "Daily Schedules", icon: Clock, active: pathname === "/schedules" },
         ...(user
             ? [

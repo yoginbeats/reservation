@@ -3,6 +3,9 @@ import Link from "next/link";
 import { Clock, MapPin, Bus, Phone, ShieldCheck, Edit3 } from "lucide-react";
 import { BusClassificationBadge } from "@/components/bus-classification-badge";
 import { getDailySchedulesAction, DailyScheduleItem } from "@/app/actions/daily-schedule";
+import { getActiveScheduledTrips, ScheduledTrip } from "@/lib/trip-store";
+import { formatDatePH, formatTimePH } from "@/lib/date-utils";
+import { ArrowRight } from "lucide-react";
 import { getUserWithRoleAndTerminal } from "@/lib/supabase/server";
 
 export const metadata = {
@@ -19,6 +22,7 @@ export default async function SchedulesPage() {
 
     // Filter only active schedules for public display
     const activeSchedules = schedules.filter(s => s.is_active);
+    const liveTrips = getActiveScheduledTrips();
 
     const amSchedules = activeSchedules.filter(s => s.period === "AM");
     const pmSchedules = activeSchedules.filter(s => s.period === "PM");
@@ -67,6 +71,82 @@ export default async function SchedulesPage() {
                         Daily Bus Schedules & Terminal Departures from <strong className="text-white">Superlines Daet Central Terminal</strong> to Metro Manila (Cubao, PITX, Alabang) and provincial connecting routes.
                     </p>
                 </div>
+
+                {/* LIVE DISPATCHED TRIPS & SPECIAL DEPARTURES (FROM ADMIN TRIP & SCHEDULE MANAGEMENT) */}
+                {liveTrips.length > 0 && (
+                    <div className="rounded-2xl border-2 border-red-500/50 bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-900 shadow-2xl overflow-hidden">
+                        <div className="bg-gradient-to-r from-red-600 via-red-700 to-zinc-900 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-3">
+                                <Bus className="h-6 w-6 text-white animate-pulse" />
+                                <div>
+                                    <h2 className="text-lg sm:text-xl font-black text-white uppercase tracking-wider">
+                                        Live Dispatched Trips &amp; Bus Departures
+                                    </h2>
+                                    <p className="text-xs text-red-100 font-medium">
+                                        Active departures scheduled directly by Superlines Administration &amp; Bay Dispatch
+                                    </p>
+                                </div>
+                            </div>
+                            <span className="text-xs font-black bg-white/20 px-3 py-1 rounded-full text-white uppercase tracking-widest self-start sm:self-auto">
+                                Live Inventory Sync ({liveTrips.length})
+                            </span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-zinc-950 text-xs uppercase tracking-wider text-zinc-400 border-b border-zinc-800 font-bold">
+                                    <tr>
+                                        <th className="py-3 px-4 sm:px-6">Departure Schedule</th>
+                                        <th className="py-3 px-4 sm:px-6">Route</th>
+                                        <th className="py-3 px-4 sm:px-6">Assigned Bus Unit</th>
+                                        <th className="py-3 px-4 sm:px-6">Service Class</th>
+                                        <th className="py-3 px-4 sm:px-6">Fare</th>
+                                        <th className="py-3 px-4 sm:px-6 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-zinc-800 font-medium text-zinc-200">
+                                    {liveTrips.map((t) => (
+                                        <tr key={t.id} className="hover:bg-zinc-800/40 transition-colors">
+                                            <td className="py-3.5 px-4 sm:px-6 font-mono text-sm whitespace-nowrap">
+                                                <div className="font-bold text-white">{formatDatePH(t.departure_time)}</div>
+                                                <div className="text-xs text-red-400 font-black">{formatTimePH(t.departure_time)}</div>
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 font-black text-white whitespace-nowrap">
+                                                <div className="flex items-center gap-2">
+                                                    <span>{t.origin}</span>
+                                                    <ArrowRight className="h-4 w-4 text-red-500" />
+                                                    <span>{t.destination}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 font-mono text-sm font-extrabold text-amber-400 whitespace-nowrap">
+                                                {t.bus_number || "Superlines Unit"}
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 whitespace-nowrap">
+                                                <BusClassificationBadge
+                                                    busType={t.bus_type}
+                                                    seatCapacity={t.seat_capacity}
+                                                    showFeatures
+                                                />
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 font-mono font-black text-emerald-400 text-sm whitespace-nowrap">
+                                                ₱{t.fare_amount || t.price || 850}.00
+                                            </td>
+                                            <td className="py-3.5 px-4 sm:px-6 text-right whitespace-nowrap">
+                                                <Link
+                                                    href={`/book?tripId=${t.id}`}
+                                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-md transition-colors"
+                                                >
+                                                    <span>Book This Trip</span>
+                                                    <ArrowRight className="h-3.5 w-3.5" />
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
 
                 {/* MORNING (AM) DEPARTURES */}
                 <div className="rounded-2xl border-2 border-zinc-800 bg-zinc-900/90 shadow-xl overflow-hidden">

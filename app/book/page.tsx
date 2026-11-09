@@ -128,7 +128,7 @@ function BookTripContent() {
 
         // Scheduled Trips from Trip & Schedule Management
     const [allScheduledTrips, setAllScheduledTrips] = useState<any[]>([]);
-    const [selectedDate, setSelectedDate] = useState<string>(dateParam && dateParam !== getTodayPH() ? dateParam : "ALL");
+    const [selectedDate, setSelectedDate] = useState<string>("ALL");
     const [passengerCount, setPassengerCount] = useState(Number(passengersParam) || 1);
 
     useEffect(() => {

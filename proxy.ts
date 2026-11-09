@@ -221,9 +221,15 @@ export default async function proxy(request: NextRequest) {
         }
     }
 
-    // Protect /api/admin routes - require ADMIN role
+    // Protect /api/admin routes - require ADMIN role for mutations
+    // Allow public read GET for trips/routes/buses so passenger and teller portals can read schedules seamlessly
     if (url.pathname.startsWith('/api/admin')) {
-        if (!user || role !== 'ADMIN') {
+        const isPublicRead = request.method === 'GET' && (
+            url.pathname.startsWith('/api/admin/trips') ||
+            url.pathname.startsWith('/api/admin/routes') ||
+            url.pathname.startsWith('/api/admin/buses')
+        );
+        if (!isPublicRead && (!user || role !== 'ADMIN')) {
             return NextResponse.json({ success: false, error: 'Unauthorized access: Main Admin privileges required.' }, { status: 403 })
         }
     }
