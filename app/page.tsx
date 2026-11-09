@@ -316,60 +316,65 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* QUICK ROUTE SECTION */}
+            {/* REAL DISPATCHED SCHEDULES SECTION */}
             <section className="py-16 px-4 bg-zinc-900 border-t border-zinc-800 relative z-10">
                 <div className="container mx-auto max-w-6xl text-center space-y-8">
                     <div>
-                        <span className="text-xs font-bold uppercase tracking-widest text-red-500">Popular Schedules</span>
-                        <h3 className="text-2xl font-black text-white mt-1">Daily Superlines Bus Routes</h3>
+                        <span className="text-xs font-bold uppercase tracking-widest text-red-500">Official Schedules</span>
+                        <h3 className="text-2xl font-black text-white mt-1">Live Superlines Bus Departures</h3>
+                        <p className="text-xs text-zinc-400 max-w-lg mx-auto mt-1">
+                            Synchronized in real-time with Superlines Dispatch Management. Select a departure to book seats directly.
+                        </p>
                     </div>
 
-                    <div className="grid gap-6 sm:grid-cols-3">
-                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-left space-y-3">
-                            <div className="flex justify-between items-center text-xs text-red-400 font-bold">
-                                <span>REGULAR AIRCON</span>
-                                <span className="text-white text-base font-black">₱850</span>
-                            </div>
-                            <h4 className="font-bold text-lg text-white">Cubao ➔ Daet</h4>
-                            <p className="text-xs text-zinc-400">49 Seats • Daily Standard Express</p>
-                            <Link 
-                                href={user ? "/book" : `/login?redirect=${encodeURIComponent("/book")}&notice=login_required`} 
-                                className="inline-flex items-center text-xs font-bold text-red-400 hover:underline pt-2"
-                            >
-                                Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                            </Link>
+                    {adminTrips.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/40 p-8 text-zinc-500 text-xs">
+                            No scheduled departures currently dispatched. Check back soon or visit the passenger timetable.
                         </div>
+                    ) : (
+                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            {adminTrips.map((t) => {
+                                const tDate = t.departure_time ? t.departure_time.slice(0, 10) : "";
+                                const depTimeStr = t.departure_time ? new Date(t.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+                                const depDateStr = t.departure_time ? new Date(t.departure_time).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : "";
+                                const bType = t.bus_type || t.bus?.bus_type || "REGULAR AIRCON";
 
-                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-left space-y-3">
-                            <div className="flex justify-between items-center text-xs text-amber-400 font-bold">
-                                <span>SUPER DELUXE</span>
-                                <span className="text-white text-base font-black">₱950</span>
-                            </div>
-                            <h4 className="font-bold text-lg text-white">PITX ➔ Daet</h4>
-                            <p className="text-xs text-zinc-400">43 Seats • Onboard Restroom & Direct SLEX Route</p>
-                            <Link 
-                                href={user ? "/book" : `/login?redirect=${encodeURIComponent("/book")}&notice=login_required`} 
-                                className="inline-flex items-center text-xs font-bold text-amber-400 hover:underline pt-2"
-                            >
-                                Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                            </Link>
-                        </div>
+                                return (
+                                    <div key={t.id} className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-6 text-left space-y-3 hover:border-red-500/60 transition-all flex flex-col justify-between shadow-xl">
+                                        <div>
+                                            <div className="flex justify-between items-center text-xs font-bold mb-2">
+                                                <span className="px-2 py-0.5 rounded-full bg-red-600/20 text-red-400 border border-red-600/30 text-[10px]">
+                                                    {bType}
+                                                </span>
+                                                <span className="text-white text-base font-black">
+                                                    ₱{t.fare_amount || t.price || 850}
+                                                </span>
+                                            </div>
+                                            <h4 className="font-black text-lg text-white flex items-center justify-between">
+                                                <span>{t.origin}</span>
+                                                <ArrowRight className="h-4 w-4 text-red-500" />
+                                                <span>{t.destination}</span>
+                                            </h4>
+                                            <div className="flex items-center justify-between text-xs text-zinc-400 pt-1 font-mono">
+                                                <span>📅 {depDateStr}</span>
+                                                <span>⏰ {depTimeStr}</span>
+                                            </div>
+                                            <p className="text-[11px] text-zinc-500 font-mono mt-1">
+                                                Bus: {t.bus_number} • {t.seat_capacity || 49} Passenger Seats
+                                            </p>
+                                        </div>
 
-                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 text-left space-y-3">
-                            <div className="flex justify-between items-center text-xs text-purple-400 font-bold">
-                                <span>FIRST CLASS</span>
-                                <span className="text-white text-base font-black">₱1,100</span>
-                            </div>
-                            <h4 className="font-bold text-lg text-white">Cubao ➔ Daet</h4>
-                            <p className="text-xs text-zinc-400">41 Seats • Premier Sleeper Recliner with Restroom</p>
-                            <Link 
-                                href={user ? "/book" : `/login?redirect=${encodeURIComponent("/book")}&notice=login_required`} 
-                                className="inline-flex items-center text-xs font-bold text-purple-400 hover:underline pt-2"
-                            >
-                                Book This Trip <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                            </Link>
+                                        <Link 
+                                            href={`/book?tripId=${encodeURIComponent(t.id)}&date=${encodeURIComponent(tDate)}&origin=${encodeURIComponent(t.origin)}&destination=${encodeURIComponent(t.destination)}`} 
+                                            className="inline-flex items-center justify-center w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-red-600/20 mt-3"
+                                        >
+                                            Book This Departure <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                                        </Link>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    </div>
+                    )}
                 </div>
             </section>
         </div>

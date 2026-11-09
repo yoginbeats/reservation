@@ -706,21 +706,45 @@ function BookTripContent() {
                             })}
                         </div>
                     ) : (
-                        <Card className="p-12 text-center text-muted-foreground space-y-4 rounded-2xl border-2">
-                            <p className="font-bold text-base text-foreground">
-                                No scheduled departures found {selectedDate !== "ALL" ? `for ${formatDatePH(selectedDate)}` : "in the system"}.
+                        <Card className="p-10 text-center text-muted-foreground space-y-4 rounded-2xl border-2">
+                            <p className="font-black text-base text-foreground">
+                                Walang nakatakdang biyahe sa {selectedDate && selectedDate !== "ALL" ? formatDatePH(selectedDate) : "napiling criteria"}
+                                {selectedOrigin !== "ALL" && ` para sa ${selectedOrigin} ➔ ${selectedDestination}`}.
                             </p>
-                            <p className="text-xs max-w-md mx-auto">
-                                Kung nag-schedule ka ng biyahe sa Trip &amp; Schedule Management, pakitsek ang departure date nito o i-click ang &quot;All Dates&quot; sa itaas para makita ang lahat ng aktibong biyahe.
+                            <p className="text-xs max-w-md mx-auto text-muted-foreground">
+                                Narito ang mga petsang may aktibong biyahe na inilagay ng Admin sa Trip Schedule Management:
                             </p>
-                            <Button
-                                variant="outline"
-                                className="font-bold text-xs"
-                                onClick={() => setSelectedDate("ALL")}
-                            >
-                                View All Scheduled Departures ({allScheduledTrips.length})
-                            </Button>
-                        </Card>
+                            <div className="flex justify-center items-center gap-2 flex-wrap pt-2">
+                                {availableDates.map(dStr => (
+                                    <Button
+                                        key={dStr}
+                                        size="sm"
+                                        variant="outline"
+                                        className="font-bold text-xs border-red-600/40 text-red-600 hover:bg-red-50"
+                                        onClick={() => {
+                                            setSelectedDate(dStr);
+                                            setSelectedOrigin("ALL");
+                                            setSelectedDestination("ALL");
+                                            setSelectedClass("ALL");
+                                        }}
+                                    >
+                                        <Calendar className="mr-1.5 h-3.5 w-3.5" />
+                                        {formatDatePH(dStr)}
+                                    </Button>
+                                ))}
+                                <Button
+                                    size="sm"
+                                    className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
+                                    onClick={() => {
+                                        setSelectedDate("ALL");
+                                        setSelectedOrigin("ALL");
+                                        setSelectedDestination("ALL");
+                                        setSelectedClass("ALL");
+                                    }}
+                                >
+                                    Tingnan Lahat ng Biyahe ({allScheduledTrips.length})
+                                </Button>
+                            </div></Card>
                     )}
                 </div>
             )}
