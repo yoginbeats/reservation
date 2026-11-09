@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -26,16 +26,19 @@ export default function AdminLoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // Staff Portal Security Gate States
-    const [isGateUnlocked, setIsGateUnlocked] = useState<boolean>(() => {
-        if (typeof window !== "undefined") {
-            return (
+    // Staff Portal Security Gate States (Hydration-safe initialization)
+    const [isGateUnlocked, setIsGateUnlocked] = useState<boolean>(false);
+
+    useEffect(() => {
+        try {
+            const unlocked =
                 sessionStorage.getItem("superlines_staff_gate_unlocked") === "true" ||
-                document.cookie.includes("superlines_staff_gate=unlocked")
-            );
-        }
-        return false;
-    });
+                document.cookie.includes("superlines_staff_gate=unlocked");
+            if (unlocked) {
+                setIsGateUnlocked(true);
+            }
+        } catch {}
+    }, []);
     const [staffGatePasscode, setStaffGatePasscode] = useState("");
     const [showStaffGatePasscode, setShowStaffGatePasscode] = useState(false);
     const [staffGateError, setStaffGateError] = useState<string | null>(null);

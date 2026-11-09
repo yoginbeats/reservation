@@ -47,6 +47,11 @@ export default function AdminReportsPage() {
 
     // Active Tab
     const [activeTab, setActiveTab] = useState<"REVENUE" | "REMITTANCE" | "DISCOUNTS" | "FLEET" | "TRANSACTIONS">("REVENUE");
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     useEffect(() => {
         fetchReports();
@@ -477,7 +482,7 @@ export default function AdminReportsPage() {
             </div>
 
             {/* TAB 1: REVENUE BREAKDOWN */}
-            {(activeTab === "REVENUE" || typeof window !== "undefined") && (
+            {(activeTab === "REVENUE" || isMounted) && (
                 <div className={`space-y-4 ${activeTab !== "REVENUE" ? "hidden print:block" : ""}`}>
                     <Card>
                         <CardHeader className="pb-3 border-b">
@@ -534,7 +539,7 @@ export default function AdminReportsPage() {
             )}
 
             {/* TAB 2: TERMINAL & TELLER REMITTANCE */}
-            {(activeTab === "REMITTANCE" || typeof window !== "undefined") && (
+            {(activeTab === "REMITTANCE" || isMounted) && (
                 <div className={`space-y-4 ${activeTab !== "REMITTANCE" ? "hidden print:block" : ""}`}>
                     <Card>
                         <CardHeader className="pb-3 border-b">
@@ -609,7 +614,7 @@ export default function AdminReportsPage() {
             )}
 
             {/* TAB 3: 20% STATUTORY DISCOUNT AUDIT */}
-            {(activeTab === "DISCOUNTS" || typeof window !== "undefined") && (
+            {(activeTab === "DISCOUNTS" || isMounted) && (
                 <div className={`space-y-4 ${activeTab !== "DISCOUNTS" ? "hidden print:block" : ""}`}>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <Card className="border-l-4 border-l-purple-600">
@@ -691,7 +696,7 @@ export default function AdminReportsPage() {
             )}
 
             {/* TAB 4: BUS FLEET UTILIZATION */}
-            {(activeTab === "FLEET" || typeof window !== "undefined") && (
+            {(activeTab === "FLEET" || isMounted) && (
                 <div className={`space-y-4 ${activeTab !== "FLEET" ? "hidden print:block" : ""}`}>
                     <Card>
                         <CardHeader className="pb-3 border-b">
@@ -757,7 +762,7 @@ export default function AdminReportsPage() {
             )}
 
             {/* TAB 5: ITEMIZED PASSENGER TRANSACTION LOG */}
-            {(activeTab === "TRANSACTIONS" || typeof window !== "undefined") && (
+            {(activeTab === "TRANSACTIONS" || isMounted) && (
                 <div className={`space-y-4 ${activeTab !== "TRANSACTIONS" ? "hidden print:block" : ""}`}>
                     <Card>
                         <CardHeader className="pb-3 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3">
