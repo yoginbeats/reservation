@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { QrCode, CheckCircle2, XCircle, AlertTriangle, Camera, RefreshCw, User, Bus, Check, Upload, X, ShieldAlert } from "lucide-react";
+import { QrCode, CheckCircle2, XCircle, AlertTriangle, Camera, RefreshCw, User, Bus, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ConductorQrScanPage() {
@@ -16,8 +16,6 @@ export default function ConductorQrScanPage() {
     const [verifying, setVerifying] = useState(false);
     const [confirming, setConfirming] = useState(false);
     const [cameraActive, setCameraActive] = useState(false);
-    const [cameraStarting, setCameraStarting] = useState(false);
-    const [cameraError, setCameraError] = useState<string | null>(null);
     const [idInspected, setIdInspected] = useState(false);
 
     // Verification Result State
@@ -27,8 +25,8 @@ export default function ConductorQrScanPage() {
         ticket?: any;
     } | null>(null);
 
-    const qrScannerRef = useRef<any>(null);
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const animationFrameRef = useRef<number | null>(null);
 
     // Toggle Camera Access
     useEffect(() => {
@@ -37,159 +35,54 @@ export default function ConductorQrScanPage() {
         } else {
             stopCamera();
         }
-        return () => {
-            stopCamera();
-        };
+        return () => stopCamera();
     }, [cameraActive]);
 
     const startCamera = async () => {
-        setCameraStarting(true);
-        setCameraError(null);
-
         try {
-            if (typeof window === "undefined") return;
-
-            const { Html5Qrcode } = await import("html5-qrcode");
-
-            // Wait for #qr-reader element in DOM
-            let attempts = 0;
-            while (!document.getElementById("qr-reader") && attempts < 15) {
-                await new Promise((r) => setTimeout(r, 100));
-                attempts++;
-            }
-
-            if (!document.getElementById("qr-reader")) {
-                throw new Error("Scanner container element not found.");
-            }
-
-            // Cleanup any existing instance
-            if (qrScannerRef.current) {
-                try {
-                    if (qrScannerRef.current.isScanning) {
-                        await qrScannerRef.current.stop();
-                    }
-                    qrScannerRef.current.clear();
-                } catch {}
-            }
-
-            const scanner = new Html5Qrcode("qr-reader");
-            qrScannerRef.current = scanner;
-
-            const onScanSuccess = (decodedText: string) => {
-                if (decodedText) {
-                    const cleanText = decodedText.trim();
-                    setManualToken(cleanText);
-                    handleLookupTicket(cleanText);
-                    setCameraActive(false);
-                }
-            };
-
-            const config = {
-                fps: 15,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0,
-            };
-
-            // 1. Detect all available camera devices
-            let cameras: any[] = [];
-            try {
-                cameras = await Html5Qrcode.getCameras();
-            } catch (camListErr) {
-                console.warn("Could not pre-enumerate cameras:", camListErr);
-            }
-
-            if (cameras && cameras.length > 0) {
-                // Prefer rear / back camera (best for mobile conductors), fallback to primary camera (laptop / webcam)
-                const rearCamera = cameras.find((c: any) =>
-                    /back|rear|environment/i.test(c.label || "")
-                );
-                const chosenCameraId = rearCamera ? rearCamera.id : cameras[0].id;
-                await scanner.start(chosenCameraId, config, onScanSuccess, () => {});
-            } else {
-                // 2. Fallback to facingMode constraints with exactly 1 valid key
-                try {
-                    await scanner.start(
-                        { facingMode: "environment" },
-                        config,
-                        onScanSuccess,
-                        () => {}
-                    );
-                } catch (backErr) {
-                    console.warn("Environment facingMode failed, falling back to user facingMode:", backErr);
-                    await scanner.start(
-                        { facingMode: "user" },
-                        config,
-                        onScanSuccess,
-                        () => {}
-                    );
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" },
+            });
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                // Attempt BarcodeDetector if available in browser
+                if ("BarcodeDetector" in window) {
+                    const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
+                    const scanLoop = async () => {
+                        if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
+                            try {
+                                const barcodes = await detector.detect(videoRef.current);
+                                if (barcodes.length > 0) {
+                                    const scannedToken = barcodes[0].rawValue;
+                                    if (scannedToken) {
+                                        setManualToken(scannedToken);
+                                        handleLookupTicket(scannedToken);
+                                        setCameraActive(false);
+                                        return;
+                                    }
+                                }
+                            } catch {}
+                        }
+                        animationFrameRef.current = requestAnimationFrame(scanLoop);
+                    };
+                    animationFrameRef.current = requestAnimationFrame(scanLoop);
                 }
             }
         } catch (err: any) {
-            console.error("Camera access error:", err);
-            const msg = err?.message || err?.toString() || "Camera device unavailable";
-            if (msg.includes("NotAllowedError") || msg.includes("Permission") || msg.includes("denied")) {
-                setCameraError("Camera access was blocked by the browser. Opening native device camera capture instead...");
-                setTimeout(() => {
-                    fileInputRef.current?.click();
-                }, 250);
-            } else if (msg.includes("NotFoundError") || msg.includes("DevicesNotFoundError")) {
-                setCameraError("No camera hardware detected on this device. You can upload a photo or type the ticket token.");
-            } else {
-                setCameraError(`Could not start camera stream: ${msg}. Opening device camera capture...`);
-                setTimeout(() => {
-                    fileInputRef.current?.click();
-                }, 250);
-            }
+            console.warn("Camera permission not granted or device unavailable:", err?.message || err);
             setCameraActive(false);
-        } finally {
-            setCameraStarting(false);
         }
     };
 
-    const stopCamera = async () => {
-        try {
-            if (qrScannerRef.current) {
-                if (qrScannerRef.current.isScanning) {
-                    await qrScannerRef.current.stop();
-                }
-                qrScannerRef.current.clear();
-                qrScannerRef.current = null;
-            }
-        } catch (e) {
-            console.warn("Camera stop error:", e);
+    const stopCamera = () => {
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
         }
-        setCameraStarting(false);
-    };
-
-    const handleFileUploadScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setVerifying(true);
-        try {
-            const { Html5Qrcode } = await import("html5-qrcode");
-            let tempEl = document.getElementById("qr-file-scan-temp");
-            if (!tempEl) {
-                tempEl = document.createElement("div");
-                tempEl.id = "qr-file-scan-temp";
-                tempEl.style.display = "none";
-                document.body.appendChild(tempEl);
-            }
-            const fileScanner = new Html5Qrcode("qr-file-scan-temp");
-            const decodedText = await fileScanner.scanFile(file, true);
-            fileScanner.clear();
-
-            if (decodedText) {
-                const clean = decodedText.trim();
-                setManualToken(clean);
-                handleLookupTicket(clean);
-            }
-        } catch (err) {
-            console.warn("File QR scan error:", err);
-            alert("Could not detect a clear QR code in that image. Please try taking a clearer photo or enter the ticket token manually.");
-        } finally {
-            setVerifying(false);
-            if (e.target) e.target.value = "";
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach((t) => t.stop());
+            videoRef.current.srcObject = null;
         }
     };
 
@@ -338,120 +231,30 @@ export default function ConductorQrScanPage() {
             {/* Camera / Manual Input Toggle Box */}
             <Card className="border-zinc-800 bg-zinc-950 text-white shadow-xl">
                 <CardHeader className="pb-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center justify-between">
                         <CardTitle className="text-base font-bold">QR Scanner Device Input</CardTitle>
-                        <div className="flex items-center gap-2">
-                            {/* Photo / Screenshot Scan Button */}
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 text-xs"
-                                disabled={verifying}
-                            >
-                                <Upload className="mr-1.5 h-3.5 w-3.5" />
-                                Scan QR Photo
-                            </Button>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                capture="environment"
-                                className="hidden"
-                                onChange={handleFileUploadScan}
-                            />
-
-                            {/* Camera Toggle Button */}
-                            <Button
-                                size="sm"
-                                variant={cameraActive ? "destructive" : "default"}
-                                type="button"
-                                onClick={() => setCameraActive(!cameraActive)}
-                                className={cameraActive ? "" : "bg-red-600 hover:bg-red-700 font-bold text-xs"}
-                            >
-                                <Camera className="mr-1.5 h-3.5 w-3.5" />
-                                {cameraActive ? "Turn Off Camera" : "Open Device Camera"}
-                            </Button>
-                        </div>
+                        <Button
+                            size="sm"
+                            variant={cameraActive ? "destructive" : "outline"}
+                            onClick={() => setCameraActive(!cameraActive)}
+                        >
+                            <Camera className="mr-2 h-4 w-4" />
+                            {cameraActive ? "Turn Off Camera" : "Open Device Camera"}
+                        </Button>
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {/* Camera Error Alert */}
-                    {cameraError && (
-                        <div className="p-4 rounded-2xl bg-red-950/80 border border-red-800 text-xs text-red-200 flex flex-col gap-2.5 animate-in fade-in">
-                            <div className="flex items-start gap-2.5">
-                                <ShieldAlert className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
-                                <div className="flex-1">
-                                    <p className="font-bold text-white">Browser Camera Permission</p>
-                                    <p className="mt-0.5 leading-relaxed text-zinc-300">{cameraError}</p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setCameraError(null)}
-                                    className="text-zinc-400 hover:text-white p-1"
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
-                            </div>
-                            <div className="flex items-center gap-2 pt-1">
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md"
-                                >
-                                    <Camera className="mr-1.5 h-3.5 w-3.5" />
-                                    Take Photo with Camera Now
-                                </Button>
-                                <span className="text-[11px] text-zinc-400">
-                                    (Opens camera directly without permission requirements)
-                                </span>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Live Camera Scanner Modal */}
+                    {/* Live Video Feed */}
                     {cameraActive && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-                            <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-3xl p-5 shadow-2xl space-y-4">
-                                <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-                                    <div className="flex items-center gap-2 text-white font-bold text-sm">
-                                        <Camera className="h-4 w-4 text-red-500 animate-pulse" />
-                                        <span>Live Boarding QR Scanner</span>
-                                    </div>
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={stopCamera}
-                                        className="text-zinc-400 hover:text-white h-8 w-8 p-0 rounded-full"
-                                    >
-                                        <XCircle className="h-5 w-5" />
-                                    </Button>
-                                </div>
-
-                                {/* QR Reader Canvas / Video Container */}
-                                <div className="relative overflow-hidden rounded-2xl bg-black border border-zinc-800 min-h-[300px] flex items-center justify-center">
-                                    <div id="qr-reader" className="w-full h-full" />
-                                    {cameraStarting && (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/90 text-zinc-300 gap-2">
-                                            <RefreshCw className="h-6 w-6 animate-spin text-red-500" />
-                                            <span className="text-xs font-semibold">Binubuksan ang device camera...</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <p className="text-[11px] text-center text-zinc-400">
-                                    Itapat ang QR code sa viewfinder para awtomatikong ma-scan ang boarding ticket.
-                                </p>
-
-                                <Button
-                                    variant="destructive"
-                                    className="w-full font-bold text-xs py-2.5 rounded-xl"
-                                    onClick={stopCamera}
-                                >
-                                    Isara ang Camera
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                            <div className="relative w-full max-w-md">
+                                <video ref={videoRef} autoPlay playsInline className="w-full h-auto rounded-lg" />
+                                <Button size="sm" variant="destructive" onClick={() => setCameraActive(false)} className="absolute top-2 right-2">
+                                    <XCircle className="h-4 w-4 mr-1" /> Close
                                 </Button>
+                                <div className="absolute inset-0 border-2 border-red-500/50 rounded-lg pointer-events-none flex items-center justify-center">
+                                    <div className="h-36 w-36 border-2 border-red-500 border-dashed rounded-lg animate-pulse" />
+                                </div>
                             </div>
                         </div>
                     )}
