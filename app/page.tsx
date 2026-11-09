@@ -249,10 +249,7 @@ export default function Home() {
                                             </label>
                                             <ModernDatePicker
                                                 value={departureDate}
-                                                onChange={(val) => {
-                                                    setDepartureDate(val);
-                                                    setHomepageDate(val);
-                                                }}
+                                                onChange={(val) => setDepartureDate(val)}
                                                 minDate={getTodayPH()}
                                                 placeholder="Pick departure"
                                                 className="w-full"
