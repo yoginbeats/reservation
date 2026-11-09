@@ -62,7 +62,7 @@ export function GlobalFooter() {
 
                         <div className="flex items-center gap-2 text-xs font-bold text-amber-400 pt-1">
                             <GraduationCap className="h-4 w-4 shrink-0 text-amber-400" />
-                            <span>BSIT Capstone Project 2026</span>
+                            <span>BSIS Capstone Project</span>
                         </div>
                     </div>
 
@@ -153,7 +153,7 @@ export function GlobalFooter() {
                                     Academic Project Notice
                                 </span>
                                 <span className="text-[10px] text-zinc-500">
-                                    BSIT Thesis / Capstone Demo Simulation
+                                    BSIS Thesis / Capstone Demo Simulation
                                 </span>
                             </button>
                         </div>
