@@ -98,6 +98,7 @@ export interface CachedBooking {
     booking_status: "CONFIRMED" | "PENDING_VERIFICATION" | "CANCELLED" | "REFUND_PENDING";
     payment_status: "PAID" | "PENDING_VERIFICATION" | "REJECTED" | "REFUND_PENDING";
     ticket_status?: "VALID" | "USED" | "CANCELLED" | "REFUND_PENDING";
+    pickup_location?: string;
     payment_method: string;
     transaction_ref: string;
     qr_token: string;

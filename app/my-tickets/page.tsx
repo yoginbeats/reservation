@@ -388,6 +388,7 @@ function TicketsContent() {
                             seat_count: item.seat_count || (item.seat_numbers?.length || 1),
                             total_price: item.total_price,
                             booking_source: "ONLINE",
+                            pickup_location: item.pickup_location || item.trip?.origin || "Main Terminal",
                             passenger_id: item.passenger_id || null,
                             trip: {
                                 id: item.trip?.id,
@@ -972,6 +973,11 @@ function TicketsContent() {
                                             <Clock className="h-3.5 w-3.5 text-blue-600" />
                                             {formatDateTimePH(trip?.departure_time || depTime)}
                                         </p>
+                                        {/* Designated Pick-up Point Badge */}
+                                        <div className="flex items-center gap-1.5 text-xs bg-blue-50/80 dark:bg-blue-950/50 p-2 rounded-lg border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 font-semibold">
+                                            <MapPin className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                                            <span><strong>Designated Pick-up:</strong> {booking?.pickup_location || origin}</span>
+                                        </div>
 
                                         {/* Dedicated Bus Unit & Bus Classification */}
                                         <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/60 text-xs">

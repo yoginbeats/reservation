@@ -401,6 +401,12 @@ export default function ConductorQrScanPage() {
 
                             <div className="grid grid-cols-2 gap-4 text-xs">
                                 <div>
+                                    <p className="text-zinc-400">Designated Pick-up Point</p>
+                                    <p className="font-extrabold text-amber-300 text-sm mt-0.5 flex items-center gap-1">
+                                        📍 {scanResult.ticket.pickup_location || scanResult.ticket.trip?.origin || "Main Terminal"}
+                                    </p>
+                                </div>
+                                <div>
                                     <p className="text-zinc-400">Route</p>
                                     <p className="font-bold text-white">
                                         {scanResult.ticket.trip?.origin} ➔ {scanResult.ticket.trip?.destination}

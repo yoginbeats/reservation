@@ -35,8 +35,10 @@ export async function POST(req: NextRequest) {
             discountIdNumber = "",
             discountCount = 0,
             discountedPassengers = [],
+            pickupLocation: rawPickupLocation,
             trip: passedTrip,
         } = body;
+        const pickupLocation = sanitizeString(rawPickupLocation || body.pickup_location || passedTrip?.origin || "Daet");
 
         // 🔒 Strict Input Sanitization
         const passengerName = sanitizeString(rawPassengerName);
@@ -158,6 +160,7 @@ export async function POST(req: NextRequest) {
             booking_status: "PENDING",
             payment_status: "PENDING",
             qr_token: qrToken,
+            pickup_location: pickupLocation,
             trip: normalizedTrip,
         });
 
@@ -196,6 +199,7 @@ export async function POST(req: NextRequest) {
                 booking_status: "CONFIRMED",
                 payment_status: "PAID",
                 qr_token: qrToken,
+                pickup_location: pickupLocation,
                 trip: normalizedTrip,
             });
         }

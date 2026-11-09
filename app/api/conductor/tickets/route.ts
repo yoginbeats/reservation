@@ -201,6 +201,7 @@ export async function GET(req: NextRequest) {
                         discount_count: localBooking.discount_count || localBooking.discounted_passengers?.length || 0,
                         discount_amount: localBooking.discount_amount || 0,
                         discounted_passengers: localBooking.discounted_passengers || [],
+                        pickup_location: localBooking.pickup_location || localBooking.trip.origin || "Daet",
                         trip: {
                             id: "",
                             origin: localBooking.trip.origin,
@@ -357,6 +358,7 @@ export async function GET(req: NextRequest) {
                             passenger_type: lb.passenger_type,
                             discount_id: lb.discount_id,
                             discounted_passengers: lb.discounted_passengers || [],
+                            pickup_location: lb.pickup_location || lb.trip?.origin || "Daet",
                         });
                     }
                 }

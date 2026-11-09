@@ -41,6 +41,8 @@ import { createClient } from "@/lib/supabase/client";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 import { formatDatePH, formatTimePH, formatDateTimePH, getTodayPH } from "@/lib/date-utils";
 import { getBusFare } from "@/lib/constants/bus-layouts";
+import { BusClassificationBadge } from "@/components/bus-classification-badge";
+import { getPickupPointsForTrip, PickupPoint } from "@/lib/constants/pickup-points";
 
 export interface DiscountPerson {
     id: string;
@@ -74,7 +76,8 @@ function BookTripContent() {
     const [paymentMethod, setPaymentMethod] = useState<"gcash_qr" | "paymongo">("gcash_qr");
     const [receiptImage, setReceiptImage] = useState<string | null>(null);
     const [receiptFileName, setReceiptFileName] = useState<string>("");
-    const [holdSeconds, setHoldSeconds] = useState(15 * 60); // 15-minute hold timer
+    const [holdSeconds, setHoldSeconds] = useState(15 * 60);
+    const [pickupLocation, setPickupLocation] = useState<string>(""); // 15-minute hold timer
 
     // 15-Minute Seat Hold Countdown
     useEffect(() => {
@@ -123,17 +126,15 @@ function BookTripContent() {
     const serviceClassParam = searchParams.get("serviceClass") || "ALL";
     const passengersParam = searchParams.get("passengers") || "1";
 
-    // Active Search and Filter State
-    const [filterOrigin, setFilterOrigin] = useState(originParam);
-    const [filterDestination, setFilterDestination] = useState(destParam);
-    const [filterDate, setFilterDate] = useState(dateParam);
-    const [filterServiceClass, setFilterServiceClass] = useState(serviceClassParam);
+        // Scheduled Trips from Trip & Schedule Management
+    const [allScheduledTrips, setAllScheduledTrips] = useState<any[]>([]);
+    const [selectedDate, setSelectedDate] = useState<string>(dateParam && dateParam !== getTodayPH() ? dateParam : "ALL");
     const [passengerCount, setPassengerCount] = useState(Number(passengersParam) || 1);
 
     useEffect(() => {
-        fetchTrips(originParam, destParam, dateParam, serviceClassParam);
+        fetchTrips();
         fetchCurrentUser();
-    }, [tripIdParam, originParam, destParam, dateParam, serviceClassParam]);
+    }, [tripIdParam]);
 
     const fetchCurrentUser = async () => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -147,109 +148,89 @@ function BookTripContent() {
         }
     };
 
-    const fetchTrips = async (
-        overrideOrigin?: string,
-        overrideDest?: string,
-        overrideDate?: string,
-        overrideServiceClass?: string
-    ) => {
+    const fetchTrips = async () => {
         setLoading(true);
         setError(null);
-
-        const currentOrigin = overrideOrigin !== undefined ? overrideOrigin : filterOrigin;
-        const currentDest = overrideDest !== undefined ? overrideDest : filterDestination;
-        const currentDate = overrideDate !== undefined ? overrideDate : filterDate;
-        const currentServiceClass = overrideServiceClass !== undefined ? overrideServiceClass : filterServiceClass;
+        let rawTrips: any[] = [];
 
         try {
-            const query = new URLSearchParams();
-            if (currentOrigin && currentOrigin !== "ALL") query.set("origin", currentOrigin);
-            if (currentDest && currentDest !== "ALL") query.set("destination", currentDest);
-            if (currentDate) query.set("date", currentDate);
-            if (currentServiceClass && currentServiceClass !== "ALL") query.set("serviceClass", currentServiceClass);
-
-            const res = await fetch(`/api/trips/available?${query.toString()}`);
-            const json = await res.json();
-
-            if (json?.success && Array.isArray(json.trips) && json.trips.length > 0) {
-                const normalized = json.trips.map((t: any) => {
-                    const bType = t.bus_type || t.bus?.bus_type || "REGULAR AIRCON";
-                    return {
-                        ...t,
-                        fare_amount: t.fare_amount ?? t.price ?? getBusFare(bType),
-                        route: {
-                            origin: { name: t.origin || currentOrigin || "Cubao" },
-                            destination: { name: t.destination || currentDest || "Daet" }
-                        },
-                        bus: {
-                            bus_number: t.bus_number || "Superlines Express",
-                            bus_type: bType,
-                            seat_capacity: t.seat_capacity || 49
-                        }
-                    };
-                });
-
-                setTrips(normalized);
-                if (tripIdParam) {
-                    const matched = normalized.find((t: any) => t.id === tripIdParam);
-                    if (matched) {
-                        handleSelectTrip(matched);
-                    }
-                }
-                setLoading(false);
-                return;
+            const res = await fetch("/api/admin/trips");
+            const data = await res.json();
+            if (data?.success && Array.isArray(data.trips) && data.trips.length > 0) {
+                rawTrips = data.trips;
             }
-        } catch (apiErr) {
-            console.warn("Available trips API note, trying database fallback:", apiErr);
+        } catch (e) {
+            console.warn("Could not fetch admin scheduled trips:", e);
         }
 
-        // Fallback: direct database query
-        let rawData: any[] = [];
-        const { data, error } = await supabase
-            .from('trips')
-            .select('*, bus:buses(bus_number, bus_type)')
-            .order('departure_time', { ascending: true });
-
-        if (error) {
-            console.warn("Retrying simple trip fetch:", error.message || error);
-            const { data: fallbackData } = await supabase
-                .from('trips')
-                .select('*')
-                .order('departure_time', { ascending: true });
-            if (fallbackData) rawData = fallbackData;
-        } else if (data) {
-            rawData = data;
+        if (rawTrips.length === 0) {
+            try {
+                const { data: dbTrips } = await supabase
+                    .from('trips')
+                    .select('*, bus:buses(bus_number, bus_type, seat_capacity)')
+                    .order('departure_time', { ascending: true });
+                if (dbTrips && dbTrips.length > 0) {
+                    rawTrips = dbTrips;
+                }
+            } catch (dbErr) {
+                console.warn("Database fallback note:", dbErr);
+            }
         }
 
-        const normalizedTrips = rawData.map((t: any) => {
+        const normalized = rawTrips.map((t: any) => {
             const bType = t.bus?.bus_type || t.bus_type || "REGULAR AIRCON";
             return {
-                ...t,
+                id: t.id,
+                origin: t.origin || t.route?.origin?.name || "Cubao",
+                destination: t.destination || t.route?.destination?.name || "Daet",
+                departure_time: t.departure_time,
                 fare_amount: t.fare_amount ?? t.price ?? getBusFare(bType),
+                status: t.status || 'SCHEDULED',
                 route: {
                     origin: { name: t.origin || t.route?.origin?.name || "Cubao" },
                     destination: { name: t.destination || t.route?.destination?.name || "Daet" }
                 },
-                bus: t.bus || {
-                    bus_number: "Superlines Express",
-                    bus_type: bType
+                bus: {
+                    bus_number: t.bus_number || t.bus?.bus_number || "Superlines Express",
+                    bus_type: bType,
+                    seat_capacity: t.seat_capacity || t.bus?.seat_capacity || 49
                 }
             };
         });
 
-        setTrips(normalizedTrips);
-        setLoading(false);
+        setAllScheduledTrips(normalized);
+        setTrips(normalized);
 
+        // If tripIdParam provided in URL, auto-select
         if (tripIdParam) {
-            const matched = normalizedTrips.find((t: any) => t.id === tripIdParam);
-            if (matched) {
-                handleSelectTrip(matched);
-            }
+            const matched = normalized.find((t: any) => t.id === tripIdParam);
+            if (matched) handleSelectTrip(matched);
         }
+
+        setLoading(false);
     };
+
+    // Derived unique scheduled dates for quick filter pills
+    const availableDates = Array.from(
+        new Set(
+            allScheduledTrips
+                .map((t) => t.departure_time ? t.departure_time.slice(0, 10) : "")
+                .filter(Boolean)
+        )
+    ).sort();
+
+    // Derived trips filtered strictly by selectedDate
+    const displayedTrips = selectedDate === "ALL"
+        ? allScheduledTrips
+        : allScheduledTrips.filter((t) => t.departure_time && t.departure_time.slice(0, 10) === selectedDate);
+
 
     const handleSelectTrip = async (trip: any) => {
         setSelectedTrip(trip);
+        const initialPickups = getPickupPointsForTrip(trip.route?.origin?.name || trip.origin, trip.route?.destination?.name || trip.destination);
+        if (initialPickups && initialPickups.length > 0) {
+            setPickupLocation(initialPickups[0].name);
+        }
         setSelectedSeat(null);
         setSelectedSeats([]);
         setDiscountCount(0);
@@ -525,6 +506,7 @@ function BookTripContent() {
                     discountCount: effectiveDiscountCount,
                     discountedPassengers: activeDiscountedList,
                     discountIdNumber: discountIdSummary,
+                    pickupLocation: pickupLocation || selectedTrip?.route?.origin?.name || selectedTrip?.origin || "Daet",
                     trip: selectedTrip,
                 }),
             });
@@ -553,6 +535,7 @@ function BookTripContent() {
                         seat_count: seatCount,
                         total_price: finalFare,
                         original_price: totalBaseFare,
+                        pickup_location: pickupLocation || selectedTrip?.route?.origin?.name || selectedTrip?.origin || "Daet",
                         trip: selectedTrip,
                         payment_method: "PAYMONGO",
                         created_at: new Date().toISOString()
@@ -600,150 +583,105 @@ function BookTripContent() {
             {/* STEP 1: SELECT TRIP SCHEDULE */}
             {step === 1 && (
                 <div className="space-y-6">
-                    {/* INTERACTIVE SEARCH & FILTER BAR */}
-                    <Card className="border-2 border-red-500/20 bg-gradient-to-br from-zinc-50 to-white dark:from-zinc-900 dark:to-zinc-950 shadow-md">
-                        <CardContent className="p-4 sm:p-5 space-y-4">
-                            <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
-                                <div className="flex items-center gap-2">
-                                    <Search className="h-4 w-4 text-red-600" />
-                                    <h3 className="font-extrabold text-sm uppercase tracking-wider text-foreground">
-                                        Search & Filter Trip Schedules
-                                    </h3>
-                                </div>
-                                <div className="inline-flex items-center gap-1.5 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 px-3 py-1 text-xs font-bold shadow-sm">
+                    {/* SCHEDULED DEPARTURES HEADER & DATE FILTER BAR */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-4 sm:p-5 rounded-2xl border-2 shadow-sm">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <Bus className="h-6 w-6 text-red-600" />
+                                <h2 className="text-xl font-black text-foreground uppercase tracking-tight">
+                                    Official Scheduled Departures
+                                </h2>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Real-time trip schedules synchronized directly from Superlines Dispatch Management.
+                            </p>
+                        </div>
+
+                        {/* Date Filter Controls */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedDate("ALL")}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                                    selectedDate === "ALL"
+                                        ? "bg-red-600 text-white border-red-600 shadow-sm"
+                                        : "bg-muted text-foreground border-border hover:bg-muted/80"
+                                }`}
+                            >
+                                All Dates ({allScheduledTrips.length})
+                            </button>
+
+                            {/* Quick Date Pills from Real Scheduled Trips */}
+                            {availableDates.map((dStr) => (
+                                <button
+                                    key={dStr}
+                                    type="button"
+                                    onClick={() => setSelectedDate(dStr)}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                                        selectedDate === dStr
+                                            ? "bg-red-600 text-white border-red-600 shadow-sm"
+                                            : "bg-muted text-foreground border-border hover:bg-muted/80"
+                                    }`}
+                                >
                                     <Calendar className="h-3.5 w-3.5" />
-                                    <span>{formatDatePH(filterDate)}</span>
-                                </div>
+                                    {formatDatePH(dStr)}
+                                </button>
+                            ))}
+
+                            {/* Modern Date Picker */}
+                            <div className="w-40">
+                                <ModernDatePicker
+                                    value={selectedDate === "ALL" ? "" : selectedDate}
+                                    onChange={(val) => setSelectedDate(val)}
+                                    placeholder="Filter by Date"
+                                    className="h-8 text-xs font-bold"
+                                />
                             </div>
-
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-end">
-                                {/* Allowed Superlines Route Format */}
-                                <div className="space-y-1 sm:col-span-2">
-                                    <label className="text-[11px] font-black uppercase tracking-wider text-muted-foreground block">
-                                        Route Terminals (Official Superlines Routes)
-                                    </label>
-                                    <div className="flex items-center gap-2">
-                                        <div className="relative flex-1">
-                                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-red-600" />
-                                            <select
-                                                value={`${filterOrigin}-${filterDestination}`}
-                                                onChange={(e) => {
-                                                    const [newOrig, newDest] = e.target.value.split("-");
-                                                    setFilterOrigin(newOrig);
-                                                    setFilterDestination(newDest);
-                                                    fetchTrips(newOrig, newDest, filterDate, filterServiceClass);
-                                                }}
-                                                className="w-full rounded-xl border border-input bg-background py-2.5 pl-8 pr-2 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-red-500 font-mono"
-                                            >
-                                                <option value="Daet-PITX">Daet ➔ PITX (Daet - PITX)</option>
-                                                <option value="Daet-Cubao">Daet ➔ Cubao (Daet - Cubao)</option>
-                                                <option value="PITX-Daet">PITX ➔ Daet (PITX - Daet)</option>
-                                                <option value="PITX-Cubao">PITX ➔ Cubao (PITX - Cubao)</option>
-                                                <option value="Cubao-Daet">Cubao ➔ Daet (Cubao - Daet)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Departure Date Picker */}
-                                <div className="space-y-1">
-                                    <label className="text-[11px] font-black uppercase tracking-wider text-muted-foreground block">
-                                        Departure Date
-                                    </label>
-                                    <ModernDatePicker
-                                        value={filterDate}
-                                        onChange={(val) => {
-                                            setFilterDate(val);
-                                            fetchTrips(filterOrigin, filterDestination, val, filterServiceClass);
-                                        }}
-                                        minDate={getTodayPH()}
-                                        placeholder="Pick Date"
-                                        className="w-full"
-                                    />
-                                </div>
-
-                                {/* Service Class Filter */}
-                                <div className="space-y-1">
-                                    <label className="text-[11px] font-black uppercase tracking-wider text-muted-foreground block">
-                                        Service Class
-                                    </label>
-                                    <select
-                                        value={filterServiceClass}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setFilterServiceClass(val);
-                                            fetchTrips(filterOrigin, filterDestination, filterDate, val);
-                                        }}
-                                        className="w-full rounded-xl border border-input bg-background py-2.5 px-3 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-red-500"
-                                    >
-                                        <option value="ALL">All Service Classes</option>
-                                        <option value="REGULAR AIRCON">Regular Aircon (₱850)</option>
-                                        <option value="SUPER DELUXE">Super Deluxe (₱950)</option>
-                                        <option value="FIRST CLASS">First Class (₱1,100)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Active filter summary bar */}
-                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs text-muted-foreground border-t">
-                                <span className="font-medium">
-                                    Showing departures for <strong className="text-foreground">{filterOrigin} ➔ {filterDestination}</strong> on <strong className="text-red-600">{formatDatePH(filterDate)}</strong>
-                                </span>
-                                <span className="font-bold text-foreground">
-                                    {trips.length} departure{trips.length === 1 ? "" : "s"} available
-                                </span>
-                            </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
 
                     {/* AVAILABLE SCHEDULES LIST */}
                     {loading ? (
                         <div className="py-16 text-center text-muted-foreground space-y-2">
                             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent"></div>
-                            <p className="font-semibold text-sm">Searching accurate trip schedules...</p>
+                            <p className="font-semibold text-sm">Loading verified dispatch schedules...</p>
                         </div>
-                    ) : trips.length > 0 ? (
+                    ) : displayedTrips.length > 0 ? (
                         <div className="grid gap-4 md:grid-cols-2">
-                            {trips.map((t) => {
+                            {displayedTrips.map((t) => {
                                 const origin = t.route?.origin?.name || t.origin || "Origin";
                                 const dest = t.route?.destination?.name || t.destination || "Destination";
                                 const busNum = t.bus?.bus_number || t.bus_number || "Superlines Express";
-                                const busType = (t.bus?.bus_type || t.bus_type || "REGULAR AIRCON").toUpperCase();
-                                const capacity = t.bus?.seat_capacity || t.seat_capacity || 45;
-                                const occupiedCount = Array.isArray(t.occupied_seats) ? t.occupied_seats.length : 0;
-                                const openSeats = Math.max(0, capacity - occupiedCount);
+                                const busType = t.bus?.bus_type || t.bus_type || "REGULAR AIRCON";
+                                const capacity = t.bus?.seat_capacity || t.seat_capacity || 49;
 
                                 return (
-                                    <Card key={t.id} className="transition-all hover:border-red-500 hover:shadow-lg border-2 flex flex-col justify-between">
-                                        <CardHeader className="pb-3">
-                                            <div className="flex items-center justify-between text-xs font-semibold uppercase">
-                                                <span className="font-bold text-red-600 flex items-center gap-1.5">
+                                    <Card
+                                        key={t.id}
+                                        className="transition-all hover:border-red-500 hover:shadow-xl border-2 flex flex-col justify-between cursor-pointer group"
+                                        onClick={() => handleSelectTrip(t)}
+                                    >
+                                        <CardHeader className="pb-3 border-b bg-muted/20">
+                                            <div className="flex items-center justify-between text-xs font-semibold">
+                                                <div className="flex items-center gap-1.5 font-bold text-red-600">
                                                     <Bus className="h-4 w-4" />
-                                                    {busNum}
-                                                </span>
+                                                    <span className="font-mono text-sm">{busNum}</span>
+                                                </div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${
-                                                        busType.includes("FIRST")
-                                                            ? "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200"
-                                                            : busType.includes("SUPER")
-                                                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200"
-                                                            : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300 border border-red-200"
-                                                    }`}>
-                                                        {busType}
-                                                    </span>
-                                                    <span className="font-mono text-base font-extrabold text-foreground">
-                                                        ₱{t.fare_amount || 850}
+                                                    <BusClassificationBadge busType={busType} seatCapacity={capacity} showFeatures />
+                                                    <span className="font-mono text-lg font-black text-foreground">
+                                                        ₱{t.fare_amount || 850}.00
                                                     </span>
                                                 </div>
                                             </div>
-                                            <CardTitle className="text-lg flex items-center justify-between mt-2 font-black">
+                                            <CardTitle className="text-xl flex items-center justify-between mt-2 font-black text-foreground">
                                                 <span>{origin}</span>
-                                                <ArrowRight className="h-4 w-4 text-red-600" />
+                                                <ArrowRight className="h-5 w-5 text-red-600 group-hover:translate-x-1 transition-transform" />
                                                 <span>{dest}</span>
                                             </CardTitle>
                                         </CardHeader>
-                                        <CardContent className="space-y-3 text-xs text-muted-foreground">
-                                            <div className="flex items-center justify-between rounded-xl bg-muted/40 p-3 border">
+                                        <CardContent className="space-y-3 pt-4 text-xs text-muted-foreground">
+                                            <div className="flex items-center justify-between rounded-xl bg-muted/50 p-3 border">
                                                 <div className="flex items-center gap-2 font-bold text-foreground">
                                                     <Calendar className="h-4 w-4 text-red-600" />
                                                     <span>{formatDatePH(t.departure_time)}</span>
@@ -753,48 +691,55 @@ function BookTripContent() {
                                                     <span>{formatTimePH(t.departure_time)}</span>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center justify-between text-[11px] px-1 font-semibold">
-                                                <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                                    ● Daily Guaranteed Schedule
+                                            <div className="flex items-center justify-between text-xs px-1">
+                                                <span className="text-emerald-600 font-bold flex items-center gap-1">
+                                                    ● Official Superlines Schedule
                                                 </span>
-                                                <span className="text-muted-foreground font-mono">
-                                                    {openSeats} seats available
+                                                <span className="text-muted-foreground font-mono font-semibold">
+                                                    Capacity: {capacity} Passenger Seats
                                                 </span>
                                             </div>
                                         </CardContent>
-                                        <CardFooter className="pt-2 border-t bg-muted/20 flex items-center justify-between">
-                                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                                                Status: <span className="text-emerald-600 font-black">Active Daily Schedule</span>
+                                        <CardFooter className="pt-3 border-t bg-muted/30 flex items-center justify-between">
+                                            <span className="text-xs text-muted-foreground font-mono">
+                                                Tap card to choose seats
                                             </span>
-                                            <span className="text-xs font-black text-red-600 font-mono">
-                                                {busNum}
-                                            </span>
+                                            <Button
+                                                size="sm"
+                                                className="bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-md"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSelectTrip(t);
+                                                }}
+                                            >
+                                                Select Seats &amp; Book &rarr;
+                                            </Button>
                                         </CardFooter>
                                     </Card>
                                 );
                             })}
                         </div>
                     ) : (
-                        <Card className="p-12 text-center text-muted-foreground space-y-4">
-                            <p className="font-bold text-base text-foreground">No schedules found for this selection.</p>
+                        <Card className="p-12 text-center text-muted-foreground space-y-4 rounded-2xl border-2">
+                            <p className="font-bold text-base text-foreground">
+                                No scheduled departures found {selectedDate !== "ALL" ? `for ${formatDatePH(selectedDate)}` : "in the system"}.
+                            </p>
                             <p className="text-xs max-w-md mx-auto">
-                                No active trips matching {filterOrigin} ➔ {filterDestination} on {formatDatePH(filterDate)}. Try picking another departure date or service class above.
+                                Kung nag-schedule ka ng biyahe sa Trip &amp; Schedule Management, pakitsek ang departure date nito o i-click ang &quot;All Dates&quot; sa itaas para makita ang lahat ng aktibong biyahe.
                             </p>
                             <Button
                                 variant="outline"
-                                onClick={() => {
-                                    setFilterServiceClass("ALL");
-                                    fetchTrips(filterOrigin, filterDestination, filterDate, "ALL");
-                                }}
+                                className="font-bold text-xs"
+                                onClick={() => setSelectedDate("ALL")}
                             >
-                                Show All Classes for this Date
+                                View All Scheduled Departures ({allScheduledTrips.length})
                             </Button>
                         </Card>
                     )}
                 </div>
             )}
 
-            {/* STEP 2: SELECT SEAT */}
+            {/* STEP 2: SELECT SEAT */}}
             {step === 2 && selectedTrip && (
                 <div className="space-y-6">
                     <div className="flex items-center justify-between">
@@ -913,6 +858,75 @@ function BookTripContent() {
 
                     {/* Official PayMongo GCash Gateway Payment Form */}
                     <form onSubmit={handleProceedToCheckout} className="space-y-6">
+                        {/* SELECTION NG PICK-UP LOCATION (DESIGNATED BOARDING POINT) */}
+                        <div className="space-y-3 rounded-2xl border-2 border-blue-500/50 p-4 bg-gradient-to-br from-blue-50/70 via-background to-blue-50/30 dark:from-blue-950/40 dark:via-background dark:to-blue-950/20 shadow-md">
+                            <div className="flex items-center justify-between border-b pb-2">
+                                <div className="flex items-center gap-2">
+                                    <MapPin className="h-5 w-5 text-blue-600 animate-pulse" />
+                                    <h3 className="font-extrabold text-sm text-foreground">
+                                        Selection ng Pick-up Location (Designated Boarding Point) *
+                                    </h3>
+                                </div>
+                                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-300">
+                                    Official Boarding Stations
+                                </span>
+                            </div>
+
+                            <p className="text-xs text-muted-foreground">
+                                Piliin kung saan ka opisyal na sasakay o susunduin ng bus sa rutang <strong className="text-foreground">{selectedTrip.route?.origin?.name || selectedTrip.origin} ➔ {selectedTrip.route?.destination?.name || selectedTrip.destination}</strong>:
+                            </p>
+
+                            <div className="grid gap-2.5 sm:grid-cols-2 pt-1">
+                                {getPickupPointsForTrip(
+                                    selectedTrip.route?.origin?.name || selectedTrip.origin,
+                                    selectedTrip.route?.destination?.name || selectedTrip.destination
+                                ).map((point: PickupPoint) => {
+                                    const isSelected = pickupLocation === point.name || (!pickupLocation && point.isMainTerminal);
+                                    return (
+                                        <div
+                                            key={point.id}
+                                            onClick={() => setPickupLocation(point.name)}
+                                            className={`cursor-pointer rounded-xl border-2 p-3 transition-all flex flex-col justify-between ${
+                                                isSelected
+                                                    ? "border-blue-600 bg-blue-50/90 dark:bg-blue-950/70 shadow-sm ring-2 ring-blue-500/40"
+                                                    : "border-border hover:border-blue-300 bg-card hover:bg-muted/40"
+                                            }`}
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="radio"
+                                                        id={point.id}
+                                                        name="pickupLocationSelection"
+                                                        checked={isSelected}
+                                                        onChange={() => setPickupLocation(point.name)}
+                                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                    />
+                                                    <label htmlFor={point.id} className="font-extrabold text-xs cursor-pointer text-foreground">
+                                                        {point.label}
+                                                    </label>
+                                                </div>
+                                                {point.isMainTerminal && (
+                                                    <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-600 text-white">
+                                                        Main Terminal
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-[11px] text-muted-foreground pl-6 mt-1">
+                                                {point.description}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex items-center gap-2 text-xs text-blue-900 dark:text-blue-200 bg-blue-100/70 dark:bg-blue-950/70 p-2.5 rounded-xl border border-blue-200 dark:border-blue-800">
+                                <MapPin className="h-4 w-4 shrink-0 text-blue-600" />
+                                <span className="text-[11px]">
+                                    <strong>Nakatala sa Tiket:</strong> Ikaw ay susunduin sa <strong className="underline text-blue-700 dark:text-blue-300">{pickupLocation || "Main Terminal"}</strong>. Makikita ito sa digital QR pass at sa conductor manifest.
+                                </span>
+                            </div>
+                        </div>
                         {/* 1. Passenger Details */}
                         <div className="space-y-4 rounded-xl border p-4 bg-card">
                             <div className="flex items-center justify-between border-b pb-2">

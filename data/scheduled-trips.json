@@ -2,5 +2,38 @@
   "clearedAll": true,
   "clearedAt": "2026-10-28T04:58:13.120Z",
   "deletedTripIds": [],
-  "trips": []
+  "trips": [
+    {
+      "origin": "Daet",
+      "destination": "Cubao",
+      "departure_time": "2026-11-22T01:24:00.000Z",
+      "fare_amount": 400,
+      "price": 400,
+      "status": "SCHEDULED",
+      "bus_id": "bus-sl101",
+      "bus_number": "SL-101",
+      "bus_type": "REGULAR_AIRCON",
+      "seat_capacity": 49,
+      "route_id": "route-cubao-daet",
+      "created_by": "usr-admin-001",
+      "id": "trip-1794187500799-9luxr",
+      "created_at": "2026-11-09T01:25:00.799Z"
+    },
+    {
+      "origin": "Cubao",
+      "destination": "Daet",
+      "departure_time": "2026-11-21T01:24:00.000Z",
+      "fare_amount": 400,
+      "price": 400,
+      "status": "SCHEDULED",
+      "bus_id": "bus-sl101",
+      "bus_number": "SL-101",
+      "bus_type": "REGULAR_AIRCON",
+      "seat_capacity": 49,
+      "route_id": "route-cubao-daet",
+      "created_by": "usr-admin-001",
+      "id": "trip-1794187500695-kc7cd",
+      "created_at": "2026-11-09T01:25:00.696Z"
+    }
+  ]
 }

@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const originQuery = (searchParams.get("origin") || "").trim();
         const destQuery = (searchParams.get("destination") || "").trim();
-        const dateQuery = (searchParams.get("date") || searchParams.get("departureDate") || "").trim() || getTodayPH();
+        const dateQuery = (searchParams.get("date") || searchParams.get("departureDate") || "").trim();
         const serviceClassQuery = (searchParams.get("serviceClass") || "").trim().toUpperCase();
 
         // 1. Fetch strictly active scheduled trips created by the Admin

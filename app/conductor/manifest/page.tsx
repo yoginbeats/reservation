@@ -47,6 +47,7 @@ interface ManifestPassenger {
     ticket_status: string;
     qr_token: string;
     created_at: string;
+    pickup_location?: string;
     is_discounted?: boolean;
     passenger_type?: string;
     discount_id?: string;
@@ -1140,6 +1141,13 @@ function ConductorManifestContent() {
                                                             <div className="font-bold text-white print:text-black">{b.passenger_name}</div>
                                                             {b.passenger_contact && (
                                                                 <div className="text-[10px] text-zinc-400 font-mono">{b.passenger_contact}</div>
+                                                            )}
+                                                            {b.pickup_location && (
+                                                                <div className="mt-1">
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-700/80">
+                                                                        📍 Pick-up: {b.pickup_location}
+                                                                    </span>
+                                                                </div>
                                                             )}
                                                         </td>
                                                         <td className="p-3">
