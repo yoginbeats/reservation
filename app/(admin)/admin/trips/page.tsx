@@ -73,12 +73,27 @@ export default function AdminTripsPage() {
     const supabase = createClient();
 
     const fetchDropdowns = async () => {
-        const { data: rData } = await supabase.from('routes').select(`id, origin:origin_terminal_id(name), destination:destination_terminal_id(name)`);
+        let routeList: any[] = [];
+        try {
+            const res = await fetch("/api/admin/routes");
+            const data = await res.json();
+            if (data?.success && Array.isArray(data.routes)) {
+                routeList = data.routes;
+            }
+        } catch (e) {
+            console.warn("Could not fetch routes from API:", e);
+        }
+
+        if (routeList.length === 0) {
+            const { data: rData } = await supabase.from('routes').select(`id, origin:origin_terminal_id(name), destination:destination_terminal_id(name)`);
+            if (rData && rData.length > 0) routeList = rData;
+        }
+
         const { data: bData } = await supabase.from('buses').select('id, bus_number, bus_type, seat_capacity').order('bus_number');
 
-        if (rData && rData.length > 0) {
-            setRoutes(rData);
-            setRouteId(rData[0].id);
+        if (routeList.length > 0) {
+            setRoutes(routeList);
+            setRouteId(routeList[0].id);
         }
         if (bData && bData.length > 0) {
             setBuses(bData);

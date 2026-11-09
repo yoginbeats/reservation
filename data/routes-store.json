@@ -1,0 +1,126 @@
+{
+  "terminals": [
+    {
+      "id": "term-cubao",
+      "name": "Cubao",
+      "location": "Superlines Cubao Terminal, EDSA, Quezon City",
+      "code": "CUB"
+    },
+    {
+      "id": "term-daet",
+      "name": "Daet",
+      "location": "Daet Central Terminal, Camarines Norte",
+      "code": "DAE"
+    },
+    {
+      "id": "term-pitx",
+      "name": "PITX",
+      "location": "Parañaque Integrated Terminal Exchange, Metro Manila",
+      "code": "PTX"
+    }
+  ],
+  "routes": [
+    {
+      "id": "route-cubao-daet",
+      "origin_terminal_id": "term-cubao",
+      "destination_terminal_id": "term-daet",
+      "origin": {
+        "name": "Cubao",
+        "location": "Superlines Cubao Terminal, EDSA"
+      },
+      "destination": {
+        "name": "Daet",
+        "location": "Daet Central Terminal"
+      },
+      "distance_km": 340,
+      "estimated_hours": 8,
+      "status": "ACTIVE",
+      "created_at": "2026-11-09T01:09:22.491Z"
+    },
+    {
+      "id": "route-daet-cubao",
+      "origin_terminal_id": "term-daet",
+      "destination_terminal_id": "term-cubao",
+      "origin": {
+        "name": "Daet",
+        "location": "Daet Central Terminal"
+      },
+      "destination": {
+        "name": "Cubao",
+        "location": "Superlines Cubao Terminal, EDSA"
+      },
+      "distance_km": 340,
+      "estimated_hours": 8,
+      "status": "ACTIVE",
+      "created_at": "2026-11-09T01:09:22.492Z"
+    },
+    {
+      "id": "route-pitx-daet",
+      "origin_terminal_id": "term-pitx",
+      "destination_terminal_id": "term-daet",
+      "origin": {
+        "name": "PITX",
+        "location": "Parañaque Integrated Terminal Exchange"
+      },
+      "destination": {
+        "name": "Daet",
+        "location": "Daet Central Terminal"
+      },
+      "distance_km": 355,
+      "estimated_hours": 8.5,
+      "status": "ACTIVE",
+      "created_at": "2026-11-09T01:09:22.492Z"
+    },
+    {
+      "id": "route-daet-pitx",
+      "origin_terminal_id": "term-daet",
+      "destination_terminal_id": "term-pitx",
+      "origin": {
+        "name": "Daet",
+        "location": "Daet Central Terminal"
+      },
+      "destination": {
+        "name": "PITX",
+        "location": "Parañaque Integrated Terminal Exchange"
+      },
+      "distance_km": 355,
+      "estimated_hours": 8.5,
+      "status": "ACTIVE",
+      "created_at": "2026-11-09T01:09:22.492Z"
+    },
+    {
+      "id": "route-cubao-pitx",
+      "origin_terminal_id": "term-cubao",
+      "destination_terminal_id": "term-pitx",
+      "origin": {
+        "name": "Cubao",
+        "location": "Superlines Cubao Terminal, EDSA"
+      },
+      "destination": {
+        "name": "PITX",
+        "location": "Parañaque Integrated Terminal Exchange"
+      },
+      "distance_km": 25,
+      "estimated_hours": 1.5,
+      "status": "ACTIVE",
+      "created_at": "2026-11-09T01:09:22.492Z"
+    },
+    {
+      "id": "route-pitx-cubao",
+      "origin_terminal_id": "term-pitx",
+      "destination_terminal_id": "term-cubao",
+      "origin": {
+        "name": "PITX",
+        "location": "Parañaque Integrated Terminal Exchange"
+      },
+      "destination": {
+        "name": "Cubao",
+        "location": "Superlines Cubao Terminal, EDSA"
+      },
+      "distance_km": 25,
+      "estimated_hours": 1.5,
+      "status": "ACTIVE",
+      "created_at": "2026-11-09T01:09:22.492Z"
+    }
+  ]
+}
