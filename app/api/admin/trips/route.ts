@@ -8,14 +8,30 @@ import {
     clearAllScheduledTrips 
 } from "@/lib/trip-store";
 
-// GET /api/admin/trips - Return all active scheduled trips
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+// GET /api/admin/trips - Return all active scheduled trips (optionally filtered by ?date=YYYY-MM-DD)
 export async function GET(req: NextRequest) {
     try {
-        const trips = getActiveScheduledTrips();
+        const url = new URL(req.url);
+        const dateQuery = url.searchParams.get("date");
+        let trips = getActiveScheduledTrips();
+        
+        if (dateQuery && dateQuery !== "ALL") {
+            trips = trips.filter(t => t.departure_time && t.departure_time.slice(0, 10) === dateQuery);
+        }
+
         return NextResponse.json({
             success: true,
             trips,
             count: trips.length,
+        }, {
+            headers: {
+                "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            }
         });
     } catch (err: any) {
         console.error("Error fetching scheduled trips:", err);

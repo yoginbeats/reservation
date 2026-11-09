@@ -12,11 +12,11 @@ import {
     ShieldCheck, 
     Clock, 
     Star, 
-    Megaphone,
-    ArrowRight
+    ArrowRight,
+    RefreshCw
 } from "lucide-react";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
-import { getTodayPH } from "@/lib/date-utils";
+import { getTodayPH, formatDatePH, formatTimePH } from "@/lib/date-utils";
 import { AcademicDisclaimerCard, AcademicDisclaimerModal } from "@/components/academic-disclaimer";
 import { createClient } from "@/lib/supabase/client";
 
@@ -30,7 +30,28 @@ export default function Home() {
     const [departureDate, setDepartureDate] = useState(() => getTodayPH());
     const [returnDate, setReturnDate] = useState("");
     const [passengers, setPassengers] = useState("1");
+    const [adminTrips, setAdminTrips] = useState<any[]>([]);
+    const [loadingTrips, setLoadingTrips] = useState(false);
+    const [homepageDate, setHomepageDate] = useState<string>("ALL");
     const supabase = createClient();
+
+    const fetchAdminTrips = async () => {
+        try {
+            setLoadingTrips(true);
+            const res = await fetch(`/api/admin/trips?_t=${Date.now()}`, {
+                cache: "no-store",
+                headers: { "Cache-Control": "no-cache" }
+            });
+            const data = await res.json();
+            if (data?.success && Array.isArray(data.trips)) {
+                setAdminTrips(data.trips);
+            }
+        } catch (e) {
+            console.warn("Could not load admin scheduled trips:", e);
+        } finally {
+            setLoadingTrips(false);
+        }
+    };
 
     useEffect(() => {
         const checkUserSession = async () => {
@@ -49,12 +70,43 @@ export default function Home() {
             } catch {}
         };
         checkUserSession();
+        fetchAdminTrips();
+
+        const onFocus = () => fetchAdminTrips();
+        window.addEventListener("focus", onFocus);
+        return () => window.removeEventListener("focus", onFocus);
     }, []);
+
+    // Unique dates from active admin-dispatched trips
+    const availableDates = Array.from(
+        new Set(
+            adminTrips
+                .map((t) => (t.departure_time ? t.departure_time.slice(0, 10) : ""))
+                .filter(Boolean)
+        )
+    ).sort();
+
+    // Check trips available on currently selected departureDate in hero
+    const heroDateTrips = adminTrips.filter(
+        (t) => t.departure_time && t.departure_time.slice(0, 10) === departureDate
+    );
+
+    // Trips displayed in the live departures section
+    const displayedHomepageTrips = homepageDate === "ALL"
+        ? adminTrips
+        : adminTrips.filter((t) => t.departure_time && t.departure_time.slice(0, 10) === homepageDate);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         const effectiveDate = departureDate || "";
-        const targetUrl = effectiveDate ? `/book?date=${encodeURIComponent(effectiveDate)}` : "/book";
+        const params = new URLSearchParams();
+        if (effectiveDate) params.set("date", effectiveDate);
+        if (origin) params.set("origin", origin);
+        if (destination) params.set("destination", destination);
+        if (serviceClass) params.set("serviceClass", serviceClass);
+        if (passengers) params.set("passengers", passengers);
+
+        const targetUrl = `/book?${params.toString()}`;
 
         if (!user) {
             router.push(`/login?redirect=${encodeURIComponent(targetUrl)}&notice=login_required`);
@@ -249,7 +301,10 @@ export default function Home() {
                                             </label>
                                             <ModernDatePicker
                                                 value={departureDate}
-                                                onChange={(val) => setDepartureDate(val)}
+                                                onChange={(val) => {
+                                                    setDepartureDate(val);
+                                                    setHomepageDate(val);
+                                                }}
                                                 minDate={getTodayPH()}
                                                 placeholder="Pick departure"
                                                 className="w-full"
@@ -292,8 +347,46 @@ export default function Home() {
                                         </div>
                                     </div>
 
+                                    {/* LIVE DEPARTURE STATUS INDICATOR */}
+                                    <div className="rounded-xl bg-zinc-50 p-2.5 border border-zinc-200/80 space-y-1.5">
+                                        <div className="flex items-center justify-between text-[11px]">
+                                            <span className="font-bold text-zinc-600">Petsa: {formatDatePH(departureDate)}</span>
+                                            {heroDateTrips.length > 0 ? (
+                                                <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-black flex items-center gap-1">
+                                                    ● {heroDateTrips.length} active schedule{heroDateTrips.length === 1 ? '' : 's'}
+                                                </span>
+                                            ) : (
+                                                <span className="text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                                    ⚠️ No trip yet
+                                                </span>
+                                            )}
+                                        </div>
+                                        {availableDates.length > 0 && (
+                                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                                <span className="text-[10px] text-zinc-500 font-bold">Admin Dispatched:</span>
+                                                {availableDates.map((dStr) => (
+                                                    <button
+                                                        key={dStr}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setDepartureDate(dStr);
+                                                            setHomepageDate(dStr);
+                                                        }}
+                                                        className={`text-[10px] font-black px-2 py-0.5 rounded-lg border transition-all ${
+                                                            departureDate === dStr 
+                                                                ? 'bg-red-600 text-white border-red-600 shadow-sm' 
+                                                                : 'bg-white text-zinc-700 border-zinc-300 hover:border-red-500 hover:bg-red-50'
+                                                        }`}
+                                                    >
+                                                        {formatDatePH(dStr)}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {/* CHECK AVAILABILITY BUTTON */}
-                                    <div className="pt-2">
+                                    <div className="pt-1">
                                         <Button
                                             type="submit"
                                             className="w-full h-14 bg-gradient-to-r from-red-600 via-red-600 to-red-700 hover:brightness-110 text-white font-black uppercase tracking-wider rounded-2xl shadow-xl shadow-red-600/30 text-base flex items-center justify-center gap-2"
@@ -319,24 +412,103 @@ export default function Home() {
             {/* REAL DISPATCHED SCHEDULES SECTION */}
             <section className="py-16 px-4 bg-zinc-900 border-t border-zinc-800 relative z-10">
                 <div className="container mx-auto max-w-6xl text-center space-y-8">
-                    <div>
-                        <span className="text-xs font-bold uppercase tracking-widest text-red-500">Official Schedules</span>
-                        <h3 className="text-2xl font-black text-white mt-1">Live Superlines Bus Departures</h3>
-                        <p className="text-xs text-zinc-400 max-w-lg mx-auto mt-1">
-                            Synchronized in real-time with Superlines Dispatch Management. Select a departure to book seats directly.
-                        </p>
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="text-left">
+                            <span className="text-xs font-bold uppercase tracking-widest text-red-500">Official Schedules</span>
+                            <h3 className="text-2xl font-black text-white mt-1">Live Superlines Bus Departures</h3>
+                            <p className="text-xs text-zinc-400 max-w-lg mt-1">
+                                Synchronized in real-time with Superlines Dispatch Management. Select a departure to book seats directly.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => fetchAdminTrips()}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700 hover:text-white transition-all"
+                        >
+                            <RefreshCw className={`h-3.5 w-3.5 text-red-500 ${loadingTrips ? 'animate-spin' : ''}`} />
+                            <span>Refresh Schedules</span>
+                        </button>
                     </div>
 
-                    {adminTrips.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/40 p-8 text-zinc-500 text-xs">
-                            No scheduled departures currently dispatched. Check back soon or visit the passenger timetable.
+                    {/* Dynamic Date Filter Bar for Departures */}
+                    <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800">
+                        <span className="text-xs font-bold text-zinc-400 mr-1">Filter by Date:</span>
+                        <button
+                            type="button"
+                            onClick={() => setHomepageDate("ALL")}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                                homepageDate === "ALL"
+                                    ? "bg-red-600 text-white border-red-600 shadow-sm"
+                                    : "bg-zinc-900 text-zinc-300 border-zinc-800 hover:bg-zinc-800"
+                            }`}
+                        >
+                            All Dates ({adminTrips.length})
+                        </button>
+                        {availableDates.map((dStr) => {
+                            const count = adminTrips.filter(t => t.departure_time?.slice(0, 10) === dStr).length;
+                            return (
+                                <button
+                                    key={dStr}
+                                    type="button"
+                                    onClick={() => setHomepageDate(dStr)}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                                        homepageDate === dStr
+                                            ? "bg-red-600 text-white border-red-600 shadow-sm"
+                                            : "bg-zinc-900 text-zinc-300 border-zinc-800 hover:bg-zinc-800"
+                                    }`}
+                                >
+                                    <Calendar className="h-3.5 w-3.5 text-red-500" />
+                                    <span>{formatDatePH(dStr)}</span>
+                                    <span className="opacity-75 font-mono">({count})</span>
+                                </button>
+                            );
+                        })}
+                        <div className="w-40 ml-auto">
+                            <ModernDatePicker
+                                value={homepageDate === "ALL" ? "" : homepageDate}
+                                onChange={(val) => setHomepageDate(val)}
+                                placeholder="Pick a date"
+                                className="h-8 text-xs font-bold"
+                            />
+                        </div>
+                    </div>
+
+                    {displayedHomepageTrips.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/60 p-10 text-center space-y-4">
+                            <p className="font-bold text-sm text-zinc-300">
+                                Walang nakatakdang biyahe sa {homepageDate !== "ALL" ? formatDatePH(homepageDate) : "napiling criteria"}.
+                            </p>
+                            <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                                Narito ang mga petsang may aktibong biyahe na inilagay ng Admin sa Trip Schedule:
+                            </p>
+                            <div className="flex justify-center items-center gap-2 flex-wrap pt-2">
+                                {availableDates.map(dStr => (
+                                    <Button
+                                        key={dStr}
+                                        size="sm"
+                                        variant="outline"
+                                        className="font-bold text-xs border-red-600/40 text-red-400 hover:bg-red-950/50"
+                                        onClick={() => setHomepageDate(dStr)}
+                                    >
+                                        <Calendar className="mr-1.5 h-3.5 w-3.5" />
+                                        {formatDatePH(dStr)}
+                                    </Button>
+                                ))}
+                                <Button
+                                    size="sm"
+                                    className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
+                                    onClick={() => setHomepageDate("ALL")}
+                                >
+                                    Tingnan Lahat ng Biyahe ({adminTrips.length})
+                                </Button>
+                            </div>
                         </div>
                     ) : (
                         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            {adminTrips.map((t) => {
+                            {displayedHomepageTrips.map((t) => {
                                 const tDate = t.departure_time ? t.departure_time.slice(0, 10) : "";
-                                const depTimeStr = t.departure_time ? new Date(t.departure_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
-                                const depDateStr = t.departure_time ? new Date(t.departure_time).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : "";
+                                const depTimeStr = formatTimePH(t.departure_time);
+                                const depDateStr = formatDatePH(t.departure_time);
                                 const bType = t.bus_type || t.bus?.bus_type || "REGULAR AIRCON";
 
                                 return (

@@ -120,20 +120,38 @@ function BookTripContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const tripIdParam = searchParams.get("tripId");
-    const originParam = searchParams.get("origin") || "Cubao";
-    const destParam = searchParams.get("destination") || "Daet";
-    const dateParam = searchParams.get("date") || searchParams.get("departureDate") || getTodayPH();
-    const serviceClassParam = searchParams.get("serviceClass") || "ALL";
+    const originParam = searchParams.get("origin") || "";
+    const destParam = searchParams.get("destination") || "";
+    const dateParam = searchParams.get("date") || searchParams.get("departureDate") || "";
+    const serviceClassParam = searchParams.get("serviceClass") || "";
     const passengersParam = searchParams.get("passengers") || "1";
 
-        // Scheduled Trips from Trip & Schedule Management
+    // Scheduled Trips from Trip & Schedule Management
     const [allScheduledTrips, setAllScheduledTrips] = useState<any[]>([]);
-    const [selectedDate, setSelectedDate] = useState<string>("ALL");
+    const [selectedDate, setSelectedDate] = useState<string>(() => dateParam || "ALL");
+    const [selectedOrigin, setSelectedOrigin] = useState<string>(() => originParam || "ALL");
+    const [selectedDestination, setSelectedDestination] = useState<string>(() => destParam || "ALL");
+    const [selectedClass, setSelectedClass] = useState<string>(() => serviceClassParam || "ALL");
     const [passengerCount, setPassengerCount] = useState(Number(passengersParam) || 1);
+
+    useEffect(() => {
+        const qDate = searchParams.get("date") || searchParams.get("departureDate");
+        if (qDate) setSelectedDate(qDate);
+        const qOrigin = searchParams.get("origin");
+        if (qOrigin) setSelectedOrigin(qOrigin);
+        const qDest = searchParams.get("destination");
+        if (qDest) setSelectedDestination(qDest);
+        const qClass = searchParams.get("serviceClass");
+        if (qClass) setSelectedClass(qClass);
+    }, [searchParams]);
 
     useEffect(() => {
         fetchTrips();
         fetchCurrentUser();
+
+        const onFocus = () => fetchTrips();
+        window.addEventListener("focus", onFocus);
+        return () => window.removeEventListener("focus", onFocus);
     }, [tripIdParam]);
 
     const fetchCurrentUser = async () => {
@@ -154,7 +172,10 @@ function BookTripContent() {
         let rawTrips: any[] = [];
 
         try {
-            const res = await fetch("/api/admin/trips");
+            const res = await fetch(`/api/admin/trips?_t=${Date.now()}`, {
+                cache: "no-store",
+                headers: { "Cache-Control": "no-cache" }
+            });
             const data = await res.json();
             if (data?.success && Array.isArray(data.trips) ) {
                 rawTrips = data.trips;
@@ -196,6 +217,11 @@ function BookTripContent() {
         setLoading(false);
     };
 
+    const handleDateSelect = async (newDate: string) => {
+        setSelectedDate(newDate);
+        await fetchTrips();
+    };
+
     // Derived unique scheduled dates for quick filter pills
     const availableDates = Array.from(
         new Set(
@@ -205,10 +231,30 @@ function BookTripContent() {
         )
     ).sort();
 
-    // Derived trips filtered strictly by selectedDate
-    const displayedTrips = selectedDate === "ALL"
-        ? allScheduledTrips
-        : allScheduledTrips.filter((t) => t.departure_time && t.departure_time.slice(0, 10) === selectedDate);
+    // Derived trips filtered strictly by selectedDate and optional route/class
+    const displayedTrips = allScheduledTrips.filter((t) => {
+        if (selectedDate !== "ALL") {
+            const tripDate = t.departure_time ? t.departure_time.slice(0, 10) : "";
+            if (tripDate !== selectedDate) return false;
+        }
+        if (selectedOrigin !== "ALL") {
+            const tripOrigin = (t.route?.origin?.name || t.origin || "").toLowerCase();
+            if (!tripOrigin.includes(selectedOrigin.toLowerCase())) return false;
+        }
+        if (selectedDestination !== "ALL") {
+            const tripDest = (t.route?.destination?.name || t.destination || "").toLowerCase();
+            if (!tripDest.includes(selectedDestination.toLowerCase())) return false;
+        }
+        if (selectedClass !== "ALL") {
+            const tripClass = (t.bus?.bus_type || t.bus_type || "").toLowerCase();
+            if (!tripClass.includes(selectedClass.toLowerCase())) return false;
+        }
+        return true;
+    });
+
+    const totalTripsOnSelectedDate = selectedDate === "ALL"
+        ? allScheduledTrips.length
+        : allScheduledTrips.filter(t => t.departure_time?.slice(0, 10) === selectedDate).length;
 
 
     const handleSelectTrip = async (trip: any) => {
@@ -587,7 +633,7 @@ function BookTripContent() {
                         <div className="flex items-center gap-2 flex-wrap">
                             <button
                                 type="button"
-                                onClick={() => setSelectedDate("ALL")}
+                                onClick={() => handleDateSelect("ALL")}
                                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                                     selectedDate === "ALL"
                                         ? "bg-red-600 text-white border-red-600 shadow-sm"
@@ -598,33 +644,81 @@ function BookTripContent() {
                             </button>
 
                             {/* Quick Date Pills from Real Scheduled Trips */}
-                            {availableDates.map((dStr) => (
-                                <button
-                                    key={dStr}
-                                    type="button"
-                                    onClick={() => setSelectedDate(dStr)}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
-                                        selectedDate === dStr
-                                            ? "bg-red-600 text-white border-red-600 shadow-sm"
-                                            : "bg-muted text-foreground border-border hover:bg-muted/80"
-                                    }`}
-                                >
-                                    <Calendar className="h-3.5 w-3.5" />
-                                    {formatDatePH(dStr)}
-                                </button>
-                            ))}
+                            {availableDates.map((dStr) => {
+                                const count = allScheduledTrips.filter(t => t.departure_time?.slice(0, 10) === dStr).length;
+                                return (
+                                    <button
+                                        key={dStr}
+                                        type="button"
+                                        onClick={() => handleDateSelect(dStr)}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                                            selectedDate === dStr
+                                                ? "bg-red-600 text-white border-red-600 shadow-sm"
+                                                : "bg-muted text-foreground border-border hover:bg-muted/80"
+                                        }`}
+                                    >
+                                        <Calendar className="h-3.5 w-3.5" />
+                                        <span>{formatDatePH(dStr)}</span>
+                                        <span className="opacity-75 font-mono">({count})</span>
+                                    </button>
+                                );
+                            })}
 
                             {/* Modern Date Picker */}
                             <div className="w-40">
                                 <ModernDatePicker
                                     value={selectedDate === "ALL" ? "" : selectedDate}
-                                    onChange={(val) => setSelectedDate(val)}
+                                    onChange={(val) => handleDateSelect(val)}
                                     placeholder="Filter by Date"
                                     className="h-8 text-xs font-bold"
                                 />
                             </div>
+
+                            {/* Refresh Button */}
+                            <button
+                                type="button"
+                                onClick={() => fetchTrips()}
+                                title="Check for newly dispatched admin trips"
+                                className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all border bg-muted text-foreground border-border hover:bg-muted/80 flex items-center gap-1.5"
+                            >
+                                <RefreshCw className={`h-3.5 w-3.5 text-red-600 ${loading ? 'animate-spin' : ''}`} />
+                                <span>Refresh</span>
+                            </button>
                         </div>
                     </div>
+
+                    {/* Active Route Filter Pills */}
+                    {(selectedOrigin !== "ALL" || selectedDestination !== "ALL" || selectedClass !== "ALL") && (
+                        <div className="flex items-center gap-2 text-xs bg-muted/60 p-2.5 rounded-xl border flex-wrap">
+                            <span className="font-bold text-muted-foreground">Ruta / Filter:</span>
+                            {selectedOrigin !== "ALL" && (
+                                <span className="px-2 py-0.5 rounded-lg bg-background border font-mono font-bold text-foreground">
+                                    Mula: {selectedOrigin}
+                                </span>
+                            )}
+                            {selectedDestination !== "ALL" && (
+                                <span className="px-2 py-0.5 rounded-lg bg-background border font-mono font-bold text-foreground">
+                                    Papunta: {selectedDestination}
+                                </span>
+                            )}
+                            {selectedClass !== "ALL" && (
+                                <span className="px-2 py-0.5 rounded-lg bg-background border font-mono font-bold text-foreground">
+                                    Class: {selectedClass}
+                                </span>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedOrigin("ALL");
+                                    setSelectedDestination("ALL");
+                                    setSelectedClass("ALL");
+                                }}
+                                className="text-xs font-black text-red-600 hover:underline ml-auto"
+                            >
+                                Ipakita Lahat ng Ruta ({totalTripsOnSelectedDate} biyahe sa petsang ito)
+                            </button>
+                        </div>
+                    )}
 
                     {/* AVAILABLE SCHEDULES LIST */}
                     {loading ? (
