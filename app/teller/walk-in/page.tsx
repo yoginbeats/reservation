@@ -422,8 +422,8 @@ export default function TellerWalkInBookingPage() {
     };
 
     return (
-        <div className="w-full max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center justify-between border-b pb-4">
+        <div className="w-full max-w-7xl mx-auto space-y-6 print:m-0 print:p-0 print:space-y-0">
+            <div className="flex items-center justify-between border-b pb-4 print:hidden">
                 <div>
                     <h1 className="text-3xl font-black tracking-tight">Terminal Walk-in Reservation</h1>
                     <p className="text-sm text-muted-foreground">Process instant physical cash tickets for passengers at counter.</p>
@@ -436,7 +436,7 @@ export default function TellerWalkInBookingPage() {
             </div>
 
             {error && (
-                <div className="flex items-center gap-2 rounded-lg bg-red-50 p-4 text-sm text-red-600 dark:bg-red-950/40">
+                <div className="flex items-center gap-2 rounded-lg bg-red-50 p-4 text-sm text-red-600 dark:bg-red-950/40 print:hidden">
                     <AlertCircle className="h-5 w-5 flex-shrink-0" />
                     <span>{error}</span>
                 </div>
@@ -444,12 +444,12 @@ export default function TellerWalkInBookingPage() {
 
             {/* ISSUED TICKET SUCCESS MODAL VIEW */}
             {completedBooking ? (
-                <div className="py-4">
-                    <Card className="mx-auto max-w-md border-2 border-emerald-500 shadow-2xl rounded-2xl overflow-hidden p-0 gap-0 print:border-none print:shadow-none bg-card">
-                        <CardHeader className="bg-gradient-to-b from-emerald-600 to-emerald-700 text-white text-center p-6 print:bg-white print:text-black">
+                <div className="py-4 print:py-0 print:m-0 flex justify-center">
+                    <Card className="mx-auto max-w-md w-full border-2 border-emerald-500 shadow-2xl rounded-2xl overflow-hidden p-0 gap-0 print:border-2 print:border-zinc-800 print:shadow-none print:max-w-[145mm] print:rounded-xl bg-card">
+                        <CardHeader className="bg-gradient-to-b from-emerald-600 to-emerald-700 text-white text-center p-6 print:bg-white print:text-black print:border-b-2 print:border-zinc-800 print:p-4">
                             <CheckCircle className="mx-auto h-12 w-12 mb-2 print:hidden" />
-                            <CardTitle className="text-xl font-black tracking-tight">TICKET ISSUED SUCCESSFULLY</CardTitle>
-                            <CardDescription className="text-emerald-100 text-xs font-semibold print:text-black">Superlines Walk-in Ticket Receipt</CardDescription>
+                            <CardTitle className="text-xl font-black tracking-tight print:text-2xl print:text-black">SUPERLINES BUS TICKET</CardTitle>
+                            <CardDescription className="text-emerald-100 text-xs font-semibold print:text-zinc-700">Official Terminal Cash Ticket Receipt</CardDescription>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
                             <div className="flex justify-between items-center border-b pb-3 text-sm">

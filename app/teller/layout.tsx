@@ -23,7 +23,7 @@ export default async function TellerLayout({
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
             {/* Teller Header */}
-            <header className="sticky top-0 z-30 border-b bg-white dark:bg-zinc-900 shadow-sm">
+            <header className="sticky top-0 z-30 border-b bg-white dark:bg-zinc-900 shadow-sm print:hidden">
                 <div className="w-full max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center gap-6">
                         <Link href="/teller" className="flex items-center gap-2.5 group">
@@ -71,7 +71,7 @@ export default async function TellerLayout({
             </header>
 
             {/* Main Content */}
-            <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">{children}</main>
+            <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 print:p-0 print:m-0 print:max-w-none">{children}</main>
         </div>
     );
 }
