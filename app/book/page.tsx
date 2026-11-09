@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
-import { formatDatePH, formatTimePH, formatDateTimePH, getTodayPH } from "@/lib/date-utils";
+import { formatDatePH, formatTimePH, formatDateTimePH, getTodayPH, getTripDatePH } from "@/lib/date-utils";
 import { getBusFare } from "@/lib/constants/bus-layouts";
 import { BusClassificationBadge } from "@/components/bus-classification-badge";
 import { getPickupPointsForTrip, PickupPoint } from "@/lib/constants/pickup-points";
@@ -122,29 +122,17 @@ function BookTripContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const tripIdParam = searchParams.get("tripId");
-    const originParam = searchParams.get("origin") || "";
-    const destParam = searchParams.get("destination") || "";
     const dateParam = searchParams.get("date") || searchParams.get("departureDate") || "";
-    const serviceClassParam = searchParams.get("serviceClass") || "";
     const passengersParam = searchParams.get("passengers") || "1";
 
     // Scheduled Trips from Trip & Schedule Management
     const [allScheduledTrips, setAllScheduledTrips] = useState<any[]>([]);
     const [selectedDate, setSelectedDate] = useState<string>(() => dateParam || "ALL");
-    const [selectedOrigin, setSelectedOrigin] = useState<string>(() => originParam || "ALL");
-    const [selectedDestination, setSelectedDestination] = useState<string>(() => destParam || "ALL");
-    const [selectedClass, setSelectedClass] = useState<string>(() => serviceClassParam || "ALL");
     const [passengerCount, setPassengerCount] = useState(Number(passengersParam) || 1);
 
     useEffect(() => {
         const qDate = searchParams.get("date") || searchParams.get("departureDate");
         if (qDate) setSelectedDate(qDate);
-        const qOrigin = searchParams.get("origin");
-        if (qOrigin) setSelectedOrigin(qOrigin);
-        const qDest = searchParams.get("destination");
-        if (qDest) setSelectedDestination(qDest);
-        const qClass = searchParams.get("serviceClass");
-        if (qClass) setSelectedClass(qClass);
     }, [searchParams]);
 
     useEffect(() => {
@@ -224,39 +212,25 @@ function BookTripContent() {
         await fetchTrips();
     };
 
-    // Derived unique scheduled dates for quick filter pills
+    // Derived unique scheduled dates for quick filter pills using Philippine Timezone
     const availableDates = Array.from(
         new Set(
             allScheduledTrips
-                .map((t) => t.departure_time ? t.departure_time.slice(0, 10) : "")
+                .map((t) => getTripDatePH(t.departure_time))
                 .filter(Boolean)
         )
     ).sort();
 
-    // Derived trips filtered strictly by selectedDate and optional route/class
-    const displayedTrips = allScheduledTrips.filter((t) => {
-        if (selectedDate !== "ALL") {
-            const tripDate = t.departure_time ? t.departure_time.slice(0, 10) : "";
-            if (tripDate !== selectedDate) return false;
-        }
-        if (selectedOrigin !== "ALL") {
-            const tripOrigin = (t.route?.origin?.name || t.origin || "").toLowerCase();
-            if (!tripOrigin.includes(selectedOrigin.toLowerCase())) return false;
-        }
-        if (selectedDestination !== "ALL") {
-            const tripDest = (t.route?.destination?.name || t.destination || "").toLowerCase();
-            if (!tripDest.includes(selectedDestination.toLowerCase())) return false;
-        }
-        if (selectedClass !== "ALL") {
-            const tripClass = (t.bus?.bus_type || t.bus_type || "").toLowerCase();
-            if (!tripClass.includes(selectedClass.toLowerCase())) return false;
-        }
-        return true;
-    });
+    // STRICT DATE FILTER ONLY:
+    // Exactly what Admin dispatched in Trip Schedule Management for the selected date
+    const displayedTrips = selectedDate === "ALL"
+        ? allScheduledTrips
+        : allScheduledTrips.filter((t) => {
+            const tripDate = getTripDatePH(t.departure_time);
+            return tripDate === selectedDate;
+        });
 
-    const totalTripsOnSelectedDate = selectedDate === "ALL"
-        ? allScheduledTrips.length
-        : allScheduledTrips.filter(t => t.departure_time?.slice(0, 10) === selectedDate).length;
+    const totalTripsOnSelectedDate = displayedTrips.length;
 
 
     const handleSelectTrip = async (trip: any) => {
@@ -732,38 +706,7 @@ function BookTripContent() {
                         </div>
                     </div>
 
-                    {/* Active Route Filter Pills */}
-                    {(selectedOrigin !== "ALL" || selectedDestination !== "ALL" || selectedClass !== "ALL") && (
-                        <div className="flex items-center gap-2 text-xs bg-muted/60 p-2.5 rounded-xl border flex-wrap">
-                            <span className="font-bold text-muted-foreground">Ruta / Filter:</span>
-                            {selectedOrigin !== "ALL" && (
-                                <span className="px-2 py-0.5 rounded-lg bg-background border font-mono font-bold text-foreground">
-                                    Mula: {selectedOrigin}
-                                </span>
-                            )}
-                            {selectedDestination !== "ALL" && (
-                                <span className="px-2 py-0.5 rounded-lg bg-background border font-mono font-bold text-foreground">
-                                    Papunta: {selectedDestination}
-                                </span>
-                            )}
-                            {selectedClass !== "ALL" && (
-                                <span className="px-2 py-0.5 rounded-lg bg-background border font-mono font-bold text-foreground">
-                                    Class: {selectedClass}
-                                </span>
-                            )}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setSelectedOrigin("ALL");
-                                    setSelectedDestination("ALL");
-                                    setSelectedClass("ALL");
-                                }}
-                                className="text-xs font-black text-red-600 hover:underline ml-auto"
-                            >
-                                Ipakita Lahat ng Ruta ({totalTripsOnSelectedDate} biyahe sa petsang ito)
-                            </button>
-                        </div>
-                    )}
+
 
                     {/* AVAILABLE SCHEDULES LIST */}
                     {loading ? (

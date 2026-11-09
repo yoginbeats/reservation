@@ -79,7 +79,7 @@ export default function TellerWalkInBookingPage() {
         // Centralize: Set all active admin scheduled trips directly
         setTrips(normalizedTrips);
         if (initialTripId) {
-            const found = finalTrips.find((t: any) => t.id === initialTripId);
+            const found = normalizedTrips.find((t: any) => t.id === initialTripId);
             if (found) handleSelectTrip(found);
         }
         setLoading(false);

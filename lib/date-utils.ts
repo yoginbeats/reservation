@@ -96,3 +96,24 @@ export function isSameDatePH(isoTimestamp: string, targetYmd: string): boolean {
         return false;
     }
 }
+
+
+/**
+ * Extracts the date in Asia/Manila timezone formatted as YYYY-MM-DD.
+ * e.g. "2026-11-28T15:00:00.000Z" (which is 11:00 PM Manila) => "2026-11-28"
+ */
+export function getTripDatePH(isoOrDate: string | Date | undefined | null): string {
+    if (!isoOrDate) return "";
+    try {
+        const d = typeof isoOrDate === "string" ? new Date(isoOrDate) : isoOrDate;
+        if (isNaN(d.getTime())) return String(isoOrDate).slice(0, 10);
+        return new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Manila",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit"
+        }).format(d);
+    } catch {
+        return String(isoOrDate).slice(0, 10);
+    }
+}

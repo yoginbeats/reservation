@@ -1,12 +1,12 @@
 {
   "clearedAll": true,
-  "clearedAt": "2026-10-28T04:58:13.120Z",
+  "clearedAt": "2026-11-09T03:19:12.933Z",
   "deletedTripIds": [],
   "trips": [
     {
-      "origin": "Daet",
-      "destination": "Cubao",
-      "departure_time": "2026-11-26T14:00:00.000Z",
+      "origin": "Cubao",
+      "destination": "Daet",
+      "departure_time": "2026-11-30T15:00:00.000Z",
       "fare_amount": 100,
       "price": 100,
       "status": "SCHEDULED",
@@ -16,13 +16,13 @@
       "seat_capacity": 49,
       "route_id": "route-cubao-daet",
       "created_by": "usr-admin-001",
-      "id": "trip-1794193076596-tr7ir",
-      "created_at": "2026-11-09T02:57:56.596Z"
+      "id": "trip-1794195107616-b1nos",
+      "created_at": "2026-11-09T03:31:47.617Z"
     },
     {
       "origin": "Cubao",
       "destination": "Daet",
-      "departure_time": "2026-11-25T14:00:00.000Z",
+      "departure_time": "2026-11-28T15:00:00.000Z",
       "fare_amount": 100,
       "price": 100,
       "status": "SCHEDULED",
@@ -32,40 +32,8 @@
       "seat_capacity": 49,
       "route_id": "route-cubao-daet",
       "created_by": "usr-admin-001",
-      "id": "trip-1794193076516-vu8l1",
-      "created_at": "2026-11-09T02:57:56.516Z"
-    },
-    {
-      "origin": "Daet",
-      "destination": "Cubao",
-      "departure_time": "2026-11-22T01:24:00.000Z",
-      "fare_amount": 400,
-      "price": 400,
-      "status": "SCHEDULED",
-      "bus_id": "bus-sl101",
-      "bus_number": "SL-101",
-      "bus_type": "REGULAR_AIRCON",
-      "seat_capacity": 49,
-      "route_id": "route-cubao-daet",
-      "created_by": "usr-admin-001",
-      "id": "trip-1794187500799-9luxr",
-      "created_at": "2026-11-09T01:25:00.799Z"
-    },
-    {
-      "origin": "Cubao",
-      "destination": "Daet",
-      "departure_time": "2026-11-21T01:24:00.000Z",
-      "fare_amount": 400,
-      "price": 400,
-      "status": "SCHEDULED",
-      "bus_id": "bus-sl101",
-      "bus_number": "SL-101",
-      "bus_type": "REGULAR_AIRCON",
-      "seat_capacity": 49,
-      "route_id": "route-cubao-daet",
-      "created_by": "usr-admin-001",
-      "id": "trip-1794187500695-kc7cd",
-      "created_at": "2026-11-09T01:25:00.696Z"
+      "id": "trip-1794194425129-26zxe",
+      "created_at": "2026-11-09T03:20:25.129Z"
     }
   ]
 }

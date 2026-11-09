@@ -15,7 +15,7 @@ import {
     ArrowRight
 } from "lucide-react";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
-import { getTodayPH, formatDatePH, formatTimePH } from "@/lib/date-utils";
+import { getTodayPH, formatDatePH, formatTimePH, getTripDatePH } from "@/lib/date-utils";
 import { AcademicDisclaimerCard, AcademicDisclaimerModal } from "@/components/academic-disclaimer";
 import { createClient } from "@/lib/supabase/client";
 
@@ -53,14 +53,8 @@ export default function Home() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         const effectiveDate = departureDate || "";
-        const params = new URLSearchParams();
-        if (effectiveDate) params.set("date", effectiveDate);
-        if (origin) params.set("origin", origin);
-        if (destination) params.set("destination", destination);
-        if (serviceClass) params.set("serviceClass", serviceClass);
-        if (passengers) params.set("passengers", passengers);
-
-        const targetUrl = `/book?${params.toString()}`;
+        // Directly go to /book with date parameter so passenger immediately sees all admin dispatched trips
+        const targetUrl = effectiveDate ? `/book?date=${encodeURIComponent(effectiveDate)}` : "/book";
 
         if (!user) {
             router.push(`/login?redirect=${encodeURIComponent(targetUrl)}&notice=login_required`);

@@ -205,29 +205,16 @@ function ConductorManifestContent() {
         let rawData: any[] = [];
 
         try {
-            const adminRes = await fetch("/api/admin/trips");
+            const adminRes = await fetch(`/api/admin/trips?_t=${Date.now()}`, {
+                cache: "no-store",
+                headers: { "Cache-Control": "no-cache" }
+            });
             const adminJson = await adminRes.json();
-            if (adminJson?.success && Array.isArray(adminJson.trips) && adminJson.trips.length > 0) {
+            if (adminJson?.success && Array.isArray(adminJson.trips)) {
                 rawData = adminJson.trips;
             }
         } catch (e) {
             console.warn("Could not load admin trips:", e);
-        }
-
-        if (rawData.length === 0) {
-            const { data, error } = await supabase
-                .from('trips')
-                .select('*, bus:buses(bus_number, bus_type, seat_capacity)')
-                .order('departure_time', { ascending: true });
-            if (!error && data && data.length > 0) {
-                rawData = data;
-            } else {
-                const { data: fallbackData } = await supabase
-                    .from('trips')
-                    .select('*')
-                    .order('departure_time', { ascending: true });
-                if (fallbackData) rawData = fallbackData;
-            }
         }
 
         const normalizedTrips = rawData.map((t: any) => ({

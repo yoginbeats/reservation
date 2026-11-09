@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CalendarCheck, MapPin, Clock, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { formatDatePH, formatTimePH } from "@/lib/date-utils";
+import { getActiveScheduledTrips } from "@/lib/trip-store";
 
 export default async function ReservationsPage() {
     const supabase = await createClient();
@@ -31,22 +32,8 @@ export default async function ReservationsPage() {
         redirect("/admin/reservations");
     }
 
-    // 3. Fetch Available Trips (Client Context)
-    let tripsRaw: any[] = [];
-    const { data: rawTrips, error } = await supabase
-        .from('trips')
-        .select('*, bus:buses(bus_number)')
-        .order('departure_time', { ascending: true });
-
-    if (error) {
-        const { data: fallbackTrips } = await supabase
-            .from('trips')
-            .select('*')
-            .order('departure_time', { ascending: true });
-        if (fallbackTrips) tripsRaw = fallbackTrips;
-    } else if (rawTrips) {
-        tripsRaw = rawTrips;
-    }
+    // 3. Fetch Available Trips (Centralized Admin Store - never pull stale DB trips)
+    const tripsRaw = getActiveScheduledTrips();
 
     const trips = tripsRaw.map((t: any) => ({
         ...t,

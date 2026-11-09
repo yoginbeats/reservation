@@ -72,7 +72,7 @@ function writeStore(data: TripStoreData) {
  */
 export function getActiveScheduledTrips(): ScheduledTrip[] {
     const store = readStore();
-    if (store.clearedAll && store.trips.length === 0) {
+    if (store.clearedAll && (!store.trips || store.trips.length === 0)) {
         return [];
     }
 
@@ -94,6 +94,7 @@ export function addScheduledTrip(trip: Omit<ScheduledTrip, "id" | "created_at"> 
         created_at: new Date().toISOString(),
     };
 
+    store.clearedAll = false;
     store.trips.unshift(newTrip);
     writeStore(store);
     return newTrip;
@@ -140,8 +141,10 @@ export function updateScheduledTrip(
 export function deleteScheduledTrip(tripId: string): boolean {
     const store = readStore();
     if (!store.deletedTripIds) store.deletedTripIds = [];
-    store.deletedTripIds.push(tripId);
-    store.trips = store.trips.filter(t => t.id !== tripId);
+    if (!store.deletedTripIds.includes(tripId)) {
+        store.deletedTripIds.push(tripId);
+    }
+    store.trips = (store.trips || []).filter(t => t.id !== tripId);
     writeStore(store);
     return true;
 }
