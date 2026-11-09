@@ -128,11 +128,17 @@ export default function ConductorQrScanPage() {
             console.error("Camera access error:", err);
             const msg = err?.message || err?.toString() || "Camera device unavailable";
             if (msg.includes("NotAllowedError") || msg.includes("Permission") || msg.includes("denied")) {
-                setCameraError("Camera access was blocked by the browser. Please allow camera permissions in your browser URL bar / site settings.");
+                setCameraError("Camera access was blocked by the browser. Opening native device camera capture instead...");
+                setTimeout(() => {
+                    fileInputRef.current?.click();
+                }, 250);
             } else if (msg.includes("NotFoundError") || msg.includes("DevicesNotFoundError")) {
-                setCameraError("No camera hardware detected on this device.");
+                setCameraError("No camera hardware detected on this device. You can upload a photo or type the ticket token.");
             } else {
-                setCameraError(`Could not start camera: ${msg}. You can upload a photo of the QR ticket or type the token below.`);
+                setCameraError(`Could not start camera stream: ${msg}. Opening device camera capture...`);
+                setTimeout(() => {
+                    fileInputRef.current?.click();
+                }, 250);
             }
             setCameraActive(false);
         } finally {
@@ -351,6 +357,7 @@ export default function ConductorQrScanPage() {
                                 ref={fileInputRef}
                                 type="file"
                                 accept="image/*"
+                                capture="environment"
                                 className="hidden"
                                 onChange={handleFileUploadScan}
                             />
@@ -372,19 +379,35 @@ export default function ConductorQrScanPage() {
                 <CardContent className="space-y-4">
                     {/* Camera Error Alert */}
                     {cameraError && (
-                        <div className="p-3.5 rounded-xl bg-red-950/70 border border-red-800/80 text-xs text-red-200 flex items-start gap-2.5 animate-in fade-in">
-                            <ShieldAlert className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
-                            <div className="flex-1">
-                                <p className="font-bold text-white">Camera Access Notice</p>
-                                <p className="mt-0.5 leading-relaxed">{cameraError}</p>
+                        <div className="p-4 rounded-2xl bg-red-950/80 border border-red-800 text-xs text-red-200 flex flex-col gap-2.5 animate-in fade-in">
+                            <div className="flex items-start gap-2.5">
+                                <ShieldAlert className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+                                <div className="flex-1">
+                                    <p className="font-bold text-white">Browser Camera Permission</p>
+                                    <p className="mt-0.5 leading-relaxed text-zinc-300">{cameraError}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setCameraError(null)}
+                                    className="text-zinc-400 hover:text-white p-1"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setCameraError(null)}
-                                className="text-zinc-400 hover:text-white p-1"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
+                            <div className="flex items-center gap-2 pt-1">
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md"
+                                >
+                                    <Camera className="mr-1.5 h-3.5 w-3.5" />
+                                    Take Photo with Camera Now
+                                </Button>
+                                <span className="text-[11px] text-zinc-400">
+                                    (Opens camera directly without permission requirements)
+                                </span>
+                            </div>
                         </div>
                     )}
 
