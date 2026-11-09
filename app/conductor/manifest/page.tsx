@@ -219,17 +219,15 @@ function ConductorManifestContent() {
                 .from('trips')
                 .select('*, bus:buses(bus_number, bus_type, seat_capacity)')
                 .order('departure_time', { ascending: true });
-            if (!error && data) rawData = data;
-        }
-
-        if (!error && data) {
-            rawData = data;
-        } else {
-            const { data: fallbackData } = await supabase
-                .from('trips')
-                .select('*')
-                .order('departure_time', { ascending: true });
-            if (fallbackData) rawData = fallbackData;
+            if (!error && data && data.length > 0) {
+                rawData = data;
+            } else {
+                const { data: fallbackData } = await supabase
+                    .from('trips')
+                    .select('*')
+                    .order('departure_time', { ascending: true });
+                if (fallbackData) rawData = fallbackData;
+            }
         }
 
         const normalizedTrips = rawData.map((t: any) => ({

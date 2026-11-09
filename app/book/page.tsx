@@ -35,7 +35,9 @@ import {
     RefreshCw,
     Search,
     AlertTriangle,
-    X
+    X,
+    User,
+    Sparkles
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
@@ -332,6 +334,27 @@ function BookTripContent() {
     const finalFare = totalBaseFare - totalDiscountAmount;
     const isDiscounted = effectiveDiscountCount > 0;
 
+    const activeDiscountedList = discountPersons.slice(0, effectiveDiscountCount).map((p) => ({
+        name: p.name.trim(),
+        classification: p.classification,
+        id_number: p.idNumber.trim(),
+    }));
+
+    const primaryPassengerType =
+        effectiveDiscountCount === 0
+            ? "REGULAR"
+            : effectiveDiscountCount === 1
+            ? activeDiscountedList[0].classification
+            : "MIXED";
+
+    const discountIdSummary = activeDiscountedList
+        .map((p) => `${p.name} (${p.classification}: ${p.id_number})`)
+        .join("; ");
+
+    const handleToggleDiscount = (apply: boolean) => {
+        handleSetDiscountCount(apply ? 1 : 0);
+    };
+
     const handleSetDiscountCount = (count: number) => {
         const validCount = Math.max(0, count);
         setDiscountCount(validCount);
@@ -402,23 +425,6 @@ function BookTripContent() {
 
         setError(null);
         setSubmitting(true);
-
-        const activeDiscountedList = discountPersons.slice(0, effectiveDiscountCount).map((p) => ({
-            name: p.name.trim(),
-            classification: p.classification,
-            id_number: p.idNumber.trim(),
-        }));
-
-        const primaryPassengerType =
-            effectiveDiscountCount === 0
-                ? "REGULAR"
-                : effectiveDiscountCount === 1
-                ? activeDiscountedList[0].classification
-                : "MIXED";
-
-        const discountIdSummary = activeDiscountedList
-            .map((p) => `${p.name} (${p.classification}: ${p.id_number})`)
-            .join("; ");
 
         try {
             const response = await fetch('/api/payments/gcash-direct', {
