@@ -137,7 +137,29 @@ export function AdminStaffManager() {
     const handleCopyCredentials = () => {
         if (!createdStaffVoucher) return;
         const text = `SUPERLINES TRANSPORTATION CO. INC.\nOFFICIAL STAFF CREDENTIALS\n---------------------------------\nEmployee: ${createdStaffVoucher.full_name}\nRole: ${createdStaffVoucher.role}\nAssigned Terminal: ${createdStaffVoucher.terminal_name}\nLogin Email: ${createdStaffVoucher.email}\nTemporary Password: ${createdStaffVoucher.temporary_password}\nPortal Link: ${window.location.origin}/admin/login\n---------------------------------\nStrictly Confidential. Please change password upon initial login.`;
-        navigator.clipboard.writeText(text);
+        try {
+            if (navigator?.clipboard?.writeText) {
+                navigator.clipboard.writeText(text).catch(() => {
+                    const ta = document.createElement("textarea");
+                    ta.value = text;
+                    ta.style.position = "fixed";
+                    ta.style.opacity = "0";
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(ta);
+                });
+            } else {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                ta.style.position = "fixed";
+                ta.style.opacity = "0";
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                document.body.removeChild(ta);
+            }
+        } catch {}
         setCopied(true);
         setTimeout(() => setCopied(false), 2500);
     };

@@ -68,9 +68,8 @@ export default function ConductorQrScanPage() {
                     animationFrameRef.current = requestAnimationFrame(scanLoop);
                 }
             }
-        } catch (err) {
-            console.error("Camera access error:", err);
-            alert("Camera access denied or unavailable on this device. Please use manual token input.");
+        } catch (err: any) {
+            console.warn("Camera permission not granted or device unavailable:", err?.message || err);
             setCameraActive(false);
         }
     };

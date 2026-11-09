@@ -307,8 +307,29 @@ function BookTripContent() {
         }
     };
 
+    const fallbackCopy = (text: string) => {
+        try {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+        } catch {}
+    };
+
     const handleCopy = (text: string, label: string) => {
-        navigator.clipboard.writeText(text);
+        try {
+            if (navigator?.clipboard?.writeText) {
+                navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+            } else {
+                fallbackCopy(text);
+            }
+        } catch {
+            fallbackCopy(text);
+        }
         setCopied(label);
         setTimeout(() => setCopied(null), 2000);
     };
