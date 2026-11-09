@@ -90,23 +90,39 @@ export default function ConductorQrScanPage() {
                 aspectRatio: 1.0,
             };
 
-            // Attempt 1: Back camera (ideal for mobile conductor scanning)
+            // 1. Detect all available camera devices
+            let cameras: any[] = [];
             try {
-                await scanner.start(
-                    { facingMode: "environment" },
-                    config,
-                    onScanSuccess,
-                    () => {}
+                cameras = await Html5Qrcode.getCameras();
+            } catch (camListErr) {
+                console.warn("Could not pre-enumerate cameras:", camListErr);
+            }
+
+            if (cameras && cameras.length > 0) {
+                // Prefer rear / back camera (best for mobile conductors), fallback to primary camera (laptop / webcam)
+                const rearCamera = cameras.find((c: any) =>
+                    /back|rear|environment/i.test(c.label || "")
                 );
-            } catch (backErr) {
-                console.warn("Back camera constraint failed, attempting default camera:", backErr);
-                // Attempt 2: Fallback to any available camera (desktop webcam, user camera)
-                await scanner.start(
-                    {},
-                    config,
-                    onScanSuccess,
-                    () => {}
-                );
+                const chosenCameraId = rearCamera ? rearCamera.id : cameras[0].id;
+                await scanner.start(chosenCameraId, config, onScanSuccess, () => {});
+            } else {
+                // 2. Fallback to facingMode constraints with exactly 1 valid key
+                try {
+                    await scanner.start(
+                        { facingMode: "environment" },
+                        config,
+                        onScanSuccess,
+                        () => {}
+                    );
+                } catch (backErr) {
+                    console.warn("Environment facingMode failed, falling back to user facingMode:", backErr);
+                    await scanner.start(
+                        { facingMode: "user" },
+                        config,
+                        onScanSuccess,
+                        () => {}
+                    );
+                }
             }
         } catch (err: any) {
             console.error("Camera access error:", err);
