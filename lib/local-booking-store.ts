@@ -95,12 +95,13 @@ export interface CachedBooking {
     seat_count?: number;
     total_price: number;
     original_price?: number;
+    booking_source?: string;
     booking_status: "CONFIRMED" | "PENDING_VERIFICATION" | "CANCELLED" | "REFUND_PENDING";
     payment_status: "PAID" | "PENDING_VERIFICATION" | "REJECTED" | "REFUND_PENDING";
     ticket_status?: "VALID" | "USED" | "CANCELLED" | "REFUND_PENDING";
     pickup_location?: string;
     payment_method: string;
-    transaction_ref: string;
+    transaction_ref?: string;
     qr_token: string;
     trip_id?: string;
     trip: {
@@ -189,14 +190,16 @@ export function getLocalBookingById(id: string): CachedBooking | undefined {
 
 export function updateLocalBookingStatus(
     id: string,
-    bookingStatus: "CONFIRMED" | "PENDING_VERIFICATION" | "CANCELLED",
-    paymentStatus: "PAID" | "PENDING_VERIFICATION" | "REJECTED"
+    bookingStatus: "CONFIRMED" | "PENDING_VERIFICATION" | "CANCELLED" | "REFUND_PENDING",
+    paymentStatus: "PAID" | "PENDING_VERIFICATION" | "REJECTED" | "REFUND_PENDING",
+    ticketStatus?: "VALID" | "USED" | "CANCELLED" | "REFUND_PENDING"
 ): CachedBooking | undefined {
     const list = getLocalBookings();
     const target = list.find(b => b.id === id);
     if (target) {
         target.booking_status = bookingStatus;
         target.payment_status = paymentStatus;
+        if (ticketStatus) target.ticket_status = ticketStatus;
         saveToFile(list);
     }
     return target;

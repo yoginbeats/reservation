@@ -804,6 +804,7 @@ function BookTripContent() {
                                         className="font-bold text-xs border-red-600/40 text-red-600 hover:bg-red-50"
                                         onClick={() => {
                                             setSelectedDate(dStr);
+                                            
                                         }}
                                     >
                                         <Calendar className="mr-1.5 h-3.5 w-3.5" />
@@ -815,12 +816,12 @@ function BookTripContent() {
                                     className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
                                     onClick={() => {
                                         setSelectedDate("ALL");
+                                        
                                     }}
                                 >
                                     Tingnan Lahat ng Biyahe ({allScheduledTrips.length})
                                 </Button>
-                            </div>
-                        </Card>
+                            </div></Card>
                     )}
                 </div>
             )}
@@ -1341,4 +1342,4 @@ export default function BookTripPage() {
             <BookTripContent />
         </Suspense>
     );
-}
+}

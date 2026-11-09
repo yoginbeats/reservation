@@ -53,21 +53,7 @@ export default function TellerManifestPage() {
             console.warn("Could not load admin trips for teller:", e);
         }
 
-        if (rawData.length === 0) {
-            const { data, error } = await supabase
-                .from('trips')
-                .select('*, bus:buses(bus_number, bus_type)')
-                .order('departure_time', { ascending: true });
-            if (!error && data && data.length > 0) {
-                rawData = data;
-            } else {
-                const { data: fallbackData } = await supabase
-                    .from('trips')
-                    .select('*')
-                    .order('departure_time', { ascending: true });
-                if (fallbackData) rawData = fallbackData;
-            }
-        }
+        // Centralized Admin active schedule only (no stale fallback)
         const normalizedTrips = rawData.map((t: any) => ({
             ...t,
             fare_amount: t.fare_amount ?? t.price ?? 850,

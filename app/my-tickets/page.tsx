@@ -976,7 +976,7 @@ function TicketsContent() {
                                         {/* Designated Pick-up Point Badge */}
                                         <div className="flex items-center gap-1.5 text-xs bg-blue-50/80 dark:bg-blue-950/50 p-2 rounded-lg border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 font-semibold">
                                             <MapPin className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                                            <span><strong>Designated Pick-up:</strong> {booking?.pickup_location || origin}</span>
+                                            <span><strong>Designated Pick-up:</strong> {(booking as any)?.pickup_location || origin}</span>
                                         </div>
 
                                         {/* Dedicated Bus Unit & Bus Classification */}

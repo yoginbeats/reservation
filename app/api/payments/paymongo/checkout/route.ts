@@ -9,7 +9,7 @@ import { saveLocalBooking, checkSeatOccupiedAcrossTerminals } from "@/lib/local-
 
 export async function POST(req: NextRequest) {
     // 🔒 Rate Limiting: Max 15 checkout attempts per 15 minutes per IP (Brute-force protection)
-    const rateLimitResponse = await enforceRateLimit(req, "booking_checkout", 15, 15 * 60 * 1000);
+    const rateLimitResponse = await enforceRateLimit(req, "booking_checkout", 60, 15 * 60 * 1000);
     if (rateLimitResponse) return rateLimitResponse;
 
     let body: any;
@@ -62,15 +62,25 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const seatsToCheck: number[] = seatNumbers && seatNumbers.length > 0
+        const seatsToCheck: number[] = (seatNumbers && seatNumbers.length > 0
             ? seatNumbers.map(Number)
-            : [Number(effectiveSeatNumber)];
+            : [Number(effectiveSeatNumber)]
+        ).filter((n: number) => !isNaN(n) && n > 0);
 
-        // Validate seats
+        if (seatsToCheck.length === 0) {
+            return NextResponse.json(
+                { success: false, error: "Please select at least one valid seat number." },
+                { status: 400 }
+            );
+        }
+
+        // Validate that seat numbers are reasonable bus seats (1 to 60)
         for (const sNum of seatsToCheck) {
-            const seatValidation = validateGuestCount(sNum);
-            if (!seatValidation.isValid) {
-                return NextResponse.json({ success: false, error: seatValidation.error }, { status: 400 });
+            if (!Number.isInteger(sNum) || sNum < 1 || sNum > 60) {
+                return NextResponse.json(
+                    { success: false, error: `Invalid seat number #${sNum}. Seats must be between 1 and 60.` },
+                    { status: 400 }
+                );
             }
         }
 
@@ -157,8 +167,9 @@ export async function POST(req: NextRequest) {
             discounted_passengers: discountedPassengers || [],
             booking_source: "ONLINE",
             payment_method: "PAYMONGO",
-            booking_status: "PENDING",
-            payment_status: "PENDING",
+            booking_status: "PENDING_VERIFICATION",
+            payment_status: "PENDING_VERIFICATION",
+            transaction_ref: bookingId,
             qr_token: qrToken,
             pickup_location: pickupLocation,
             trip: normalizedTrip,
@@ -198,6 +209,7 @@ export async function POST(req: NextRequest) {
                 payment_method: "PAYMONGO",
                 booking_status: "CONFIRMED",
                 payment_status: "PAID",
+                transaction_ref: bookingId,
                 qr_token: qrToken,
                 pickup_location: pickupLocation,
                 trip: normalizedTrip,

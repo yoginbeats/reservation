@@ -34,7 +34,7 @@ export default async function TellerDashboardPage() {
         }
         const remainingSeats = Math.max(0, capacity - bookedSeatsCount);
 
-        let boardStatus = t.status || "SCHEDULED";
+        let boardStatus: string = t.status || "SCHEDULED";
         const depTime = new Date(t.departure_time).getTime();
         const now = Date.now();
         const minutesUntil = Math.round((depTime - now) / 60000);
