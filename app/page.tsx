@@ -347,44 +347,6 @@ export default function Home() {
                                         </div>
                                     </div>
 
-                                    {/* LIVE DEPARTURE STATUS INDICATOR */}
-                                    <div className="rounded-xl bg-zinc-50 p-2.5 border border-zinc-200/80 space-y-1.5">
-                                        <div className="flex items-center justify-between text-[11px]">
-                                            <span className="font-bold text-zinc-600">Petsa: {formatDatePH(departureDate)}</span>
-                                            {heroDateTrips.length > 0 ? (
-                                                <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-black flex items-center gap-1">
-                                                    ● {heroDateTrips.length} active schedule{heroDateTrips.length === 1 ? '' : 's'}
-                                                </span>
-                                            ) : (
-                                                <span className="text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                                                    ⚠️ No trip yet
-                                                </span>
-                                            )}
-                                        </div>
-                                        {availableDates.length > 0 && (
-                                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                                                <span className="text-[10px] text-zinc-500 font-bold">Admin Dispatched:</span>
-                                                {availableDates.map((dStr) => (
-                                                    <button
-                                                        key={dStr}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setDepartureDate(dStr);
-                                                            setHomepageDate(dStr);
-                                                        }}
-                                                        className={`text-[10px] font-black px-2 py-0.5 rounded-lg border transition-all ${
-                                                            departureDate === dStr 
-                                                                ? 'bg-red-600 text-white border-red-600 shadow-sm' 
-                                                                : 'bg-white text-zinc-700 border-zinc-300 hover:border-red-500 hover:bg-red-50'
-                                                        }`}
-                                                    >
-                                                        {formatDatePH(dStr)}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-
                                     {/* CHECK AVAILABILITY BUTTON */}
                                     <div className="pt-1">
                                         <Button
