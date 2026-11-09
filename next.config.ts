@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   output: "standalone",
+  // Limit build concurrency to prevent container thread exhaustion on hosting
+  experimental: {
+    cpus: 2,
+    workerThreads: false,
+  },
   // Remove X-Powered-By header to hide Next.js
   poweredByHeader: false,
   // Hide development indicators in the browser
