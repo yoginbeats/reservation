@@ -44,6 +44,7 @@ next-env.d.ts
 #sensitive data
 .env
 .local_bookings.json
+.local_routes_terminals.json
 hostinger-deploy.zip
 hostinger-deploy*.zip
 deploy_temp/
