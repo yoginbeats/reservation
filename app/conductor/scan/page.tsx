@@ -141,14 +141,15 @@ export default function ConductorQrScanPage() {
                 runScanLoop();
             }
         } catch (err: any) {
-            console.error("Camera access error:", err);
+            console.warn("Camera access request notice:", err?.name, err?.message);
+            setCameraActive(false);
             let msg = "Could not access device camera.";
             if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-                msg = "Camera permission was denied. Please allow camera permissions in your browser address bar.";
+                msg = "Naka-Block ang camera sa iyong browser. Upang magamit ang live scanner, i-click ang lock icon (🔒) o site settings sa tabi ng URL bar, piliin ang 'Allow' para sa Camera, at i-refresh ang page.";
             } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
-                msg = "No camera hardware detected on this device.";
+                msg = "Walang nakitang camera hardware sa device na ito. Gamitin ang 'Snap Photo / Upload' button sa ibaba.";
             } else if (err?.name === "NotReadableError" || err?.name === "TrackStartError") {
-                msg = "Camera is currently in use by another application.";
+                msg = "Kasalukuyang ginagamit ang camera ng ibang app (halimbawa: Zoom, Teams, o camera app). Pakisara muna ang ibang app.";
             }
             setCameraError(msg);
         }
