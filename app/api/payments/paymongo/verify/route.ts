@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
         // If returned with payment=success or simulated session
         if (urlPaymentStatus === "success" || (sessionId && (sessionId.startsWith("sim_") || sessionId.startsWith("cs_sim_")))) {
             // Update local booking store
-            updateLocalBookingStatus(bookingId, "PAID", "CONFIRMED", "VALID");
+            updateLocalBookingStatus(bookingId, "CONFIRMED", "PAID", "VALID");
 
             // Update Supabase Database records
             try {
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
         if (transactionRef) {
             const session = await retrievePayMongoCheckoutSession(transactionRef);
             if (session.paid) {
-                updateLocalBookingStatus(bookingId, "PAID", "CONFIRMED", "VALID");
+                updateLocalBookingStatus(bookingId, "CONFIRMED", "PAID", "VALID");
 
                 try {
                     await supabase.from("bookings").update({ booking_status: "CONFIRMED" }).eq("id", bookingId);

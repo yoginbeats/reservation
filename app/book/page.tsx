@@ -790,8 +790,7 @@ function BookTripContent() {
                     ) : (
                         <Card className="p-10 text-center text-muted-foreground space-y-4 rounded-2xl border-2">
                             <p className="font-black text-base text-foreground">
-                                Walang nakatakdang biyahe sa {selectedDate && selectedDate !== "ALL" ? formatDatePH(selectedDate) : "napiling criteria"}
-                                {selectedOrigin !== "ALL" && ` para sa ${selectedOrigin} ➔ ${selectedDestination}`}.
+                                Walang nakatakdang biyahe sa {selectedDate && selectedDate !== "ALL" ? formatDatePH(selectedDate) : "napiling petsa"}.
                             </p>
                             <p className="text-xs max-w-md mx-auto text-muted-foreground">
                                 Narito ang mga petsang may aktibong biyahe na inilagay ng Admin sa Trip Schedule Management:
@@ -805,9 +804,7 @@ function BookTripContent() {
                                         className="font-bold text-xs border-red-600/40 text-red-600 hover:bg-red-50"
                                         onClick={() => {
                                             setSelectedDate(dStr);
-                                            setSelectedOrigin("ALL");
-                                            setSelectedDestination("ALL");
-                                            setSelectedClass("ALL");
+                                            
                                         }}
                                     >
                                         <Calendar className="mr-1.5 h-3.5 w-3.5" />
@@ -819,9 +816,7 @@ function BookTripContent() {
                                     className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
                                     onClick={() => {
                                         setSelectedDate("ALL");
-                                        setSelectedOrigin("ALL");
-                                        setSelectedDestination("ALL");
-                                        setSelectedClass("ALL");
+                                        
                                     }}
                                 >
                                     Tingnan Lahat ng Biyahe ({allScheduledTrips.length})
@@ -1347,4 +1342,4 @@ export default function BookTripPage() {
             <BookTripContent />
         </Suspense>
     );
-}
+}

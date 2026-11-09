@@ -38,8 +38,12 @@ interface TripItem {
     destination: string;
     departure_time: string;
     fare_amount: number;
-    status: string;
+    price?: number;
+    status: "SCHEDULED" | "BOARDING" | "COMPLETED" | "CANCELLED" | string;
     bus_id?: string;
+    bus_number?: string;
+    bus_type?: string;
+    seat_capacity?: number;
     route_id?: string;
     bus?: {
         id?: string;
@@ -269,7 +273,7 @@ export default function AdminTripsPage() {
         setEditDepartureTime(localIso);
         setEditBusId(t.bus_id || "");
         setEditFare(t.fare_amount || t.price || 850);
-        setEditStatus(t.status || "SCHEDULED");
+        setEditStatus((t.status as any) || "SCHEDULED");
     };
 
     const handleSaveEditTrip = async (e: React.FormEvent) => {
