@@ -19,7 +19,8 @@ import {
     SwitchCamera,
     ShieldAlert,
     ExternalLink,
-    AlertCircle
+    AlertCircle,
+    X
 } from "lucide-react";
 import jsQR from "jsqr";
 
@@ -451,20 +452,54 @@ export default function ConductorQrScanPage() {
                 <CardContent className="space-y-4">
                     {/* Camera Error Alert with Actionable Help */}
                     {cameraError && (
-                        <div className="rounded-xl border border-red-500/40 bg-red-950/40 p-4 space-y-2 text-xs">
-                            <div className="flex items-center gap-2 font-bold text-red-400">
-                                <AlertCircle className="h-4 w-4 shrink-0" />
-                                <span>Camera Access Notice</span>
+                        <div className="rounded-xl border border-red-500/50 bg-red-950/60 p-4 space-y-3 text-xs shadow-lg animate-in fade-in">
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 font-bold text-red-300 text-sm">
+                                    <ShieldAlert className="h-4 w-4 shrink-0 text-red-500" />
+                                    <span>Camera Access Notice</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setCameraError(null)}
+                                    className="text-zinc-400 hover:text-white p-1 rounded-md transition"
+                                    aria-label="Dismiss notice"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
                             </div>
-                            <p className="text-zinc-300 leading-relaxed">{cameraError}</p>
-                            <div className="pt-1 flex items-center gap-2">
+
+                            <p className="text-zinc-200 leading-relaxed">{cameraError}</p>
+
+                            <div className="rounded-lg bg-black/40 border border-zinc-800/80 p-3 space-y-1.5 text-[11px] text-zinc-300">
+                                <p className="font-bold text-zinc-100 flex items-center gap-1.5">
+                                    <span>💡</span> Paano i-Allow ang Camera sa iyong Browser:
+                                </p>
+                                <ol className="list-decimal list-inside space-y-1 text-zinc-300 pl-1">
+                                    <li>I-click ang <strong>🔒 Lock icon</strong> o <strong>🎛️ Site Settings</strong> sa tabi ng URL sa address bar.</li>
+                                    <li>Hanapin ang <strong>Camera</strong> at ilipat ito mula <span className="text-red-400 font-semibold">Block</span> patungong <strong className="text-emerald-400">Allow</strong>.</li>
+                                    <li>Pindutin ang <strong>Subukang Muli</strong> sa ibaba o i-refresh ang page.</li>
+                                </ol>
+                            </div>
+
+                            <div className="pt-1 flex flex-wrap items-center gap-2">
+                                <Button
+                                    size="sm"
+                                    onClick={() => {
+                                        setCameraError(null);
+                                        setCameraActive(true);
+                                    }}
+                                    className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold"
+                                >
+                                    <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Subukang Muli (Retry Camera)
+                                </Button>
                                 <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="border-red-500/50 bg-red-900/30 text-red-200 hover:bg-red-900/50 text-xs font-bold"
+                                    className="border-amber-500/50 bg-amber-950/40 text-amber-200 hover:bg-amber-900/50 text-xs font-bold"
                                 >
-                                    <Upload className="mr-1.5 h-3.5 w-3.5" /> Use Photo Snap Instead (Works Everywhere)
+                                    <Camera className="mr-1.5 h-3.5 w-3.5 text-amber-400" />
+                                    Snap Photo with Camera Directly (No Permission Needed)
                                 </Button>
                             </div>
                         </div>

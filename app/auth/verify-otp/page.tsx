@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createClient } from "@/lib/supabase/client";
 import {
     ShieldCheck,
     Mail,
@@ -49,11 +50,31 @@ function VerifyOtpContent() {
 
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-    // On mount, auto-dispatch initial OTP
+    // On mount, resolve email from param or Supabase session, then auto-dispatch OTP
     useEffect(() => {
-        if (paramEmail && !activeDemoOtp) {
-            handleSendSecurityOtp(paramEmail, "");
-        }
+        let isMounted = true;
+        const resolveAndSend = async () => {
+            let emailToUse = paramEmail;
+            if (!emailToUse) {
+                try {
+                    const supabase = createClient();
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user?.email && isMounted) {
+                        emailToUse = user.email;
+                        setPrimaryEmail(user.email);
+                    }
+                } catch (e) {
+                    console.warn("Could not retrieve logged in session email:", e);
+                }
+            }
+            if (emailToUse && !activeDemoOtp && isMounted) {
+                handleSendSecurityOtp(emailToUse, "");
+            }
+        };
+        resolveAndSend();
+        return () => {
+            isMounted = false;
+        };
     }, [paramEmail]);
 
     // Resend cooldown timer
@@ -259,14 +280,46 @@ function VerifyOtpContent() {
                                 <Label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
                                     Primary Google Account (Used to Sign In)
                                 </Label>
-                                <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg p-2.5">
-                                    <div className="h-6 w-6 rounded-full bg-white flex items-center justify-center text-[10px] font-black text-blue-600 shadow-sm shrink-0">
-                                        G
+                                {primaryEmail ? (
+                                    <div className="flex items-center justify-between gap-2 bg-zinc-900 border border-zinc-800 rounded-lg p-2.5">
+                                        <div className="flex items-center gap-2 truncate">
+                                            <div className="h-6 w-6 rounded-full bg-white flex items-center justify-center text-[10px] font-black text-blue-600 shadow-sm shrink-0">
+                                                G
+                                            </div>
+                                            <span className="font-mono text-sm font-bold text-zinc-100 truncate">
+                                                {primaryEmail}
+                                            </span>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setPrimaryEmail("")}
+                                            className="text-[11px] text-zinc-400 hover:text-white h-7 px-2"
+                                        >
+                                            Change
+                                        </Button>
                                     </div>
-                                    <span className="font-mono text-sm font-bold text-zinc-100 truncate">
-                                        {primaryEmail || "No email specified"}
-                                    </span>
-                                </div>
+                                ) : (
+                                    <div className="flex gap-2">
+                                        <Input
+                                            type="email"
+                                            placeholder="Ilagay ang iyong Gmail (e.g. juan@gmail.com)"
+                                            value={primaryEmail}
+                                            onChange={(e) => setPrimaryEmail(e.target.value)}
+                                            className="bg-zinc-900 border-zinc-700 text-xs h-9 text-zinc-100 placeholder:text-zinc-500"
+                                        />
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => handleSendSecurityOtp(primaryEmail)}
+                                            disabled={!primaryEmail.trim() || isSendingOtp}
+                                            className="h-9 text-xs font-bold bg-red-600 hover:bg-red-700 text-white shrink-0"
+                                        >
+                                            {isSendingOtp ? "Sending..." : "Send PIN"}
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Secondary / Other Google Account Input */}
