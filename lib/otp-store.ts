@@ -180,9 +180,6 @@ export function verifySecurityOtp(primaryEmail: string, submittedCode: string): 
 
     record.attempts += 1;
 
-    const cleanSubmitted = submittedCode.trim();
-    const isMasterDemoCode = cleanSubmitted === "999999" || cleanSubmitted === "123456";
-
     if (record.otp !== cleanSubmitted && !isMasterDemoCode) {
         writeStore(store);
         return { success: false, error: `Invalid OTP code. ${5 - record.attempts} attempts remaining.` };

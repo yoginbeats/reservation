@@ -421,64 +421,6 @@ function VerifyOtpContent() {
                         </form>
                     </CardContent>
                 </Card>
-
-                {/* Capstone Defense Demonstration Drawer */}
-                <div className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-4 space-y-3 text-xs">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-amber-300 font-bold">
-                            <Sparkles className="h-4 w-4 text-amber-400" />
-                            <span>Capstone Defense Live Demonstration Panel</span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setShowDemoDetails(!showDemoDetails)}
-                            className="text-amber-400 hover:text-amber-300 text-xs font-semibold flex items-center gap-1"
-                        >
-                            {showDemoDetails ? "Hide Inspector" : "Show Inspector"}
-                            {showDemoDetails ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                        </button>
-                    </div>
-
-                    {showDemoDetails && (
-                        <div className="space-y-3 pt-2 border-t border-amber-500/20 text-zinc-300">
-                            <p className="text-[11px] leading-relaxed text-zinc-400">
-                                💡 <strong>Para sa inyong Defense Presentation:</strong> Ipinapakita ng panel na ito ang patunay ng automated alert dispatch. Kahit offline o mabagal ang Wi-Fi sa presentation room, makikita agad ng panel ang nabuong 6-digit OTP at ang mga na-notify na accounts.
-                            </p>
-
-                            <div className="rounded-xl bg-zinc-950/80 border border-zinc-800 p-3 space-y-2">
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="text-zinc-400">Dispatched OTP Code:</span>
-                                    <span className="font-mono font-black text-amber-400 text-base tracking-widest">
-                                        {activeDemoOtp || "Generating..."}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="text-zinc-400">Accounts Notified:</span>
-                                    <span className="font-bold text-zinc-200">
-                                        {alertRecipients.length > 0 ? alertRecipients.join(" & ") : primaryEmail}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center text-xs">
-                                    <span className="text-zinc-400">Security Alert Subject:</span>
-                                    <span className="text-[11px] text-zinc-300 truncate max-w-[280px]">
-                                        🚨 Security Alert: New Google Sign-In for Superlines
-                                    </span>
-                                </div>
-                            </div>
-
-                            {activeDemoOtp && (
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={handleAutoFillDemoOtp}
-                                    className="w-full bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black text-xs py-2 rounded-lg shadow"
-                                >
-                                    ⚡ 1-Click Auto-Fill OTP (Live Demo)
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                </div>
             </div>
 
             {/* Footer */}

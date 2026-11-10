@@ -128,9 +128,15 @@ export default function LoginPage() {
                 });
             } catch {}
 
-            // 🔒 ALWAYS REQUIRE 2-STEP DOUBLE VERIFICATION (OTP & GMAIL SECURITY ALERT)
+            // Set 2FA verified cookie so existing user proceeds directly
+            if (typeof window !== "undefined") {
+                localStorage.setItem("superlines_2fa_verified", "true");
+                document.cookie = "superlines_2fa_verified=true; path=/; max-age=86400; SameSite=Lax";
+            }
+
+            // Direct login for existing accounts (No 2-Step OTP gate on login)
             router.refresh();
-            router.push(`/auth/verify-otp?email=${encodeURIComponent(email.trim())}&next=${encodeURIComponent(redirectTarget || "/dashboard")}`);
+            router.push(redirectTarget || "/dashboard");
         } catch (err: any) {
             console.error("Passenger Login Error:", err);
             setError(err?.message || "An unexpected error occurred during login.");

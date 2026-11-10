@@ -102,14 +102,13 @@ export async function GET(request: Request) {
                     ? `/complete-profile?next=${encodeURIComponent(next)}`
                     : next;
 
-                // 🔒 REQUIRE 2-STEP DOUBLE VERIFICATION (OTP & SECONDARY GOOGLE ALERT)
-                const verifyUrl = `${origin}/auth/verify-otp?email=${encodeURIComponent(user.email || "")}&next=${encodeURIComponent(targetNext)}`;
-                return NextResponse.redirect(verifyUrl);
+                // Existing Google accounts proceed directly to their target
+                return NextResponse.redirect(`${origin}${targetNext}`);
             } catch (err) {
                 console.warn('OAuth profile sync warning:', err);
             }
 
-            return NextResponse.redirect(`${origin}/auth/verify-otp?email=${encodeURIComponent(user.email || "")}&next=${encodeURIComponent(next)}`);
+            return NextResponse.redirect(`${origin}${next}`);
         }
     }
 

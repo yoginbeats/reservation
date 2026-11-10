@@ -488,43 +488,6 @@ export default function RegisterPage() {
                                         {resendCooldown > 0 ? `Resend Code in ${resendCooldown}s` : "Resend OTP Code"}
                                     </button>
                                 </div>
-
-                                {/* Defense Demo Inspector */}
-                                <div className="rounded-xl border border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20 p-3.5 space-y-2 text-xs">
-                                    <div className="flex items-center justify-between text-amber-800 dark:text-amber-300 font-bold">
-                                        <span className="flex items-center gap-1.5">
-                                            <Sparkles className="h-4 w-4 text-amber-600" />
-                                            Capstone Defense Demo Inspector
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowDemoInspector(!showDemoInspector)}
-                                            className="text-amber-700 hover:underline text-[11px]"
-                                        >
-                                            {showDemoInspector ? "Hide" : "Show"}
-                                        </button>
-                                    </div>
-                                    {showDemoInspector && (
-                                        <div className="space-y-2 pt-1 border-t border-amber-200 dark:border-amber-800 text-muted-foreground">
-                                            <div className="flex justify-between items-center font-mono">
-                                                <span>Live Generated OTP:</span>
-                                                <span className="font-black text-amber-600 dark:text-amber-400 text-base">
-                                                    {activeDemoOtp || "Generating..."}
-                                                </span>
-                                            </div>
-                                            {activeDemoOtp && (
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    onClick={handleAutoFillDemoOtp}
-                                                    className="w-full bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-xs py-1.5 h-8 rounded-lg"
-                                                >
-                                                    ⚡ 1-Click Auto-Fill OTP (Demo Mode)
-                                                </Button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
                             </form>
                         ) : (
                             /* =========================================================================
