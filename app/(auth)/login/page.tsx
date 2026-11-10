@@ -128,8 +128,9 @@ export default function LoginPage() {
                 });
             } catch {}
 
+            // 🔒 ALWAYS REQUIRE 2-STEP DOUBLE VERIFICATION (OTP & GMAIL SECURITY ALERT)
             router.refresh();
-            router.push(redirectTarget || "/dashboard");
+            router.push(`/auth/verify-otp?email=${encodeURIComponent(email.trim())}&next=${encodeURIComponent(redirectTarget || "/dashboard")}`);
         } catch (err: any) {
             console.error("Passenger Login Error:", err);
             setError(err?.message || "An unexpected error occurred during login.");
