@@ -55,3 +55,5 @@ node_modules_old/
 # deployment archives
 release/
 *.zip
+
+clean-source.tar.gz
