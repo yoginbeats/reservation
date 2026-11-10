@@ -6,6 +6,7 @@ import { enforceRateLimit } from "@/lib/rate-limiter";
 import { validateAndSanitizeEmail, sanitizeString, validateGuestCount } from "@/lib/validators";
 import { slotHoldManager } from "@/lib/slot-hold";
 import { saveLocalBooking, checkSeatOccupiedAcrossTerminals } from "@/lib/local-booking-store";
+import { resolveAppOrigin } from "@/lib/app-url";
 
 export async function POST(req: NextRequest) {
     // 🔒 Rate Limiting: Max 15 checkout attempts per 15 minutes per IP (Brute-force protection)
@@ -175,7 +176,7 @@ export async function POST(req: NextRequest) {
             trip: normalizedTrip,
         });
 
-        const originUrl = req.headers.get("origin") || "http://localhost:3000";
+        const originUrl = resolveAppOrigin(req);
 
         // Create Official PayMongo Checkout Session (configured for GCash)
         const seatsDisplay = seatsToCheck.length > 1 ? `Seats #${seatsToCheck.join(", #")}` : `Seat #${effectiveSeatNumber}`;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { findSystemCredential } from "@/lib/constants/credentials";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { resolveAppOrigin } from "@/lib/app-url";
 
 export async function POST(req: NextRequest) {
     try {
@@ -35,11 +36,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 2. Resolve the application origin
-        const origin =
-            req.headers.get("origin") ||
-            req.nextUrl.origin ||
-            process.env.NEXT_PUBLIC_SITE_URL ||
-            "http://localhost:3000";
+        const origin = resolveAppOrigin(req);
 
         const redirectTo = `${origin}/auth/callback?next=/reset-password`;
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLocalBookingById, saveLocalBooking } from "@/lib/local-booking-store";
 import { sendLiveEmail } from "@/lib/email-service";
+import { resolveAppOrigin } from "@/lib/app-url";
 
 export async function POST(req: NextRequest) {
     try {
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
                 : `#${seat_number || "01"}`;
         const refNo = gcash_ref || "GCASH-DIRECT";
         const token = qr_token || `TKT-${Date.now()}`;
-        const appOrigin = req.headers.get("origin") || "http://localhost:3000";
+        const appOrigin = resolveAppOrigin(req);
         const ticketUrl = `${appOrigin}/my-tickets?booking_id=${booking_id || ""}&ref=${encodeURIComponent(refNo)}`;
 
         // Official Superlines Electronic Bus Ticket (e-Ticket) Email HTML

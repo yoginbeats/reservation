@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveAppOrigin } from "@/lib/app-url";
 
 export async function POST(req: NextRequest) {
     try {
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
                         </p>
 
                         <div style="text-align: center; margin-top: 24px;">
-                            <a href="${req.headers.get("origin") || "http://localhost:3000"}/reservations" class="btn">
+                            <a href="${resolveAppOrigin(req)}/reservations" class="btn">
                                 Book Your First Trip Now &rarr;
                             </a>
                         </div>

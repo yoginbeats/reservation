@@ -6,6 +6,7 @@ import { seatLock, SlotAlreadyTakenError } from "@/lib/seat-lock";
 import { enforceRateLimit, getClientIp } from "@/lib/rate-limiter";
 import { validateAndSanitizeEmail, sanitizeString, validateGuestCount } from "@/lib/validators";
 import { slotHoldManager } from "@/lib/slot-hold";
+import { resolveAppOrigin } from "@/lib/app-url";
 
 export async function POST(req: NextRequest) {
     // 🔒 Rate Limiting: Max 10 booking requests per 15 minutes per IP (Brute-force protection)
@@ -340,7 +341,7 @@ export async function POST(req: NextRequest) {
             // Step 6: Dispatch e-ticket boarding pass to passenger email
             if (passengerEmail) {
                 try {
-                    const originUrl = req.nextUrl?.origin || "http://localhost:3000";
+                    const originUrl = resolveAppOrigin(req);
                     fetch(`${originUrl}/api/tickets/send-ticket-email`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getVerificationMode, setVerificationMode } from "@/lib/payment-settings";
 import { getLocalBookings, updateLocalBookingStatus, saveLocalBooking } from "@/lib/local-booking-store";
+import { resolveAppOrigin } from "@/lib/app-url";
 
 export async function GET(req: NextRequest) {
     try {
@@ -231,7 +232,7 @@ export async function POST(req: NextRequest) {
                 const targetBooking = getLocalBookings().find(b => b.id === bookingId);
                 const passengerEmail = targetBooking?.passenger_email;
                 if (passengerEmail) {
-                    const originUrl = req.nextUrl?.origin || "http://localhost:3000";
+                    const originUrl = resolveAppOrigin(req);
                     fetch(`${originUrl}/api/tickets/send-ticket-email`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
