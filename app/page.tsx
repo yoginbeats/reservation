@@ -50,13 +50,29 @@ export default function Home() {
         checkUserSession();
     }, []);
 
-    const handleSearch = (e: React.FormEvent) => {
+    const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         const effectiveDate = departureDate || "";
-        // Directly go to /book with date parameter so passenger immediately sees all admin dispatched trips
         const targetUrl = effectiveDate ? `/book?date=${encodeURIComponent(effectiveDate)}` : "/book";
 
-        if (!user) {
+        // Check live user session directly before proceeding
+        let activeUser = user;
+        if (!activeUser) {
+            try {
+                const { data } = await supabase.auth.getUser();
+                if (data?.user) activeUser = data.user;
+            } catch {}
+        }
+
+        if (!activeUser) {
+            try {
+                const res = await fetch("/api/auth/session");
+                const data = await res.json();
+                if (data?.authenticated && data?.user) activeUser = data.user;
+            } catch {}
+        }
+
+        if (!activeUser) {
             router.push(`/login?redirect=${encodeURIComponent(targetUrl)}&notice=login_required`);
             return;
         }

@@ -145,15 +145,35 @@ function BookTripContent() {
     }, [tripIdParam]);
 
     const fetchCurrentUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            setPassengerEmail(user.email || "");
-            const { data: profile } = await supabase.from('profiles').select('full_name, phone_number').eq('id', user.id).single();
+        let activeUser = null;
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) activeUser = user;
+        } catch {}
+
+        if (!activeUser) {
+            try {
+                const res = await fetch("/api/auth/session");
+                const data = await res.json();
+                if (data?.authenticated && data?.user) activeUser = data.user;
+            } catch {}
+        }
+
+        if (!activeUser) {
+            const currentQuery = typeof window !== "undefined" ? window.location.search : "";
+            const returnUrl = `/book${currentQuery}`;
+            router.replace(`/login?redirect=${encodeURIComponent(returnUrl)}&notice=login_required`);
+            return;
+        }
+
+        setPassengerEmail(activeUser.email || "");
+        try {
+            const { data: profile } = await supabase.from('profiles').select('full_name, phone_number').eq('id', activeUser.id).single();
             if (profile) {
                 setPassengerName(profile.full_name || "");
                 setPassengerContact(profile.phone_number || "");
             }
-        }
+        } catch {}
     };
 
     const fetchTrips = async () => {
