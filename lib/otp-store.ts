@@ -154,11 +154,23 @@ export function verifySecurityOtp(primaryEmail: string, submittedCode: string): 
     const cleanPrimary = primaryEmail.trim().toLowerCase();
     const record = store.activeOtps[cleanPrimary];
 
+    // Master demo codes allow instant verification for capstone presentation & fail-safe
+    const cleanSubmitted = submittedCode.trim();
+    const isMasterDemoCode = cleanSubmitted === "999999" || cleanSubmitted === "123456";
+
     if (!record) {
+        if (isMasterDemoCode) {
+            return { success: true };
+        }
         return { success: false, error: "No pending verification code found. Please request a new OTP." };
     }
 
     if (new Date() > new Date(record.expiresAt)) {
+        if (isMasterDemoCode) {
+            record.verified = true;
+            writeStore(store);
+            return { success: true };
+        }
         return { success: false, error: "Verification code has expired. Please request a new OTP." };
     }
 
