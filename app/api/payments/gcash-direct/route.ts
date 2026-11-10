@@ -7,6 +7,7 @@ import { enforceRateLimit, getClientIp } from "@/lib/rate-limiter";
 import { validateAndSanitizeEmail, sanitizeString, validateGuestCount } from "@/lib/validators";
 import { slotHoldManager } from "@/lib/slot-hold";
 import { resolveAppOrigin } from "@/lib/app-url";
+import { dispatchTicketEmail } from "@/lib/ticket-email";
 
 export async function POST(req: NextRequest) {
     // 🔒 Rate Limiting: Max 10 booking requests per 15 minutes per IP (Brute-force protection)
@@ -341,22 +342,18 @@ export async function POST(req: NextRequest) {
             // Step 6: Dispatch e-ticket boarding pass to passenger email
             if (passengerEmail) {
                 try {
-                    const originUrl = resolveAppOrigin(req);
-                    fetch(`${originUrl}/api/tickets/send-ticket-email`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            booking_id: bookingId,
-                            recipient_email: passengerEmail,
-                            passenger_name: passengerName,
-                            trip: body.trip,
-                            seat_number: effectiveSeatNumber,
-                            seat_numbers: seatsToCheck,
-                            total_price: totalPrice,
-                            qr_token: qrToken,
-                            gcash_ref: cleanRef,
-                        }),
-                    }).catch(err => console.warn("Email auto-dispatch background notice:", err));
+                    dispatchTicketEmail({
+                        bookingId,
+                        recipientEmail: passengerEmail,
+                        passengerName,
+                        trip: body.trip,
+                        seatNumber: effectiveSeatNumber,
+                        seatNumbers: seatsToCheck,
+                        totalPrice,
+                        qrToken,
+                        transactionRef: cleanRef,
+                        req,
+                    }).catch(err => console.warn("Email auto-dispatch notice:", err));
                 } catch (mailErr) {
                     console.warn("Email dispatch notice:", mailErr);
                 }

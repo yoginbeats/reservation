@@ -944,7 +944,7 @@ function BookTripContent() {
                     </Card>
 
                     {/* Official PayMongo GCash Gateway Payment Form */}
-                    <form onSubmit={handleProceedToCheckout} className="space-y-6">
+                    <form onSubmit={paymentMethod === "gcash_qr" ? handleConfirmDirectGcash : handleProceedToCheckout} className="space-y-6">
                         {/* SELECTION NG PICK-UP LOCATION (DESIGNATED BOARDING POINT) */}
                         <div className="space-y-3 rounded-2xl border-2 border-blue-500/50 p-4 bg-gradient-to-br from-blue-50/70 via-background to-blue-50/30 dark:from-blue-950/40 dark:via-background dark:to-blue-950/20 shadow-md">
                             <div className="flex items-center justify-between border-b pb-2">
@@ -1221,8 +1221,8 @@ function BookTripContent() {
                             </div>
                         </div>
 
-                        {/* 3. Official PayMongo GCash Payment Card (No Personal QR Required) */}
-                        <div className="rounded-2xl border-2 border-blue-500/50 bg-gradient-to-b from-blue-50/70 via-white to-blue-50/30 dark:from-blue-950/40 dark:via-zinc-900 dark:to-zinc-950 p-5 space-y-4 shadow-md">
+                        {/* 3. Payment Method Section: Direct GCash QR or PayMongo Gateway */}
+                        <div className="rounded-2xl border-2 border-blue-500/50 bg-gradient-to-b from-blue-50/70 via-white to-blue-50/30 dark:from-blue-950/40 dark:via-zinc-900 dark:to-zinc-950 p-5 space-y-5 shadow-md">
                             <div className="flex items-center justify-between border-b border-blue-200/80 dark:border-blue-900/60 pb-3">
                                 <div className="flex items-center gap-2.5">
                                     <div className="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-base shadow-sm">
@@ -1230,34 +1230,154 @@ function BookTripContent() {
                                     </div>
                                     <div>
                                         <h3 className="font-extrabold text-blue-950 dark:text-blue-100 text-base leading-tight">
-                                            3. GCash Online Payment (via PayMongo Gateway)
+                                            3. GCash Payment
                                         </h3>
                                         <p className="text-xs text-blue-700 dark:text-blue-300">
-                                            Official BSP-Supervised Automated Payment Gateway
+                                            Pumili ng paraan ng pagbayad sa GCash
                                         </p>
                                     </div>
                                 </div>
                                 <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-600 text-white flex items-center gap-1.5 shadow-sm">
                                     <ShieldCheck className="h-4 w-4" />
-                                    100% Automated &amp; Instant
+                                    100% Verified Booking
                                 </span>
                             </div>
 
-                            {/* Gateway Information Banner */}
-                            <div className="rounded-xl bg-blue-100/70 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 p-4 space-y-2 text-xs">
-                                <p className="font-bold text-blue-950 dark:text-blue-100 flex items-center gap-1.5">
-                                    <Sparkles className="h-4 w-4 text-blue-600 shrink-0" />
-                                    <span>Zero Manual Reference Verification:</span>
-                                </p>
-                                <p className="text-blue-900/90 dark:text-blue-200/90 leading-relaxed">
-                                    Hindi mo na kailangang mag-type ng Reference Number o mag-upload ng screenshot ng resibo. Pag-click ng <strong>&ldquo;Proceed to GCash Payment&rdquo;</strong>, ididirekta ka sa opisyal na PayMongo portal kung saan automatic na magbubukas ang iyong GCash app o opisyal na Dynamic QR code.
-                                </p>
-                                <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] font-semibold text-blue-800 dark:text-blue-300">
-                                    <span>• Instant QR Boarding Pass</span>
-                                    <span>• Automatic Audit &amp; Direct Admin Report</span>
-                                    <span>• PCI-DSS Level 1 Encrypted</span>
-                                </div>
+                            {/* Payment Method Selector Tabs */}
+                            <div className="grid grid-cols-2 gap-2 bg-blue-100/60 dark:bg-zinc-800 p-1.5 rounded-xl border border-blue-200 dark:border-zinc-700">
+                                <button
+                                    type="button"
+                                    onClick={() => setPaymentMethod("gcash_qr")}
+                                    className={`py-2.5 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                                        paymentMethod === "gcash_qr"
+                                            ? "bg-blue-600 text-white shadow-md"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    }`}
+                                >
+                                    <QrCode className="h-4 w-4" />
+                                    <span>Direct GCash QR (Recommended)</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPaymentMethod("paymongo")}
+                                    className={`py-2.5 px-3 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                                        paymentMethod === "paymongo"
+                                            ? "bg-blue-600 text-white shadow-md"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    }`}
+                                >
+                                    <Wallet className="h-4 w-4" />
+                                    <span>PayMongo Gateway</span>
+                                </button>
                             </div>
+
+                            {/* TAB 1: DIRECT GCASH QR (SCAN TO PAY) */}
+                            {paymentMethod === "gcash_qr" && (
+                                <div className="space-y-4">
+                                    {/* QR Code Container */}
+                                    <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-zinc-800 rounded-2xl border-2 border-blue-200 dark:border-blue-900 shadow-sm space-y-3">
+                                        <div className="text-center space-y-1">
+                                            <span className="text-xs font-black text-blue-600 uppercase tracking-wider">
+                                                InstaPay &bull; GCash Official QR
+                                            </span>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                I-scan gamit ang iyong GCash app para magbayad
+                                            </p>
+                                        </div>
+
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={customQrUrl || process.env.NEXT_PUBLIC_GCASH_QR_URL || "/gcash-qr.jpg"}
+                                            alt="Superlines GCash QR Code"
+                                            className="max-h-72 w-auto rounded-xl border-2 border-blue-400 shadow-md bg-white p-1 object-contain"
+                                        />
+
+                                        <div className="flex items-center gap-3 text-xs font-semibold">
+                                            <a
+                                                href={customQrUrl || process.env.NEXT_PUBLIC_GCASH_QR_URL || "/gcash-qr.jpg"}
+                                                download="superlines-gcash-qr.jpg"
+                                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 underline"
+                                            >
+                                                Save / Download QR Code
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    {/* Amount Details Box */}
+                                    <div className="rounded-xl bg-blue-50/70 dark:bg-blue-950/40 p-4 border border-blue-200 dark:border-blue-800 space-y-2 text-xs">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-foreground">Exact Amount to Send:</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-black text-lg text-emerald-600 dark:text-emerald-400 font-mono">
+                                                    ₱{finalFare}.00
+                                                </span>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-7 px-2 text-xs font-bold text-blue-600 hover:text-blue-700"
+                                                    onClick={() => handleCopy(String(finalFare), "amount")}
+                                                >
+                                                    {copied === "amount" ? (
+                                                        <span className="flex items-center gap-1 text-emerald-600">
+                                                            <Check className="h-3 w-3" /> Copied
+                                                        </span>
+                                                    ) : (
+                                                        <span className="flex items-center gap-1">
+                                                            <Copy className="h-3 w-3" /> Copy ₱{finalFare}
+                                                        </span>
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                            Buksan ang GCash app, pindutin ang <strong>QR (Scan)</strong>, i-scan ang code sa itaas, at bayaran ang eksaktong halaga na <strong>₱{finalFare}.00</strong>.
+                                        </p>
+                                    </div>
+
+                                    {/* GCash Reference Number Input */}
+                                    <div className="space-y-1.5 rounded-xl border p-4 bg-card">
+                                        <Label htmlFor="gcashRefInput" className="font-extrabold text-xs flex items-center justify-between">
+                                            <span className="flex items-center gap-1">
+                                                <span>GCash Reference Number (13 Digits)</span>
+                                                <span className="text-destructive">*</span>
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground font-normal">Hal: 1029384756102</span>
+                                        </Label>
+                                        <Input
+                                            id="gcashRefInput"
+                                            required
+                                            placeholder="I-type ang 13-digit Reference No. mula sa GCash receipt"
+                                            value={gcashRef}
+                                            onChange={(e) => setGcashRef(e.target.value)}
+                                            className="bg-white dark:bg-zinc-800 font-mono text-sm uppercase font-bold tracking-wider"
+                                            maxLength={30}
+                                        />
+                                        <p className="text-[10px] text-muted-foreground">
+                                            Makikita ang Reference Number sa GCash transaction receipt o SMS confirmation pagkatapos magbayad.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB 2: PAYMONGO AUTOMATED GATEWAY */}
+                            {paymentMethod === "paymongo" && (
+                                <div className="space-y-4">
+                                    <div className="rounded-xl bg-blue-100/70 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 p-4 space-y-2 text-xs">
+                                        <p className="font-bold text-blue-950 dark:text-blue-100 flex items-center gap-1.5">
+                                            <Sparkles className="h-4 w-4 text-blue-600 shrink-0" />
+                                            <span>Automated Checkout Session:</span>
+                                        </p>
+                                        <p className="text-blue-900/90 dark:text-blue-200/90 leading-relaxed">
+                                            Ididirekta ka sa opisyal na PayMongo portal kung saan automatic na magbubukas ang iyong GCash app para mag-login at magbayad gamit ang iyong GCash OTP.
+                                        </p>
+                                        <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] font-semibold text-blue-800 dark:text-blue-300">
+                                            <span>• 100% Instant Webhook Sync</span>
+                                            <span>• PCI-DSS Level 1 Encrypted</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Official Terms & Conditions */}
                             <div className="rounded-xl border p-4 bg-card space-y-3">
@@ -1286,13 +1406,13 @@ function BookTripContent() {
                                         </div>
                                         <div className="space-y-1">
                                             <p className="font-bold text-foreground">1. Ticketing, Rebooking, and Cancellations</p>
-                                            <p>• <strong>Reservation Policy:</strong> Tickets are valid only for the specific date and trip indicated.</p>
-                                            <p>• <strong>Arrival Time:</strong> Passengers must be at the terminal at least one (1) hour before departure.</p>
-                                            <p>• <strong>Penalty Fees:</strong> 20% penalty fee of the ticket price will be charged for rebooking.</p>
+                                            <p>&bull; <strong>Reservation Policy:</strong> Tickets are valid only for the specific date and trip indicated.</p>
+                                            <p>&bull; <strong>Arrival Time:</strong> Passengers must be at the terminal at least one (1) hour before departure.</p>
+                                            <p>&bull; <strong>Penalty Fees:</strong> 20% penalty fee of the ticket price will be charged for rebooking.</p>
                                         </div>
                                         <div className="space-y-1 pt-1 border-t">
                                             <p className="font-bold text-foreground">2. Safety and Code of Conduct</p>
-                                            <p>• In compliance with LTFRB Safe Spaces Act (Bawal ang Bastos), disrespectful behavior is strictly prohibited.</p>
+                                            <p>&bull; In compliance with LTFRB Safe Spaces Act (Bawal ang Bastos), disrespectful behavior is strictly prohibited.</p>
                                         </div>
                                     </div>
                                 )}
@@ -1318,18 +1438,22 @@ function BookTripContent() {
                                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-base shadow-lg shadow-blue-500/25 py-6 rounded-xl"
                                 disabled={submitting}
                             >
-                                {submitting ? "Redirecting to PayMongo GCash Gateway..." : (
+                                {submitting ? (
+                                    paymentMethod === "gcash_qr" ? "Verifying &amp; Generating Boarding Pass..." : "Redirecting to PayMongo Gateway..."
+                                ) : (
                                     <span className="flex items-center justify-center gap-2">
                                         <Wallet className="h-5 w-5" />
-                                        Proceed to Pay with GCash (₱{finalFare}.00) &rarr;
+                                        {paymentMethod === "gcash_qr"
+                                            ? `Confirm GCash Payment & Get Boarding Pass (₱${finalFare}.00) →`
+                                            : `Proceed to Pay via PayMongo Gateway (₱${finalFare}.00) →`}
                                     </span>
                                 )}
                             </Button>
                             <p className="text-[11px] text-center text-muted-foreground">
-                                ✉️ Official Confirmation: Once paid via GCash, your verified QR Boarding Pass will be issued automatically and synced immediately to Superlines Admin Reports.
+                                ✉️ Official Confirmation: Once submitted, your verified QR Boarding Pass will be generated instantly and dispatched directly to your Gmail!
                             </p>
                         </div>
-                    </form>
+</form>
                 </div>
             )}
         </div>
