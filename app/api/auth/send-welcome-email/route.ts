@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveAppOrigin } from "@/lib/app-url";
+import { sendLiveEmail } from "@/lib/email-service";
 
 export async function POST(req: NextRequest) {
     try {
@@ -86,34 +87,18 @@ export async function POST(req: NextRequest) {
             </html>
         `;
 
-        // If RESEND_API_KEY is configured in .env.local, send live email
-        const resendApiKey = process.env.RESEND_API_KEY;
-        if (resendApiKey) {
-            try {
-                const resendResponse = await fetch("https://api.resend.com/emails", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${resendApiKey}`,
-                    },
-                    body: JSON.stringify({
-                        from: "Superlines Bus <onboarding@resend.dev>",
-                        to: [email],
-                        subject: "Welcome to Superlines! Your Account is Ready",
-                        html: emailHtml,
-                    }),
-                });
-                const resendData = await resendResponse.json();
-                console.log("Resend API response:", resendData);
-            } catch (mailErr) {
-                console.warn("Live email send failed:", mailErr);
-            }
-        } else {
-            console.log(`[Account Welcome Email Simulation] To: ${email} | Name: ${fullName}`);
-        }
+        // Send live welcome email via Gmail SMTP or Resend
+        const emailResult = await sendLiveEmail({
+            to: email,
+            subject: "🎉 Welcome to Superlines! Your Passenger Account is Ready",
+            html: emailHtml,
+            fromName: "Superlines Passenger Portal",
+        });
 
         return NextResponse.json({
             success: true,
+            emailDispatched: emailResult.success,
+            provider: emailResult.provider,
             message: "Welcome email processed successfully.",
         });
     } catch (err: any) {

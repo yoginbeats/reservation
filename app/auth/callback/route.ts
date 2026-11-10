@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { sendLiveEmail } from '@/lib/email-service'
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
@@ -65,6 +66,25 @@ export async function GET(request: Request) {
                         },
                         { onConflict: 'id' }
                     );
+
+                    // Send Welcome Email for new Google signups
+                    if (user.email) {
+                        sendLiveEmail({
+                            to: user.email,
+                            subject: "🎉 Welcome to Superlines! Your Google Account is Connected",
+                            html: `
+                                <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e4e4e7; border-radius: 12px;">
+                                    <h2 style="color: #dc2626; margin-top: 0;">Mabuhay, ${fullName}! 🎉</h2>
+                                    <p>Your Google Account <strong>${user.email}</strong> is now registered and verified with the <strong>Superlines Online Reservation & Ticketing Portal</strong>.</p>
+                                    <p>You can now book your bus trips, select preferred seats, and access digital boarding tickets anytime.</p>
+                                    <p style="margin-top: 24px;"><a href="${origin}/book" style="background: #dc2626; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;">Book a Trip Now &rarr;</a></p>
+                                    <hr style="border: 0; border-top: 1px solid #f4f4f5; margin: 24px 0;" />
+                                    <p style="font-size: 11px; color: #71717a;">Superlines Transportation Co., Inc. &bull; Official Digital Dispatch</p>
+                                </div>
+                            `,
+                            fromName: "Superlines Passenger Portal",
+                        }).catch((e) => console.warn("Google OAuth welcome email send notice:", e));
+                    }
                 }
 
                 // Ensure user role exists (default PASSENGER)
