@@ -269,8 +269,12 @@ export default async function proxy(request: NextRequest) {
     }
 
     // Redirect logged-in users away from auth pages to their respective dashboards
-    const authPages = ['/login', '/register']
+    const authPages = ['/login', '/register', '/auth/verify-otp']
     const isAuthPage = authPages.some(path => url.pathname === path || url.pathname.startsWith(path + '/'))
+
+    if (url.pathname.includes('/auth/verify-otp')) {
+        return NextResponse.redirect(new URL(user ? getRoleHomePage(role) : '/login', request.url))
+    }
 
     if (isAuthPage && user) {
         return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
