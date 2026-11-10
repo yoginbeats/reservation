@@ -34,6 +34,15 @@ function VerifyOtpContent() {
     const paramEmail = searchParams.get("email") || "";
     const nextUrl = searchParams.get("next") || "/dashboard";
 
+    // Auto-bypass: redirect immediately to dashboard or next url
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            localStorage.setItem("superlines_2fa_verified", "true");
+            document.cookie = "superlines_2fa_verified=true; path=/; max-age=86400; SameSite=Lax";
+        }
+        router.replace(nextUrl);
+    }, [nextUrl, router]);
+
     const [primaryEmail, setPrimaryEmail] = useState(paramEmail);
     const [secondaryEmail, setSecondaryEmail] = useState("");
     const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
