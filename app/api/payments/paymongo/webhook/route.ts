@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getLocalBookingById } from "@/lib/local-booking-store";
+import { dispatchTicketEmail } from "@/lib/ticket-email";
 
 export async function POST(req: NextRequest) {
     try {
@@ -39,6 +41,22 @@ export async function POST(req: NextRequest) {
                 .eq("reservation_id", bookingId);
 
             console.log(`Successfully verified and confirmed booking/reservation #${bookingId} via PayMongo Webhook.`);
+
+            const localBooking = getLocalBookingById(bookingId);
+            if (localBooking?.passenger_email) {
+                dispatchTicketEmail({
+                    bookingId,
+                    recipientEmail: localBooking.passenger_email,
+                    passengerName: localBooking.passenger_name,
+                    trip: localBooking.trip,
+                    seatNumber: localBooking.seat_number,
+                    seatNumbers: localBooking.seat_numbers,
+                    totalPrice: localBooking.total_price,
+                    qrToken: localBooking.qr_token,
+                    transactionRef: txId,
+                    req,
+                }).catch((err) => console.warn("Webhook ticket email notice:", err));
+            }
         }
 
         return NextResponse.json({ received: true });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { retrievePayMongoCheckoutSession } from "@/lib/paymongo";
 import { getLocalBookingById, updateLocalBookingStatus } from "@/lib/local-booking-store";
+import { dispatchTicketEmail } from "@/lib/ticket-email";
 
 export async function GET(req: NextRequest) {
     try {
@@ -50,6 +51,22 @@ export async function GET(req: NextRequest) {
                 console.warn("Database status update notice:", dbErr);
             }
 
+            // Auto-dispatch e-ticket to passenger's Gmail upon payment confirmation
+            if (localBooking?.passenger_email) {
+                dispatchTicketEmail({
+                    bookingId,
+                    recipientEmail: localBooking.passenger_email,
+                    passengerName: localBooking.passenger_name,
+                    trip: localBooking.trip,
+                    seatNumber: localBooking.seat_number,
+                    seatNumbers: localBooking.seat_numbers,
+                    totalPrice: localBooking.total_price,
+                    qrToken: localBooking.qr_token,
+                    transactionRef: localBooking.transaction_ref || sessionId || "PAYMONGO-GCASH",
+                    req,
+                }).catch((mailErr) => console.warn("[PayMongo Verify] Auto ticket mail notice:", mailErr));
+            }
+
             return NextResponse.json({
                 success: true,
                 status: "PAID",
@@ -96,6 +113,21 @@ export async function GET(req: NextRequest) {
                     await supabase.from("tickets").update({ ticket_status: "VALID" }).eq("booking_id", bookingId);
                     await supabase.from("tickets").update({ ticket_status: "VALID" }).eq("reservation_id", bookingId);
                 } catch {}
+
+                if (localBooking?.passenger_email) {
+                    dispatchTicketEmail({
+                        bookingId,
+                        recipientEmail: localBooking.passenger_email,
+                        passengerName: localBooking.passenger_name,
+                        trip: localBooking.trip,
+                        seatNumber: localBooking.seat_number,
+                        seatNumbers: localBooking.seat_numbers,
+                        totalPrice: localBooking.total_price,
+                        qrToken: localBooking.qr_token,
+                        transactionRef: localBooking.transaction_ref || transactionRef || "PAYMONGO-GCASH",
+                        req,
+                    }).catch((mailErr) => console.warn("[PayMongo Verify] Auto ticket mail notice:", mailErr));
+                }
 
                 return NextResponse.json({
                     success: true,

@@ -231,7 +231,7 @@ function TicketsContent() {
 
     const handleSendEmailForTicket = async (ticket: UserTicket, targetEmail?: string) => {
         const defaultEmail = (ticket.booking as any)?.passenger_email || "passenger@gmail.com";
-        const email = targetEmail || prompt("Enter email address to send digital ticket to:", defaultEmail);
+        const email = targetEmail || ((ticket.booking as any)?.passenger_email || prompt("Enter email address to send digital ticket to:", ""));
         if (!email) return;
         setEmailingTicketId(ticket.id);
         setEmailSuccessMsg(null);

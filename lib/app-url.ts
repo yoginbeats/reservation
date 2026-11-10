@@ -39,3 +39,4 @@ export function resolveAppOrigin(req?: any): string {
 
     return liveProductionUrl;
 }
+
