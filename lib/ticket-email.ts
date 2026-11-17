@@ -172,6 +172,9 @@ export async function dispatchTicketEmail(payload: TicketEmailPayload) {
             <strong>Discount Verification:</strong> Original physical ID (Senior, Student, or PWD) is strictly inspected by the conductor prior to boarding.
           </li>
           <li>Valid government-issued ID matching the passenger name is required upon boarding.</li>
+          <li style="color: #065f46; font-weight: 700;">
+            🐾 <strong>Pet Travel Policy:</strong> Pets must be enclosed in a secure cage/carrier, wearing a pet diaper at all times, and provided with an additional paid regular seat.
+          </li>
         </ul>
       </div>
     </div>

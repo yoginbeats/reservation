@@ -1823,6 +1823,7 @@ function TicketsContent() {
                             )}
 
                             <div className="border-t border-dashed pt-2 text-center text-[10px] text-muted-foreground">
+                                🐾 Pet Policy: Pets must be in a carrier/cage, wearing a diaper, with a paid seat.
                                 Present this stub or QR code upon boarding at the terminal platform.
                             </div>
                         </div>

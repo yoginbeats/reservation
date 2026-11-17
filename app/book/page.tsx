@@ -881,6 +881,50 @@ function BookTripContent() {
                         }}
                     />
 
+                    {/* PET TRAVEL POLICY NOTICE IN SEAT PICKER */}
+                    <div className="rounded-xl border-2 border-emerald-500/40 bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-emerald-50/80 dark:from-emerald-950/40 dark:via-zinc-900 dark:to-emerald-950/40 p-4 space-y-2 text-xs">
+                        <div className="flex items-center justify-between border-b border-emerald-200/80 dark:border-emerald-800/60 pb-2">
+                            <div className="flex items-center gap-2">
+                                <span className="text-base">🐾</span>
+                                <span className="font-extrabold uppercase tracking-wide text-emerald-950 dark:text-emerald-100 text-xs">
+                                    Superlines Pet Travel Policy (Biyahe Kasama ang Alaga)
+                                </span>
+                            </div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">
+                                1 Extra Seat Required
+                            </span>
+                        </div>
+                        <p className="text-[11.5px] leading-relaxed text-foreground/90">
+                            Nagbibiyahe ka ba kasama ang iyong alagang aso o pusa? Alinsunod sa <strong>LTFRB Memorandum Circular No. 2019-019</strong> at Superlines Company Policy:
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-0.5 text-xs">
+                            <div className="bg-white/90 dark:bg-zinc-800/90 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 space-y-0.5">
+                                <strong className="text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5 text-xs">
+                                    <span>📦</span> 1. Secure Cage / Carrier
+                                </strong>
+                                <p className="text-[10.5px] text-muted-foreground leading-tight">
+                                    Dapat nakalagay ang alaga sa sariling enclosed at maaliwalas na cage o carrier sa buong biyahe.
+                                </p>
+                            </div>
+                            <div className="bg-white/90 dark:bg-zinc-800/90 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 space-y-0.5">
+                                <strong className="text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5 text-xs">
+                                    <span>🧷</span> 2. Suot ang Pet Diaper
+                                </strong>
+                                <p className="text-[10.5px] text-muted-foreground leading-tight">
+                                    Dapat laging nakasuot ng pet diaper ang alaga para sa sanitation at kalinisan ng bus.
+                                </p>
+                            </div>
+                            <div className="bg-white/90 dark:bg-zinc-800/90 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 space-y-0.5">
+                                <strong className="text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5 text-xs">
+                                    <span>💺</span> 3. Karagdagang 1 Bayad na Upuan
+                                </strong>
+                                <p className="text-[10.5px] text-muted-foreground leading-tight">
+                                    <strong>Mag-select ng karagdagang 1 upuan</strong> sa seat map para sa carrier ng alaga (bawal sa pasilyo o kandungan).
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="flex justify-end">
                         <Button
                             size="lg"
@@ -1083,6 +1127,53 @@ function BookTripContent() {
                                     <p className="text-[10px] text-muted-foreground">Digital QR Boarding Pass and official receipt will be sent here.</p>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* PET TRAVEL POLICY CARD IN CHECKOUT */}
+                        <div className="rounded-xl border-2 border-emerald-500/40 bg-gradient-to-r from-emerald-50/70 via-teal-50/40 to-emerald-50/70 dark:from-emerald-950/30 dark:via-zinc-900 dark:to-emerald-950/30 p-4 space-y-2.5 shadow-xs">
+                            <div className="flex items-center justify-between border-b border-emerald-200/70 dark:border-emerald-800/60 pb-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-base">🐾</span>
+                                    <h4 className="font-extrabold text-xs uppercase tracking-wider text-emerald-950 dark:text-emerald-100">
+                                        Superlines Pet Travel Policy (Pagbibiyahe Kasama ang Alaga)
+                                    </h4>
+                                </div>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">
+                                    LTFRB MC 2019-019
+                                </span>
+                            </div>
+                            <p className="text-xs text-foreground/90 leading-relaxed">
+                                Pinapayagan ang mga alagang aso at pusa sa Superlines alinsunod sa mga sumusunod na panuntunan para sa kaligtasan at kaayusan ng lahat:
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-0.5 text-xs">
+                                <div className="bg-white dark:bg-zinc-800 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 space-y-0.5">
+                                    <span className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1 text-xs">
+                                        📦 Enclosed Cage / Carrier
+                                    </span>
+                                    <p className="text-[10.5px] text-muted-foreground leading-tight">
+                                        Dapat nakalagay sa secure at maaliwalas na travel cage o carrier sa buong biyahe.
+                                    </p>
+                                </div>
+                                <div className="bg-white dark:bg-zinc-800 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 space-y-0.5">
+                                    <span className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1 text-xs">
+                                        🧷 Suot ang Pet Diaper
+                                    </span>
+                                    <p className="text-[10.5px] text-muted-foreground leading-tight">
+                                        Mahigpit na ipinag-uutos na may suot na diaper ang alaga sa buong biyahe para sa kalinisan.
+                                    </p>
+                                </div>
+                                <div className="bg-white dark:bg-zinc-800 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 space-y-0.5">
+                                    <span className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1 text-xs">
+                                        💺 Karagdagang 1 Bayad na Upuan
+                                    </span>
+                                    <p className="text-[10.5px] text-muted-foreground leading-tight">
+                                        Kailangan magbayad ng karagdagang 1 upuan para sa carrier ng alaga (bawal sa pasilyo o kandungan).
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="text-[10.5px] text-muted-foreground italic pt-1 border-t border-emerald-200/60 dark:border-emerald-800/40">
+                                * Tiyakin ding dala ang updated na anti-rabies vaccination card / veterinary health record ng alaga bago mag-board.
+                            </p>
                         </div>
 
                         {/* 2. 20% Statutory Discount Options (Senior, Student, PWD) */}
@@ -1424,6 +1515,13 @@ function BookTripContent() {
                                         <div className="space-y-1 pt-1 border-t">
                                             <p className="font-bold text-foreground">2. Safety and Code of Conduct</p>
                                             <p>&bull; In compliance with LTFRB Safe Spaces Act (Bawal ang Bastos), disrespectful behavior is strictly prohibited.</p>
+                                        </div>
+                                        <div className="space-y-1 pt-1 border-t">
+                                            <p className="font-bold text-foreground">3. Official Pet Travel Policy (LTFRB MC No. 2019-019 &amp; Superlines Policy)</p>
+                                            <p>&bull; <strong>Enclosed Carrier / Cage:</strong> Pets (dogs and cats) must be kept inside a clean, secure, and properly ventilated cage or pet carrier at all times inside the bus.</p>
+                                            <p>&bull; <strong>Pet Diaper Required:</strong> Pets must wear a suitable pet diaper throughout the trip to maintain bus sanitation and comfort for fellow passengers.</p>
+                                            <p>&bull; <strong>Additional Seat Payment:</strong> Passengers traveling with pets must reserve and pay for an additional regular seat (one full seat per pet carrier). Pets are strictly not permitted to occupy the bus aisle, overhead racks, or passenger lap/foot space.</p>
+                                            <p>&bull; <strong>Health &amp; Rabies Card:</strong> Pet owners must carry an updated anti-rabies vaccination card and health record, ready for inspection prior to boarding.</p>
                                         </div>
                                     </div>
                                 )}
