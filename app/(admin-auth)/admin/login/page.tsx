@@ -34,31 +34,6 @@ export default function AdminLoginPage() {
     const router = useRouter();
     const supabase = createClient();
 
-    const handleUnlockStaffGate = (e: React.FormEvent) => {
-        e.preventDefault();
-        setStaffGateError(null);
-
-        const clean = staffGatePasscode.trim().toLowerCase();
-        const validPasscodes = [
-            "staff123",
-            "admin123",
-            "teller123",
-            "conductor123",
-            "superlines2026",
-            "superlines",
-        ];
-
-        if (validPasscodes.includes(clean)) {
-            if (typeof window !== "undefined") {
-                sessionStorage.setItem("superlines_staff_gate_unlocked", "true");
-                document.cookie = "superlines_staff_gate=unlocked; path=/; max-age=3600; SameSite=Lax";
-            }
-            setIsGateUnlocked(true);
-        } else {
-            setStaffGateError("Access Denied: Invalid staff security passcode. Unauthorized passenger entry is strictly prohibited.");
-        }
-    };
-
     const executeAdminLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
