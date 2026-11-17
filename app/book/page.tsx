@@ -1147,6 +1147,34 @@ function BookTripContent() {
                                         </select>
                                     </div>
 
+                                    {/* MANDATORY PHYSICAL ID BOARDING DISCLAIMER */}
+                                    <div className="rounded-xl border-2 border-amber-500/70 bg-gradient-to-r from-amber-50 via-amber-100/50 to-amber-50 dark:from-amber-950/40 dark:via-amber-900/20 dark:to-amber-950/40 p-4 space-y-2.5 shadow-sm">
+                                        <div className="flex items-center gap-2 text-amber-900 dark:text-amber-100 font-extrabold text-xs">
+                                            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                                            <span className="uppercase tracking-wider">Mandatory Boarding Requirement: Physical ID Verification</span>
+                                        </div>
+                                        <p className="text-xs text-amber-950 dark:text-amber-200 leading-relaxed">
+                                            <strong>Paalala sa mga pasaherong may discount:</strong> Ang inyong orihinal na <strong>Physical ID</strong> (Senior Citizen / OSCA ID, Valid Student ID na may updated registration, o PWD ID) ay <strong>kinakailangang ipakita sa Bus Conductor bago sumakay</strong> sa bus.
+                                        </p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                                            <div className="bg-white/80 dark:bg-zinc-900/80 rounded-lg p-2.5 border border-amber-300 dark:border-amber-800 space-y-0.5">
+                                                <span className="font-black text-amber-900 dark:text-amber-200 block">👵 Senior Citizen (RA 9994)</span>
+                                                <span className="text-muted-foreground text-[10px] block leading-tight">OSCA ID o Valid Gov't ID kalakip ang date of birth</span>
+                                            </div>
+                                            <div className="bg-white/80 dark:bg-zinc-900/80 rounded-lg p-2.5 border border-amber-300 dark:border-amber-800 space-y-0.5">
+                                                <span className="font-black text-amber-900 dark:text-amber-200 block">🎓 Student (RA 11314)</span>
+                                                <span className="text-muted-foreground text-[10px] block leading-tight">Valid School ID na may kasalukuyang enrollment / AY stamp</span>
+                                            </div>
+                                            <div className="bg-white/80 dark:bg-zinc-900/80 rounded-lg p-2.5 border border-amber-300 dark:border-amber-800 space-y-0.5">
+                                                <span className="font-black text-amber-900 dark:text-amber-200 block">♿ PWD (RA 10754)</span>
+                                                <span className="text-muted-foreground text-[10px] block leading-tight">Opisyal na PWD ID na inisyu ng LGU o NCDA</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-[10.5px] text-amber-800 dark:text-amber-300 italic pt-1 border-t border-amber-200 dark:border-amber-800/60 leading-normal">
+                                            ⚠️ <em>Mahalagang Paalala:</em> Ang kabiguang magpakita ng orihinal na pisikal na ID sa oras ng boarding ay magreresulta sa pagpapawalang-bisa ng 20% discount, at kinakailangang magbayad ng buong regular fare bago payagang sumakay.
+                                        </p>
+                                    </div>
+
                                     {discountPersons.slice(0, effectiveDiscountCount).map((p, idx) => (
                                         <div key={p.id || idx} className="rounded-xl border border-purple-300 dark:border-purple-800 bg-purple-50/40 dark:bg-purple-950/20 p-3.5 space-y-3">
                                             <div className="flex items-center justify-between font-bold text-xs text-purple-900 dark:text-purple-200">
@@ -1204,7 +1232,7 @@ function BookTripContent() {
                                                     onChange={(e) => handleUpdateDiscountPerson(idx, "idNumber", e.target.value)}
                                                     className="bg-white dark:bg-zinc-800 font-mono text-xs uppercase"
                                                 />
-                                                <p className="text-[10px] text-muted-foreground">* Valid physical ID must be presented upon boarding.</p>
+                                                <p className="text-[10.5px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1"><AlertCircle className="h-3.5 w-3.5 shrink-0" /><span>Paalala: Dalhin ang inyong orihinal na physical ID sa araw ng biyahe. Iinspeksyunin ito ng konduktor bago sumakay.</span></p>
                                             </div>
                                         </div>
                                     ))}
@@ -1349,6 +1377,18 @@ function BookTripContent() {
                                 </p>
                             </div>
 
+                            {effectiveDiscountCount > 0 && (
+                                <div className="rounded-xl border border-amber-400 bg-amber-50/80 dark:bg-amber-950/40 p-3.5 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-2.5 shadow-sm">
+                                    <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                                    <div>
+                                        <span className="font-black text-amber-900 dark:text-amber-100 uppercase tracking-wide">Boarding ID Disclaimer:</span>
+                                        <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed mt-0.5">
+                                            May <strong>{effectiveDiscountCount} pasahero</strong> na may 20% statutory discount sa booking na ito. Pakitiyak na dalhin ang kanilang <strong>orihinal na physical ID</strong> (Senior Citizen / Student / PWD) upang maipakita sa konduktor sa oras ng pagsakay.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Official Terms & Conditions */}
                             <div className="rounded-xl border p-4 bg-card space-y-3">
                                 <div className="flex items-center justify-between">
@@ -1379,6 +1419,7 @@ function BookTripContent() {
                                             <p>&bull; <strong>Reservation Policy:</strong> Tickets are valid only for the specific date and trip indicated.</p>
                                             <p>&bull; <strong>Arrival Time:</strong> Passengers must be at the terminal at least one (1) hour before departure.</p>
                                             <p>&bull; <strong>Penalty Fees:</strong> 20% penalty fee of the ticket price will be charged for rebooking.</p>
+                                            <p>&bull; <strong>Discount ID Verification Policy:</strong> All passengers availing of the 20% statutory discount (Senior Citizens, Students, and PWDs) are strictly required to present their physical valid ID to the conductor upon boarding. If no valid physical ID is presented, the discount is forfeited and the regular fare difference must be settled.</p>
                                         </div>
                                         <div className="space-y-1 pt-1 border-t">
                                             <p className="font-bold text-foreground">2. Safety and Code of Conduct</p>

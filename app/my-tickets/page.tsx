@@ -936,6 +936,19 @@ function TicketsContent() {
                                                             20% {dp.classification}: {dp.name}
                                                         </span>
                                                     ))}
+                                                
+                                                    {/* MANDATORY PHYSICAL ID BOARDING DISCLAIMER */}
+                                                    <div className="mt-2.5 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50/90 dark:bg-amber-950/40 p-2.5 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-2 shadow-xs">
+                                                        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <p className="font-extrabold text-[11px] uppercase tracking-wide text-amber-950 dark:text-amber-100">
+                                                                Physical ID Required Upon Boarding:
+                                                            </p>
+                                                            <p className="text-[10.5px] text-amber-850 dark:text-amber-300 leading-tight mt-0.5">
+                                                                Discounted passengers (Senior Citizen, Student, PWD) must present their original physical valid ID to the conductor upon boarding.
+                                                            </p>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             ) : booking?.passenger_type && booking.passenger_type !== "REGULAR" ? (
                                                 <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
@@ -1796,6 +1809,18 @@ function TicketsContent() {
                                     <span>₱{viewingBoardingPass.booking?.total_price || 850}.00</span>
                                 </div>
                             </div>
+
+                            {(Boolean(viewingBoardingPass.booking?.discounted_passengers && viewingBoardingPass.booking.discounted_passengers.length > 0) || (viewingBoardingPass.booking?.discount_amount && viewingBoardingPass.booking.discount_amount > 0) || (viewingBoardingPass.booking?.passenger_type && viewingBoardingPass.booking.passenger_type !== "REGULAR")) && (
+                                <div className="bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 rounded-lg p-2 text-center text-[10px] text-amber-900 dark:text-amber-200">
+                                    <span className="font-extrabold flex items-center justify-center gap-1">
+                                        <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                                        <span>MANDATORY PHYSICAL ID FOR DISCOUNT</span>
+                                    </span>
+                                    <p className="text-[9px] text-amber-800 dark:text-amber-300 mt-0.5 leading-tight">
+                                        Original physical ID (Senior / Student / PWD) must be presented to conductor upon boarding.
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="border-t border-dashed pt-2 text-center text-[10px] text-muted-foreground">
                                 Present this stub or QR code upon boarding at the terminal platform.

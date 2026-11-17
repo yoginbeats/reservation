@@ -2,69 +2,69 @@ import { sendLiveEmail } from "@/lib/email-service";
 import { resolveAppOrigin } from "@/lib/app-url";
 
 export interface TicketEmailPayload {
-    bookingId: string;
-    recipientEmail: string;
-    passengerName?: string;
-    trip?: {
-        origin?: string;
-        destination?: string;
-        bus_number?: string;
-        departure_time?: string;
-    };
-    seatNumber?: number | string;
-    seatNumbers?: number[];
-    totalPrice?: number | string;
-    qrToken?: string;
-    transactionRef?: string;
-    req?: any;
+  bookingId: string;
+  recipientEmail: string;
+  passengerName?: string;
+  trip?: {
+    origin?: string;
+    destination?: string;
+    bus_number?: string;
+    departure_time?: string;
+  };
+  seatNumber?: number | string;
+  seatNumbers?: number[];
+  totalPrice?: number | string;
+  qrToken?: string;
+  transactionRef?: string;
+  req?: any;
 }
 
 /**
  * Dispatches an official Superlines e-Ticket & Boarding Pass directly to Gmail / Passenger inbox.
  */
 export async function dispatchTicketEmail(payload: TicketEmailPayload) {
-    const {
-        bookingId,
-        recipientEmail,
-        passengerName = "Valued Passenger",
-        trip,
-        seatNumber = 1,
-        seatNumbers = [],
-        totalPrice = 0,
-        qrToken,
-        transactionRef = "PAID-VERIFIED",
-        req,
-    } = payload;
+  const {
+    bookingId,
+    recipientEmail,
+    passengerName = "Valued Passenger",
+    trip,
+    seatNumber = 1,
+    seatNumbers = [],
+    totalPrice = 0,
+    qrToken,
+    transactionRef = "PAID-VERIFIED",
+    req,
+  } = payload;
 
-    const email = recipientEmail?.trim()?.toLowerCase();
-    if (!email) {
-        console.warn("[Ticket Email] No recipient email provided for booking:", bookingId);
-        return { success: false, error: "No recipient email provided" };
-    }
+  const email = recipientEmail?.trim()?.toLowerCase();
+  if (!email) {
+    console.warn("[Ticket Email] No recipient email provided for booking:", bookingId);
+    return { success: false, error: "No recipient email provided" };
+  }
 
-    const origin = trip?.origin || "Cubao Terminal";
-    const destination = trip?.destination || "Daet Central Terminal";
-    const busNumber = trip?.bus_number || "Superlines Express Aircon";
-    const departureTime = trip?.departure_time
-        ? new Date(trip.departure_time).toLocaleString("en-US", {
-              timeZone: "Asia/Manila",
-              dateStyle: "full",
-              timeStyle: "short",
-          })
-        : "Scheduled Superlines Departure";
+  const origin = trip?.origin || "Cubao Terminal";
+  const destination = trip?.destination || "Daet Central Terminal";
+  const busNumber = trip?.bus_number || "Superlines Express Aircon";
+  const departureTime = trip?.departure_time
+    ? new Date(trip.departure_time).toLocaleString("en-US", {
+      timeZone: "Asia/Manila",
+      dateStyle: "full",
+      timeStyle: "short",
+    })
+    : "Scheduled Superlines Departure";
 
-    const seatsDisplay =
-        seatNumbers && seatNumbers.length > 0
-            ? seatNumbers.map((s) => `#${s < 10 ? `0${s}` : s}`).join(", ")
-            : `#${Number(seatNumber) < 10 ? `0${seatNumber}` : seatNumber}`;
+  const seatsDisplay =
+    seatNumbers && seatNumbers.length > 0
+      ? seatNumbers.map((s) => `#${s < 10 ? `0${s}` : s}`).join(", ")
+      : `#${Number(seatNumber) < 10 ? `0${seatNumber}` : seatNumber}`;
 
-    const token = qrToken || `TKT-${bookingId.slice(0, 8).toUpperCase()}`;
-    const appOrigin = resolveAppOrigin(req);
-    const ticketUrl = `${appOrigin}/my-tickets?booking_id=${bookingId}&ref=${encodeURIComponent(transactionRef)}`;
+  const token = qrToken || `TKT-${bookingId.slice(0, 8).toUpperCase()}`;
+  const appOrigin = resolveAppOrigin(req);
+  const ticketUrl = `${appOrigin}/my-tickets?booking_id=${bookingId}&ref=${encodeURIComponent(transactionRef)}`;
 
-    const subject = `🎫 Superlines Bus e-Ticket & Boarding Pass: ${origin} ➔ ${destination} (${seatsDisplay})`;
+  const subject = `🎫 Superlines Bus e-Ticket & Boarding Pass: ${origin} ➔ ${destination} (${seatsDisplay})`;
 
-    const emailHtml = `
+  const emailHtml = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -144,6 +144,19 @@ export async function dispatchTicketEmail(payload: TicketEmailPayload) {
         <div style="font-size: 11px; color: #71717a;">Present this token or the QR code at the bus door for instant boarding</div>
       </div>
 
+      <!-- MANDATORY PHYSICAL ID DISCLAIMER FOR DISCOUNTED TICKETS -->
+      <div style="background-color: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 14px 18px; margin: 20px 0; color: #92400e; font-size: 13px; line-height: 1.5;">
+        <div style="font-weight: 800; color: #b45309; font-size: 13px; display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+          ⚠️ MANDATORY BOARDING REQUIREMENT: PHYSICAL ID FOR DISCOUNTS
+        </div>
+        <p style="margin: 6px 0 0; color: #78350f; font-size: 12.5px;">
+          Passengers availing of statutory discounts (<strong>Senior Citizen, Student, or PWD</strong>) <strong>MUST present their original physical valid ID</strong> (OSCA Senior ID, Valid School ID with current AY registration, or PWD ID) to the conductor upon boarding.
+        </p>
+        <p style="margin: 6px 0 0; font-size: 11px; color: #92400e; font-style: italic;">
+          * Note: Failure or refusal to present the physical ID upon boarding will forfeit the 20% discount and require payment of the regular fare difference before boarding.
+        </p>
+      </div>
+
       <div class="btn-container">
         <a href="${ticketUrl}" class="btn" target="_blank">
           View &amp; Print Full Boarding Pass &rarr;
@@ -151,10 +164,13 @@ export async function dispatchTicketEmail(payload: TicketEmailPayload) {
       </div>
 
       <div class="instructions">
-        <strong>Boarding Reminders:</strong>
+        <strong>Boarding Reminders &amp; Verification Policies:</strong>
         <ul style="margin: 6px 0 0; padding-left: 18px;">
           <li>Please arrive at the terminal at least <strong>30 minutes</strong> before departure.</li>
           <li>Have this e-Ticket ready on your phone screen or print a physical copy.</li>
+          <li style="color: #b45309; font-weight: 700;">
+            <strong>Discount Verification:</strong> Original physical ID (Senior, Student, or PWD) is strictly inspected by the conductor prior to boarding.
+          </li>
           <li>Valid government-issued ID matching the passenger name is required upon boarding.</li>
         </ul>
       </div>
@@ -169,12 +185,12 @@ export async function dispatchTicketEmail(payload: TicketEmailPayload) {
 </html>
     `;
 
-    console.log(`[Ticket Email] Sending live e-Ticket to ${email} for booking #${bookingId}...`);
-    return await sendLiveEmail({
-        to: email,
-        subject,
-        html: emailHtml,
-        fromName: "Superlines e-Ticket Dispatch",
-    });
+  console.log(`[Ticket Email] Sending live e-Ticket to ${email} for booking #${bookingId}...`);
+  return await sendLiveEmail({
+    to: email,
+    subject,
+    html: emailHtml,
+    fromName: "Superlines e-Ticket Dispatch",
+  });
 }
 
