@@ -115,12 +115,6 @@ export function GlobalFooter() {
                                     <span>Passenger Portal & Profile</span>
                                 </Link>
                             </li>
-                            <li>
-                                <Link href="/admin/login" className="hover:text-zinc-200 transition-colors text-[11px] text-zinc-500 flex items-center gap-1 pt-2">
-                                    <span>Authorized Staff Portal Login</span>
-                                    <ArrowUpRight className="h-3 w-3" />
-                                </Link>
-                            </li>
                         </ul>
                     </div>
 
