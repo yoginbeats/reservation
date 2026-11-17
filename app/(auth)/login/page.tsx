@@ -62,34 +62,6 @@ export default function LoginPage() {
         }
     }, []);
 
-    const handleStaffGateSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setStaffGateError(null);
-        setIsVerifyingStaff(true);
-
-        const clean = staffPasscode.trim().toLowerCase();
-        const validPasscodes = [
-            "staff123",
-            "admin123",
-            "teller123",
-            "conductor123",
-            "superlines2026",
-            "superlines",
-        ];
-
-        if (validPasscodes.includes(clean)) {
-            if (typeof window !== "undefined") {
-                sessionStorage.setItem("superlines_staff_gate_unlocked", "true");
-                document.cookie = "superlines_staff_gate=unlocked; path=/; max-age=3600; SameSite=Lax";
-            }
-            setShowStaffModal(false);
-            router.push("/admin/login");
-        } else {
-            setStaffGateError("Access Denied: Invalid staff security passcode. Unauthorized passenger access to the staff portal is strictly prohibited.");
-            setIsVerifyingStaff(false);
-        }
-    };
-
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
