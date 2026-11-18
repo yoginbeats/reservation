@@ -208,3 +208,13 @@ export function getBusClassification(input?: string | null, busNumber?: string |
 
     return REGULAR_AIRCON_LAYOUT;
 }
+
+/**
+ * Designated PWD Priority Seats (Front row, right side near entrance/exit)
+ * Consistent across Regular Aircon, Super Deluxe, and First Class layouts.
+ */
+export const PWD_PRIORITY_SEATS: readonly number[] = [3, 4];
+
+export function isPwdPrioritySeat(seatNumber: number): boolean {
+    return PWD_PRIORITY_SEATS.includes(seatNumber);
+}

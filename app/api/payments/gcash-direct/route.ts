@@ -8,6 +8,7 @@ import { validateAndSanitizeEmail, sanitizeString, validateGuestCount } from "@/
 import { slotHoldManager } from "@/lib/slot-hold";
 import { resolveAppOrigin } from "@/lib/app-url";
 import { dispatchTicketEmail } from "@/lib/ticket-email";
+import { isPwdPrioritySeat, PWD_PRIORITY_SEATS } from "@/lib/constants/bus-layouts";
 
 export async function POST(req: NextRequest) {
     // 🔒 Rate Limiting: Max 10 booking requests per 15 minutes per IP (Brute-force protection)
@@ -84,6 +85,24 @@ export async function POST(req: NextRequest) {
             }
         }
         const busNumber = body.trip?.bus_number;
+        // 🔒 Enforce PWD Priority Seat restriction (Seats #3 & #4)
+        if (seatsToCheck.some((sNum) => isPwdPrioritySeat(sNum))) {
+            const hasPwdPassenger =
+                String(passengerType || "").toUpperCase().includes("PWD") ||
+                (Array.isArray(discountedPassengers) &&
+                    discountedPassengers.some(
+                        (p: any) => String(p?.classification || "").toUpperCase() === "PWD" && String(p?.idNumber || "").trim().length > 0
+                    ));
+            if (!hasPwdPassenger) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: `PWD Priority Seats (#${PWD_PRIORITY_SEATS.join(" & #")}) can only be booked by verified PWD passengers with a valid PWD ID.`,
+                    },
+                    { status: 400 }
+                );
+            }
+        }
         const departureTime = body.trip?.departure_time;
         const requestId = crypto.randomUUID();
 

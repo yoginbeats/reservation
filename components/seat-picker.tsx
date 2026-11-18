@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle2, UserCheck, Armchair, DoorOpen, Bath } from "lucide-react";
+import { CheckCircle2, UserCheck, Armchair, DoorOpen, Bath, Accessibility, Lock } from "lucide-react";
 import { 
     SUPERLINES_BUS_CLASSIFICATIONS, 
     getBusClassification, 
     BusClassification,
-    SeatGridCell
+    SeatGridCell,
+    isPwdPrioritySeat,
+    PWD_PRIORITY_SEATS,
 } from "@/lib/constants/bus-layouts";
 
 interface SeatPickerProps {
@@ -20,6 +22,7 @@ interface SeatPickerProps {
     busNumber?: string;
     maxSeats?: number;
     allowClassificationSwitch?: boolean;
+    allowPwdSeats?: boolean;
 }
 
 export function SeatPicker({
@@ -32,6 +35,7 @@ export function SeatPicker({
     busNumber,
     maxSeats = 10,
     allowClassificationSwitch = true,
+    allowPwdSeats = false,
 }: SeatPickerProps) {
     // Resolve initial classification based on busType or busNumber
     const [classification, setClassification] = useState<BusClassification>(() => 
@@ -43,6 +47,19 @@ export function SeatPicker({
         setClassification(getBusClassification(busType, busNumber));
     }, [busType, busNumber]);
 
+    // Automatically remove PWD priority seats if allowPwdSeats becomes false
+    useEffect(() => {
+        if (!allowPwdSeats) {
+            if (selectedSeats && selectedSeats.some((s) => isPwdPrioritySeat(s))) {
+                const filtered = selectedSeats.filter((s) => !isPwdPrioritySeat(s));
+                if (onSelectSeats) onSelectSeats(filtered);
+                if (onSelectSeat) onSelectSeat(filtered.length > 0 ? filtered[filtered.length - 1] : 0);
+            } else if (selectedSeat && isPwdPrioritySeat(selectedSeat)) {
+                if (onSelectSeat) onSelectSeat(0);
+            }
+        }
+    }, [allowPwdSeats, selectedSeats, selectedSeat, onSelectSeats, onSelectSeat]);
+
     const isSeatSelected = (seatNum: number) => {
         if (selectedSeats && selectedSeats.length > 0) {
             return selectedSeats.includes(seatNum);
@@ -51,6 +68,10 @@ export function SeatPicker({
     };
 
     const handleSeatClick = (seatNum: number) => {
+        // Strictly prevent non-PWD customers from selecting PWD priority seats
+        if (isPwdPrioritySeat(seatNum) && !allowPwdSeats) {
+            return;
+        }
         if (onSelectSeats && selectedSeats !== undefined) {
             if (selectedSeats.includes(seatNum)) {
                 const next = selectedSeats.filter((s) => s !== seatNum);
@@ -116,11 +137,15 @@ export function SeatPicker({
         const seatNum = cell.seatNumber!;
         const isBooked = bookedSeats.includes(seatNum);
         const isSelected = isSeatSelected(seatNum);
+        const isPwd = isPwdPrioritySeat(seatNum);
+        const isPwdLocked = isPwd && !allowPwdSeats;
 
         // Official color from paper sheets:
         // Regular Aircon & Super Deluxe = Red (#E05D5D)
         // First Class = Blue (#5B9BD5)
-        const availableBg = isRedTheme
+        const availableBg = isPwd
+            ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-700"
+            : isRedTheme
             ? "bg-[#E05D5D] hover:bg-[#D44A4A] text-white border-[#C94545]"
             : "bg-[#5B9BD5] hover:bg-[#4A8EC6] text-white border-[#457EB3]";
 
@@ -128,18 +153,41 @@ export function SeatPicker({
             <button
                 key={seatNum}
                 type="button"
-                disabled={isBooked}
+                disabled={isBooked || isPwdLocked}
                 onClick={() => handleSeatClick(seatNum)}
                 className={`relative flex h-10 w-11 sm:h-11 sm:w-12 flex-col items-center justify-center rounded-md border font-mono text-xs font-black transition-all ${
                     isBooked
                         ? "cursor-not-allowed bg-zinc-200 border-zinc-300 text-zinc-400 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-500 opacity-60 line-through select-none"
+                        : isPwdLocked
+                        ? "cursor-not-allowed bg-indigo-100 border-indigo-300 text-indigo-700 dark:bg-indigo-950/60 dark:border-indigo-800 dark:text-indigo-300 opacity-80 select-none"
                         : isSelected
                         ? "border-emerald-600 bg-emerald-600 text-white shadow-lg shadow-emerald-600/40 ring-4 ring-emerald-300 dark:ring-emerald-600 scale-105 z-10"
                         : `${availableBg} shadow-sm hover:scale-105 active:scale-95`
                 } ${isBackRow ? "flex-1 max-w-[52px]" : ""}`}
-                title={`Seat #${seatNum} ${isBooked ? '(Booked)' : isSelected ? '(Selected)' : '(Available)'}`}
+                title={
+                    isBooked
+                        ? `Seat #${seatNum} (Booked)`
+                        : isPwdLocked
+                        ? `Seat #${seatNum} (PWD Priority Only — Enable PWD option to select)`
+                        : isPwd
+                        ? `Seat #${seatNum} (PWD Priority Seat)`
+                        : isSelected
+                        ? `Seat #${seatNum} (Selected)`
+                        : `Seat #${seatNum} (Available)`
+                }
             >
-                <span className="text-[13px]">{seatNum}</span>
+                <span className="text-[13px] leading-none">{seatNum}</span>
+                {isPwd && !isBooked && (
+                    <span className="text-[8px] font-sans font-extrabold uppercase tracking-tight leading-none mt-0.5 flex items-center gap-0.5">
+                        <Accessibility className="h-2.5 w-2.5" />
+                        PWD
+                    </span>
+                )}
+                {isPwdLocked && !isBooked && (
+                    <span className="absolute -left-1 -top-1 rounded-full bg-indigo-600 p-0.5 text-white shadow">
+                        <Lock className="h-2.5 w-2.5" />
+                    </span>
+                )}
                 {isSelected && (
                     <span className="absolute -right-1 -top-1 rounded-full bg-white p-0.5 text-emerald-600 shadow">
                         <CheckCircle2 className="h-3 w-3" />
@@ -280,6 +328,12 @@ export function SeatPicker({
                 <div className="flex items-center gap-1.5">
                     <div className="h-3 w-3 rounded bg-zinc-300 dark:bg-zinc-700 line-through" />
                     <span>Booked</span>
+                </div>
+                <div className="flex items-center gap-1.5" title={`Seats ${PWD_PRIORITY_SEATS.join(" & ")} reserved for PWD`}>
+                    <div className={`h-3 w-3 rounded flex items-center justify-center ${allowPwdSeats ? "bg-indigo-600 text-white" : "bg-indigo-200 border border-indigo-400 text-indigo-700"}`}>
+                        <Accessibility className="h-2.5 w-2.5" />
+                    </div>
+                    <span>PWD Only</span>
                 </div>
                 {classification.hasCR && (
                     <div className="flex items-center gap-1.5">

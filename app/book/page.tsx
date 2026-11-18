@@ -42,7 +42,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 import { formatDatePH, formatTimePH, formatDateTimePH, getTodayPH, getTripDatePH } from "@/lib/date-utils";
-import { getBusFare } from "@/lib/constants/bus-layouts";
+import { getBusFare, isPwdPrioritySeat, PWD_PRIORITY_SEATS } from "@/lib/constants/bus-layouts";
 import { BusClassificationBadge } from "@/components/bus-classification-badge";
 import { getPickupPointsForTrip, PickupPoint } from "@/lib/constants/pickup-points";
 import { GCASH_QR_BASE64 } from "@/lib/constants/gcash-qr";
@@ -81,6 +81,7 @@ function BookTripContent() {
     const [receiptFileName, setReceiptFileName] = useState<string>("");
     const [holdSeconds, setHoldSeconds] = useState(15 * 60);
     const [pickupLocation, setPickupLocation] = useState<string>(""); // 15-minute hold timer
+    const [isPwdPassenger, setIsPwdPassenger] = useState(false);
 
     // 15-Minute Seat Hold Countdown
     useEffect(() => {
@@ -415,6 +416,22 @@ function BookTripContent() {
             return;
         }
 
+        const seatsList = selectedSeats.length > 0 ? selectedSeats : [effectiveSeat];
+        if (seatsList.some((s) => isPwdPrioritySeat(s))) {
+            const hasVerifiedPwd =
+                isPwdPassenger &&
+                effectiveDiscountCount > 0 &&
+                discountPersons
+                    .slice(0, effectiveDiscountCount)
+                    .some((p) => p?.classification === "PWD" && p?.idNumber?.trim());
+            if (!hasVerifiedPwd) {
+                setError(
+                    `PWD Priority Seats (#${PWD_PRIORITY_SEATS.join(" & #")}) can only be booked by a PWD passenger. Please enable the 20% Statutory Discount, select "PWD", and enter a valid PWD ID Number.`
+                );
+                return;
+            }
+        }
+
         if (effectiveDiscountCount > 0) {
             for (let i = 0; i < effectiveDiscountCount; i++) {
                 const p = discountPersons[i];
@@ -527,6 +544,22 @@ function BookTripContent() {
         e.preventDefault();
         const effectiveSeat = selectedSeat || (selectedSeats.length > 0 ? selectedSeats[0] : null);
         if (!selectedTrip || !effectiveSeat) return;
+
+        const seatsList = selectedSeats.length > 0 ? selectedSeats : [effectiveSeat];
+        if (seatsList.some((s) => isPwdPrioritySeat(s))) {
+            const hasVerifiedPwd =
+                isPwdPassenger &&
+                effectiveDiscountCount > 0 &&
+                discountPersons
+                    .slice(0, effectiveDiscountCount)
+                    .some((p) => p?.classification === "PWD" && p?.idNumber?.trim());
+            if (!hasVerifiedPwd) {
+                setError(
+                    `PWD Priority Seats (#${PWD_PRIORITY_SEATS.join(" & #")}) can only be booked by a PWD passenger. Please enable the 20% Statutory Discount, select "PWD", and enter a valid PWD ID Number.`
+                );
+                return;
+            }
+        }
 
         if (effectiveDiscountCount > 0) {
             for (let i = 0; i < effectiveDiscountCount; i++) {
@@ -862,7 +895,46 @@ function BookTripContent() {
                         </Button>
                     </div>
 
+                    {/* PWD PRIORITY SEAT ACCESS TOGGLE */}
+                    <div className="rounded-xl border-2 border-indigo-200 dark:border-indigo-900 bg-indigo-50/70 dark:bg-indigo-950/30 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-start gap-2.5">
+                            <div className="p-2 rounded-lg bg-indigo-600 text-white shrink-0 mt-0.5">
+                                <Accessibility className="h-4 w-4" />
+                            </div>
+                            <div className="space-y-0.5">
+                                <p className="text-xs font-extrabold text-indigo-950 dark:text-indigo-100">
+                                    PWD Priority Seats (Seats #{PWD_PRIORITY_SEATS.join(" & #")})
+                                </p>
+                                <p className="text-[11px] text-indigo-800/80 dark:text-indigo-300/80 leading-snug">
+                                    Seats #{PWD_PRIORITY_SEATS.join(" & #")} are strictly reserved for Persons with Disabilities (PWD). Non-PWD passengers cannot select these seats.
+                                </p>
+                            </div>
+                        </div>
+                        <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-zinc-900 border border-indigo-300 dark:border-indigo-700 cursor-pointer select-none shrink-0 shadow-2xs">
+                            <input
+                                type="checkbox"
+                                checked={isPwdPassenger}
+                                onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setIsPwdPassenger(checked);
+                                    if (!checked) {
+                                        const filtered = selectedSeats.filter((s) => !isPwdPrioritySeat(s));
+                                        setSelectedSeats(filtered);
+                                        if (selectedSeat && isPwdPrioritySeat(selectedSeat)) {
+                                            setSelectedSeat(filtered.length > 0 ? filtered[filtered.length - 1] : null);
+                                        }
+                                    }
+                                }}
+                                className="h-4 w-4 rounded border-indigo-400 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            />
+                            <span className="text-xs font-bold text-indigo-950 dark:text-indigo-100">
+                                I am a PWD / Booking for PWD
+                            </span>
+                        </label>
+                    </div>
+
                     <SeatPicker
+                        allowPwdSeats={isPwdPassenger}
                         busType={selectedTrip?.bus?.bus_type || selectedTrip?.service_class || "REGULAR_AIRCON"}
                         busNumber={selectedTrip?.bus?.bus_number || selectedTrip?.bus_number}
                         totalSeats={selectedTrip?.bus?.seat_capacity || 49}
