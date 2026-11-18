@@ -6,6 +6,7 @@ import { GlobalFooter } from "@/components/global-footer";
 import { AnnouncementPanel } from "@/components/announcement-panel";
 import { AcademicDisclaimerModal } from "@/components/academic-disclaimer-modal";
 import { DataPrivacyModal } from "@/components/data-privacy-modal";
+import { CustomerSupportChatbox } from "@/components/customer-support-chatbox";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,6 +52,7 @@ export default function RootLayout({
         <GlobalHeader />
         <main className="flex-1">{children}</main>
         <GlobalFooter />
+        <CustomerSupportChatbox />
       </body>
     </html>
   );
