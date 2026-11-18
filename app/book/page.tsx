@@ -45,6 +45,7 @@ import { formatDatePH, formatTimePH, formatDateTimePH, getTodayPH, getTripDatePH
 import { getBusFare } from "@/lib/constants/bus-layouts";
 import { BusClassificationBadge } from "@/components/bus-classification-badge";
 import { getPickupPointsForTrip, PickupPoint } from "@/lib/constants/pickup-points";
+import { GCASH_QR_BASE64 } from "@/lib/constants/gcash-qr";
 
 export interface DiscountPerson {
     id: string;
@@ -1395,14 +1396,14 @@ function BookTripContent() {
 
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                    src="/gcash-qr.jpg"
+                                    src={GCASH_QR_BASE64}
                                     alt="Superlines GCash QR Code"
                                     className="max-h-80 w-auto rounded-xl border-2 border-blue-400 shadow-md bg-white p-1 object-contain"
                                 />
 
                                 <div className="flex items-center gap-3 text-xs font-semibold">
                                     <a
-                                        href="/gcash-qr.jpg"
+                                        href={GCASH_QR_BASE64}
                                         download="superlines-gcash-qr.jpg"
                                         className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 underline"
                                     >
