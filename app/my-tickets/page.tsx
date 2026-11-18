@@ -33,6 +33,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { formatDatePH, formatTimePH, formatDateTimePH } from "@/lib/date-utils";
 import { SeatPicker } from "@/components/seat-picker";
+import { TicketQrCode } from "@/components/ticket-qr-code";
 
 interface UserTicket {
     id: string;
@@ -1150,29 +1151,8 @@ function TicketsContent() {
                                     {/* QR Code Container (shown only if ticket is valid) */}
                                     {isValid && (
                                         <div className="flex flex-col items-center justify-center rounded-xl bg-zinc-50 dark:bg-zinc-900 p-4 border border-dashed">
-                                            <div className="flex h-32 w-32 items-center justify-center rounded-lg bg-white p-2 border shadow-inner">
-                                                <svg viewBox="0 0 100 100" className="h-full w-full">
-                                                    <rect width="100" height="100" fill="white" />
-                                                    <rect x="5" y="5" width="25" height="25" fill="black" />
-                                                    <rect x="8" y="8" width="19" height="19" fill="white" />
-                                                    <rect x="12" y="12" width="11" height="11" fill="black" />
-
-                                                    <rect x="70" y="5" width="25" height="25" fill="black" />
-                                                    <rect x="73" y="8" width="19" height="19" fill="white" />
-                                                    <rect x="77" y="12" width="11" height="11" fill="black" />
-
-                                                    <rect x="5" y="70" width="25" height="25" fill="black" />
-                                                    <rect x="8" y="73" width="19" height="19" fill="white" />
-                                                    <rect x="12" y="77" width="11" height="11" fill="black" />
-
-                                                    <rect x="35" y="10" width="10" height="10" fill="black" />
-                                                    <rect x="50" y="20" width="10" height="10" fill="black" />
-                                                    <rect x="10" y="35" width="10" height="10" fill="black" />
-                                                    <rect x="35" y="35" width="20" height="20" fill="black" />
-                                                    <rect x="65" y="35" width="10" height="10" fill="black" />
-                                                    <rect x="40" y="65" width="15" height="15" fill="black" />
-                                                    <rect x="70" y="70" width="20" height="20" fill="black" />
-                                                </svg>
+                                            <div className="flex h-36 w-36 items-center justify-center rounded-lg bg-white p-1.5 border shadow-inner overflow-hidden">
+                                                <TicketQrCode value={t.qr_token} size={180} className="h-full w-full" />
                                             </div>
                                             <p className="mt-2 font-mono text-xs font-bold text-zinc-700 dark:text-zinc-300 tracking-wider">
                                                 {t.qr_token}
@@ -1769,6 +1749,9 @@ function TicketsContent() {
                                 <h4 className="font-extrabold text-sm uppercase tracking-wider text-foreground">SUPERLINES EXPRESS</h4>
                                 <p className="text-[10px] text-muted-foreground">Official Passenger Boarding Pass</p>
                                 <p className="font-black text-xs text-blue-600">{viewingBoardingPass.qr_token}</p>
+                                <div className="mx-auto mt-2 flex h-36 w-36 items-center justify-center rounded-lg bg-white p-1.5 border shadow-xs overflow-hidden">
+                                    <TicketQrCode value={viewingBoardingPass.qr_token} size={200} className="h-full w-full" />
+                                </div>
                             </div>
 
                             <div className="space-y-1.5 text-[11px]">

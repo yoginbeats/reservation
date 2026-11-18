@@ -172,9 +172,9 @@ export default function ConductorQrScanPage() {
                     ctx.drawImage(video, 0, 0, width, height);
                     const imageData = ctx.getImageData(0, 0, width, height);
 
-                    // Universal jsQR decoder (works on 100% of browsers)
+                    // Universal jsQR decoder (works on 100% of browsers, handles light & dark mode screens)
                     const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "dontInvert",
+                        inversionAttempts: "attemptBoth",
                     });
 
                     if (code && code.data && code.data.trim()) {
@@ -224,18 +224,22 @@ export default function ConductorQrScanPage() {
         reader.onload = (event) => {
             const img = new Image();
             img.onload = () => {
+                const maxDim = 1000;
+                const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+                const w = Math.max(1, Math.round(img.width * scale));
+                const h = Math.max(1, Math.round(img.height * scale));
                 const canvas = document.createElement("canvas");
-                canvas.width = img.width;
-                canvas.height = img.height;
+                canvas.width = w;
+                canvas.height = h;
                 const ctx = canvas.getContext("2d");
                 if (!ctx) {
                     setProcessingPhoto(false);
                     return;
                 }
-                ctx.drawImage(img, 0, 0, img.width, img.height);
-                const imageData = ctx.getImageData(0, 0, img.width, img.height);
+                ctx.drawImage(img, 0, 0, w, h);
+                const imageData = ctx.getImageData(0, 0, w, h);
                 const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                    inversionAttempts: "dontInvert",
+                    inversionAttempts: "attemptBoth",
                 });
 
                 setProcessingPhoto(false);

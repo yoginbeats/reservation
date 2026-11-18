@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SeatPicker } from "@/components/seat-picker";
+import { TicketQrCode } from "@/components/ticket-qr-code";
 import { Ticket, Bus, ArrowRight, Printer, CheckCircle, AlertCircle, RefreshCw, Calculator } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { BusClassificationBadge } from "@/components/bus-classification-badge";
@@ -535,24 +536,8 @@ export default function TellerWalkInBookingPage() {
 
                             {/* Generated SVG QR Code */}
                             <div className="flex flex-col items-center justify-center rounded-lg bg-muted p-4 border border-dashed">
-                                <div className="h-28 w-28 bg-white p-2 border rounded shadow-inner">
-                                    <svg viewBox="0 0 100 100" className="h-full w-full">
-                                        <rect width="100" height="100" fill="white" />
-                                        <rect x="5" y="5" width="25" height="25" fill="black" />
-                                        <rect x="8" y="8" width="19" height="19" fill="white" />
-                                        <rect x="12" y="12" width="11" height="11" fill="black" />
-                                        <rect x="70" y="5" width="25" height="25" fill="black" />
-                                        <rect x="73" y="8" width="19" height="19" fill="white" />
-                                        <rect x="77" y="12" width="11" height="11" fill="black" />
-                                        <rect x="5" y="70" width="25" height="25" fill="black" />
-                                        <rect x="8" y="73" width="19" height="19" fill="white" />
-                                        <rect x="12" y="77" width="11" height="11" fill="black" />
-                                        <rect x="35" y="10" width="10" height="10" fill="black" />
-                                        <rect x="50" y="20" width="10" height="10" fill="black" />
-                                        <rect x="35" y="35" width="20" height="20" fill="black" />
-                                        <rect x="65" y="35" width="10" height="10" fill="black" />
-                                        <rect x="40" y="65" width="15" height="15" fill="black" />
-                                    </svg>
+                                <div className="h-32 w-32 bg-white p-1.5 border rounded shadow-inner overflow-hidden">
+                                    <TicketQrCode value={completedBooking.qr_token} size={180} className="h-full w-full" />
                                 </div>
                                 <p className="mt-2 font-mono text-xs font-bold text-foreground">{completedBooking.qr_token}</p>
                             </div>

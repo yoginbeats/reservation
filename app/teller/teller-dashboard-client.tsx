@@ -36,6 +36,7 @@ import {
     AlertTriangle
 } from "lucide-react";
 import { SeatPicker } from "@/components/seat-picker";
+import { TicketQrCode } from "@/components/ticket-qr-code";
 
 interface TellerDashboardClientProps {
     initialTrips: any[];
@@ -1145,24 +1146,8 @@ export function TellerDashboardClient({
 
                         {/* QR Code and Token */}
                         <div className="flex flex-col items-center justify-center pt-1">
-                            <div className="h-28 w-28 bg-white p-2 border-2 border-black rounded">
-                                <svg viewBox="0 0 100 100" className="h-full w-full">
-                                    <rect width="100" height="100" fill="white" />
-                                    <rect x="5" y="5" width="25" height="25" fill="black" />
-                                    <rect x="8" y="8" width="19" height="19" fill="white" />
-                                    <rect x="12" y="12" width="11" height="11" fill="black" />
-                                    <rect x="70" y="5" width="25" height="25" fill="black" />
-                                    <rect x="73" y="8" width="19" height="19" fill="white" />
-                                    <rect x="77" y="12" width="11" height="11" fill="black" />
-                                    <rect x="5" y="70" width="25" height="25" fill="black" />
-                                    <rect x="8" y="73" width="19" height="19" fill="white" />
-                                    <rect x="12" y="77" width="11" height="11" fill="black" />
-                                    <rect x="35" y="10" width="10" height="10" fill="black" />
-                                    <rect x="50" y="20" width="10" height="10" fill="black" />
-                                    <rect x="35" y="35" width="20" height="20" fill="black" />
-                                    <rect x="65" y="35" width="10" height="10" fill="black" />
-                                    <rect x="40" y="65" width="15" height="15" fill="black" />
-                                </svg>
+                            <div className="h-32 w-32 bg-white p-1.5 border-2 border-black rounded overflow-hidden">
+                                <TicketQrCode value={selectedTicketForPrint.qr_token} size={180} className="h-full w-full" />
                             </div>
                             <p className="mt-1 font-mono text-[11px] font-black">{selectedTicketForPrint.qr_token}</p>
                             <p className="text-[9px] text-zinc-500 text-center mt-1">
