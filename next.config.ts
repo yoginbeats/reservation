@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   experimental: {
     cpus: 2,
     workerThreads: false,
+    agentUpgrade: "security",
   },
   // Remove X-Powered-By header to hide Next.js
   poweredByHeader: false,
