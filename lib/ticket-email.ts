@@ -150,13 +150,16 @@ export async function dispatchTicketEmail(payload: TicketEmailPayload) {
       <!-- MANDATORY PHYSICAL ID DISCLAIMER FOR DISCOUNTED TICKETS -->
       <div style="background-color: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 14px 18px; margin: 20px 0; color: #92400e; font-size: 13px; line-height: 1.5;">
         <div style="font-weight: 800; color: #b45309; font-size: 13px; display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
-          ⚠️ MANDATORY BOARDING REQUIREMENT: PHYSICAL ID FOR DISCOUNTS
+          ⚠️ MANDATORY BOARDING REQUIREMENT: PHYSICAL ID / KAILANGAN ANG PISIKAL NA ID
         </div>
         <p style="margin: 6px 0 0; color: #78350f; font-size: 12.5px;">
           Passengers availing of statutory discounts (<strong>Senior Citizen, Student, or PWD</strong>) <strong>MUST present their original physical valid ID</strong> (OSCA Senior ID, Valid School ID with current AY registration, or PWD ID) to the conductor upon boarding.
         </p>
+        <p style="margin: 6px 0 0; color: #78350f; font-size: 12px; font-style: italic;">
+          (Ang mga pasaherong may 20% discount (Senior Citizen, Student, o PWD) ay <strong>KAILANGANG magpakita ng orihinal na pisikal na ID</strong> sa konduktor bago sumakay.)
+        </p>
         <p style="margin: 6px 0 0; font-size: 11px; color: #92400e; font-style: italic;">
-          * Note: Failure or refusal to present the physical ID upon boarding will forfeit the 20% discount and require payment of the regular fare difference before boarding.
+          * Note: Failure or refusal to present the physical ID upon boarding will forfeit the 20% discount and require payment of the regular fare difference before boarding. (Kung walang maipakitang pisikal na ID, mawawala ang 20% discount at kakailanganing bayaran ang regular na pamasahe.)
         </p>
       </div>
 

@@ -289,21 +289,41 @@ export default function Home() {
 
                                         {/* Passengers */}
                                         <div className="space-y-1">
-                                            <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500 block">
-                                                PASSENGERS
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500 flex items-center justify-between">
+                                                <span>PASSENGERS</span>
+                                                <span className="text-[9px] font-bold text-red-600">Max 10</span>
                                             </label>
                                             <div className="relative flex items-center">
-                                                <Users className="absolute left-2.5 h-3.5 w-3.5 text-red-600" />
-                                                <select
+                                                <Users className="absolute left-2.5 h-3.5 w-3.5 text-red-600 pointer-events-none" />
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
                                                     value={passengers}
-                                                    onChange={(e) => setPassengers(e.target.value)}
-                                                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 py-3 pl-8 pr-2 text-xs font-bold text-zinc-800 outline-none"
-                                                >
-                                                    <option value="1">1</option>
-                                                    <option value="2">2</option>
-                                                    <option value="3">3</option>
-                                                    <option value="4">4</option>
-                                                </select>
+                                                    onChange={(e) => {
+                                                        const digits = e.target.value.replace(/[^0-9]/g, "");
+                                                        if (digits === "") {
+                                                            setPassengers("");
+                                                            return;
+                                                        }
+                                                        const num = parseInt(digits, 10);
+                                                        if (num >= 1 && num <= 10) {
+                                                            setPassengers(String(num));
+                                                        } else if (num > 10) {
+                                                            setPassengers("10");
+                                                        }
+                                                    }}
+                                                    onBlur={() => {
+                                                        const num = parseInt(passengers, 10);
+                                                        if (!passengers || isNaN(num) || num < 1) {
+                                                            setPassengers("1");
+                                                        } else if (num > 10) {
+                                                            setPassengers("10");
+                                                        }
+                                                    }}
+                                                    placeholder="1-10"
+                                                    aria-label="Number of passengers (1 to 10)"
+                                                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50/50 py-3 pl-8 pr-3 text-xs font-bold text-zinc-800 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                                                />
                                             </div>
                                         </div>
                                     </div>

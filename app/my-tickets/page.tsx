@@ -1797,17 +1797,27 @@ function TicketsContent() {
                                 <div className="bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 rounded-lg p-2 text-center text-[10px] text-amber-900 dark:text-amber-200">
                                     <span className="font-extrabold flex items-center justify-center gap-1">
                                         <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                                        <span>MANDATORY PHYSICAL ID FOR DISCOUNT</span>
+                                        <span>MANDATORY PHYSICAL ID / KAILANGAN ANG PISIKAL NA ID</span>
                                     </span>
                                     <p className="text-[9px] text-amber-800 dark:text-amber-300 mt-0.5 leading-tight">
                                         Original physical ID (Senior / Student / PWD) must be presented to conductor upon boarding.
+                                        <br />
+                                        <span className="italic">(Dapat ipakita ang orihinal na pisikal na ID sa konduktor bago sumakay.)</span>
                                     </p>
                                 </div>
                             )}
 
-                            <div className="border-t border-dashed pt-2 text-center text-[10px] text-muted-foreground">
-                                🐾 Pet Policy: Pets must be in a carrier/cage, wearing a diaper, with a paid seat.
-                                Present this stub or QR code upon boarding at the terminal platform.
+                            <div className="border-t border-dashed pt-2 text-center text-[10px] text-muted-foreground space-y-1">
+                                <p>
+                                    🐾 Pet Policy: Pets must be in a carrier/cage, wearing a diaper, with a paid seat.
+                                    <br />
+                                    <span className="italic">(Alaga: Dapat nasa kulungan, may diaper, at may bayad na upuan.)</span>
+                                </p>
+                                <p>
+                                    Present this stub or QR code upon boarding at the terminal platform.
+                                    <br />
+                                    <span className="italic">(Ipakita ang stub o QR code na ito sa konduktor pagdating sa terminal.)</span>
+                                </p>
                             </div>
                         </div>
 

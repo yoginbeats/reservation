@@ -105,10 +105,12 @@ export function DataPrivacyModal() {
                         id="privacy-modal-title"
                         className="text-lg sm:text-xl font-extrabold tracking-tight text-white flex items-center gap-2"
                     >
-                        Data Privacy Notice &amp; Consent
+                        Data Privacy Notice &amp; Consent / Abiso sa Pagkapribado ng Datos
                     </h2>
                     <p className="text-xs sm:text-sm text-emerald-100/90 mt-1 leading-relaxed">
                         Your security and privacy are of utmost importance to us. In compliance with the <strong>Data Privacy Act of 2012 (Republic Act No. 10173)</strong>, here is full transparency on how we protect, process, and handle your information on this website.
+                        <br />
+                        <span className="italic text-[11px] text-emerald-50/85">(Mahalaga sa amin ang inyong seguridad at privacy. Alinsunod sa Data Privacy Act of 2012 (R.A. 10173), narito kung paano namin pinoprotektahan at ginagamit ang inyong impormasyon.)</span>
                     </p>
                 </div>
 
@@ -118,10 +120,13 @@ export function DataPrivacyModal() {
                     <div className="p-3.5 sm:p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 space-y-1.5">
                         <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
                             <Lock className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-                            <span>STATEMENT OF DATA USAGE (DATA USAGE SCOPE)</span>
+                            <span>STATEMENT OF DATA USAGE / PAHAYAG SA PAGGAMIT NG DATOS</span>
                         </div>
                         <p className="text-xs sm:text-[13px] text-foreground leading-normal">
                             All personal information you provide (such as your <strong>Full Name, Contact Number, Email Address, GCash Transaction Reference Number, and ID Verification</strong>) will be collected and processed <strong>exclusively</strong> for your bus ticket booking, travel manifest, and official operations of Superlines Express.
+                        </p>
+                        <p className="text-[11px] text-muted-foreground italic leading-normal">
+                            (Ang lahat ng personal na impormasyong ibibigay mo ay gagamitin lamang para sa iyong bus ticket booking, travel manifest, at opisyal na operasyon ng Superlines Express.)
                         </p>
                     </div>
 

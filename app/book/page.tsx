@@ -909,6 +909,8 @@ function BookTripContent() {
                                 </p>
                                 <p className="text-[11px] text-indigo-800/80 dark:text-indigo-300/80 leading-snug">
                                     Seats #{PWD_PRIORITY_SEATS.join(" & #")} are strictly reserved for Persons with Disabilities (PWD). Non-PWD passengers cannot select these seats.
+                                    <br />
+                                    <span className="italic">(Ang Seats #{PWD_PRIORITY_SEATS.join(" at #")} ay nakalaan lamang para sa mga PWD. Hindi ito maaaring piliin ng mga hindi PWD.)</span>
                                 </p>
                             </div>
                         </div>
@@ -1564,9 +1566,12 @@ function BookTripContent() {
                                 <div className="rounded-xl border border-amber-400 bg-amber-50/80 dark:bg-amber-950/40 p-3.5 text-xs text-amber-950 dark:text-amber-200 flex items-start gap-2.5 shadow-sm">
                                     <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                                     <div>
-                                        <span className="font-black text-amber-900 dark:text-amber-100 uppercase tracking-wide">Boarding ID Disclaimer:</span>
+                                        <span className="font-black text-amber-900 dark:text-amber-100 uppercase tracking-wide">Boarding ID Disclaimer / Paalala sa Pag-board:</span>
                                         <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed mt-0.5">
-                                            May <strong>{effectiveDiscountCount} pasahero</strong> na may 20% statutory discount sa booking na ito. Pakitiyak na dalhin ang kanilang <strong>orihinal na physical ID</strong> (Senior Citizen / Student / PWD) upang maipakita sa konduktor sa oras ng pagsakay.
+                                            There are <strong>{effectiveDiscountCount} passenger(s)</strong> availing the 20% statutory discount. Please ensure they bring their <strong>original physical valid ID</strong> (Senior Citizen / Student / PWD) to present to the conductor upon boarding.
+                                        </p>
+                                        <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90 leading-relaxed mt-1 italic">
+                                            (May <strong>{effectiveDiscountCount} pasahero</strong> na may 20% statutory discount sa booking na ito. Pakitiyak na dalhin ang kanilang <strong>orihinal na physical ID</strong> upang maipakita sa konduktor sa oras ng pagsakay.)
                                         </p>
                                     </div>
                                 </div>

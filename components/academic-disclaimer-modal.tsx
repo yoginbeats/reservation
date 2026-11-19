@@ -76,10 +76,10 @@ export function AcademicDisclaimerModal() {
                         className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2.5"
                     >
                         <AlertTriangle className="h-6 w-6 text-amber-300 flex-shrink-0 animate-pulse" />
-                        IMPORTANT NOTICE
+                        IMPORTANT NOTICE / MAHALAGANG PAALALA
                     </h2>
                     <p className="text-xs sm:text-sm text-rose-100 mt-1">
-                        Please read carefully before proceeding to browse or test this website.
+                        Please read carefully before proceeding to browse or test this website. / Pakibasa nang mabuti bago magpatuloy.
                     </p>
                 </div>
 
@@ -89,20 +89,25 @@ export function AcademicDisclaimerModal() {
                     <div className="p-4 sm:p-5 rounded-2xl border-2 border-red-500/30 bg-red-50/70 dark:bg-red-950/30 text-red-950 dark:text-red-100 space-y-3">
                         <div className="flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-red-600 text-white">
-                                Academic Project Purpose Only
+                                Academic Project Purpose Only / Para sa Akademikong Proyekto Lamang
                             </span>
                         </div>
                         <p className="font-extrabold text-foreground text-sm sm:text-base leading-snug">
                             This online reservation system is developed for academic project purposes only and is not an official reservation system of Superlines Transportation Co., Inc.
                         </p>
+                        <p className="text-xs sm:text-sm font-semibold text-red-900/90 dark:text-red-200/90 leading-snug">
+                            (Ang online reservation system na ito ay ginawa para sa akademikong proyekto lamang at hindi opisyal na sistema ng Superlines Transportation Co., Inc.)
+                        </p>
                         <div className="flex items-start gap-2 pt-1 text-xs sm:text-sm text-muted-foreground border-t border-red-200 dark:border-red-900/60 pt-3">
                             <MapPin className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
                             <span>
                                 For inquiries regarding actual reservations and ticket bookings, please visit the nearest <strong>Superlines terminal</strong> in your area.
+                                <br />
+                                <span className="italic">(Para sa aktuwal na reserbasyon at pagbili ng tiket, mangyaring bumisita sa pinakamalapit na <strong>Superlines terminal</strong> sa inyong lugar.)</span>
                             </span>
                         </div>
                         <p className="text-xs font-bold text-foreground">
-                            Thank you for your understanding!
+                            Thank you for your understanding! / Maraming salamat sa inyong pang-unawa!
                         </p>
                     </div>
 
