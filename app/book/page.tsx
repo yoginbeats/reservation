@@ -451,8 +451,10 @@ function BookTripContent() {
             return;
         }
 
-        if (!gcashRef || gcashRef.trim().length < 6) {
-            setError("Please enter the GCash Reference Number from your GCash payment confirmation receipt.");
+        const normalizedRef = gcashRef.replace(/[\s-]+/g, "").trim().toUpperCase();
+        if (!normalizedRef || normalizedRef.length < 6) {
+            setError("Please enter a valid GCash Reference Number (at least 6 digits/characters) from your GCash payment receipt.");
+            document.getElementById("gcashRefInput")?.focus();
             return;
         }
 
@@ -477,7 +479,7 @@ function BookTripContent() {
                     discountCount: effectiveDiscountCount,
                     discountedPassengers: activeDiscountedList,
                     discountIdNumber: discountIdSummary,
-                    gcashRefNumber: gcashRef.trim(),
+                    gcashRefNumber: normalizedRef,
                     receiptImageUrl: receiptImage || "",
                     trip: {
                         id: selectedTrip.id,
@@ -1525,19 +1527,36 @@ function BookTripContent() {
                                         <span>GCash Reference Number (13 Digits)</span>
                                         <span className="text-destructive">*</span>
                                     </span>
-                                    <span className="text-[10px] text-muted-foreground font-normal">Hal: 1029384756102</span>
+                                    {gcashRef.replace(/[\s-]+/g, "").length >= 6 ? (
+                                        <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                                            <CheckCircle2 className="h-3 w-3" />
+                                            Valid ({gcashRef.replace(/[\s-]+/g, "").length} chars)
+                                        </span>
+                                    ) : (
+                                        <span className="text-[10px] text-muted-foreground font-normal">Hal: 1029384756102</span>
+                                    )}
                                 </Label>
                                 <Input
                                     id="gcashRefInput"
                                     required
-                                    placeholder="I-type ang 13-digit Reference No. mula sa GCash receipt"
+                                    inputMode="text"
+                                    placeholder="I-type o i-paste ang Reference No. mula sa GCash receipt"
                                     value={gcashRef}
-                                    onChange={(e) => setGcashRef(e.target.value)}
+                                    onChange={(e) => {
+                                        const raw = e.target.value;
+                                        // If user pastes full GCash SMS ("... Ref. No. 1029384756102 ..."), extract the 10-15 digit ref
+                                        const smsMatch = raw.match(/ref(?:\.|erence)?\s*(?:no\.?|number|#)?\s*[:\-]?\s*([A-Z0-9\s-]{6,20})/i);
+                                        if (smsMatch && raw.length > 22) {
+                                            setGcashRef(smsMatch[1].replace(/[\s-]+/g, "").toUpperCase());
+                                        } else {
+                                            setGcashRef(raw.replace(/[\s-]+/g, "").toUpperCase());
+                                        }
+                                    }}
                                     className="bg-white dark:bg-zinc-800 font-mono text-sm uppercase font-bold tracking-wider py-5"
                                     maxLength={30}
                                 />
                                 <p className="text-[10px] text-muted-foreground">
-                                    Pakitiyak na tama ang Reference Number upang maging instant VALID ang inyong QR boarding pass.
+                                    Pakitiyak na tama ang Reference Number (kahit walang spaces) upang maging instant VALID ang inyong QR boarding pass.
                                 </p>
                             </div>
 

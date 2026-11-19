@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
         // 🔒 Strict Input Sanitization
         const passengerName = sanitizeString(rawPassengerName);
         const passengerContact = sanitizeString(rawPassengerContact);
-        const gcashRefNumber = sanitizeString(rawGcashRef);
+        const gcashRefNumber = sanitizeString(rawGcashRef).replace(/[\s-]+/g, "").toUpperCase();
 
         let passengerEmail = "";
         if (rawPassengerEmail) {
