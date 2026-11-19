@@ -74,7 +74,7 @@ export function validateDate(rawDate: unknown, options: { allowPast?: boolean } 
 }
 
 /**
- * Strict Number of Guests / Seat Count Validator (1 to 45)
+ * Strict Number of Guests / Seat Count Validator (1 to 49)
  */
 export function validateGuestCount(rawCount: unknown): { isValid: boolean; count: number; error?: string } {
     const num = Number(rawCount);
@@ -87,8 +87,8 @@ export function validateGuestCount(rawCount: unknown): { isValid: boolean; count
         return { isValid: false, count: 0, error: "Number of guests must be at least 1." };
     }
 
-    if (num > 45) {
-        return { isValid: false, count: 0, error: "Number of guests cannot exceed maximum bus capacity of 45." };
+    if (num > 49) {
+        return { isValid: false, count: 0, error: "Number of guests cannot exceed maximum bus capacity of 49." };
     }
 
     return { isValid: true, count: num };

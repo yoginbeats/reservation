@@ -1613,6 +1613,13 @@ function BookTripContent() {
                                 </div>
                             </div>
 
+                            {error && (
+                                <div className="rounded-xl border-2 border-red-400 bg-red-50 dark:bg-red-950/60 p-3.5 text-xs text-red-700 dark:text-red-200 flex items-start gap-2.5 shadow-sm">
+                                    <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+                                    <span className="font-bold leading-relaxed">{error}</span>
+                                </div>
+                            )}
+
                             {/* Submit Button */}
                             <Button
                                 type="submit"
