@@ -12,6 +12,7 @@ import {
     RefreshCw,
     User,
     Mail,
+    Phone,
     Sparkles,
     Loader2,
     Inbox,
@@ -134,8 +135,9 @@ export default function AdminSupportPage() {
             const q = searchQuery.toLowerCase();
             const matchName = t.customer_name.toLowerCase().includes(q);
             const matchEmail = (t.customer_email || "").toLowerCase().includes(q);
+            const matchPhone = (t.customer_phone || "").toLowerCase().includes(q);
             const matchMsg = t.messages.some((m) => m.message.toLowerCase().includes(q));
-            if (!matchName && !matchEmail && !matchMsg) return false;
+            if (!matchName && !matchEmail && !matchPhone && !matchMsg) return false;
         }
         return true;
     });
@@ -386,11 +388,17 @@ export default function AdminSupportPage() {
                                             </span>
                                         ) : null}
                                     </div>
-                                    <div className="flex items-center gap-3 text-[11px] text-zinc-500">
+                                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-zinc-500">
                                         {activeThread.customer_email && (
                                             <span className="inline-flex items-center gap-1">
                                                 <Mail className="h-3 w-3" />
                                                 {activeThread.customer_email}
+                                            </span>
+                                        )}
+                                        {activeThread.customer_phone && (
+                                            <span className="inline-flex items-center gap-1 font-mono">
+                                                <Phone className="h-3 w-3" />
+                                                {activeThread.customer_phone}
                                             </span>
                                         )}
                                         <span className="font-mono text-[10px] text-zinc-400">

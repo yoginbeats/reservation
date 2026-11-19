@@ -50,6 +50,7 @@ export function CustomerSupportChatbox() {
     const [viewMode, setViewMode] = useState<"list" | "new" | "chat">("new");
     const [customerName, setCustomerName] = useState("");
     const [customerEmail, setCustomerEmail] = useState("");
+    const [customerPhone, setCustomerPhone] = useState("");
     const [category, setCategory] = useState<SupportCategory>("Customer Service");
     const [rating, setRating] = useState<number>(5);
     const [messageText, setMessageText] = useState("");
@@ -71,8 +72,10 @@ export function CustomerSupportChatbox() {
 
         const storedName = localStorage.getItem("superlines_support_name");
         const storedEmail = localStorage.getItem("superlines_support_email");
+        const storedPhone = localStorage.getItem("superlines_support_phone");
         if (storedName) setCustomerName(storedName);
         if (storedEmail) setCustomerEmail(storedEmail);
+        if (storedPhone) setCustomerPhone(storedPhone);
 
         fetch("/api/auth/session")
             .then((r) => r.json())
@@ -82,8 +85,10 @@ export function CustomerSupportChatbox() {
                     const metaName =
                         u.user_metadata?.full_name ||
                         `${u.user_metadata?.first_name || ""} ${u.user_metadata?.last_name || ""}`.trim();
+                    const metaPhone = u.user_metadata?.phone || u.user_metadata?.contact_number || u.phone || "";
                     if (metaName && !storedName) setCustomerName(metaName);
                     if (u.email && !storedEmail) setCustomerEmail(u.email);
+                    if (metaPhone && !storedPhone) setCustomerPhone(metaPhone);
                 }
             })
             .catch(() => {});
@@ -151,6 +156,14 @@ export function CustomerSupportChatbox() {
             setError("Please enter your name.");
             return;
         }
+        if (!customerEmail.trim()) {
+            setError("Please enter your email address.");
+            return;
+        }
+        if (!customerPhone.trim()) {
+            setError("Please enter your phone number.");
+            return;
+        }
         if (!messageText.trim()) {
             setError("Please enter your message or feedback.");
             return;
@@ -159,9 +172,8 @@ export function CustomerSupportChatbox() {
         setSending(true);
         try {
             localStorage.setItem("superlines_support_name", customerName.trim());
-            if (customerEmail.trim()) {
-                localStorage.setItem("superlines_support_email", customerEmail.trim());
-            }
+            localStorage.setItem("superlines_support_email", customerEmail.trim());
+            localStorage.setItem("superlines_support_phone", customerPhone.trim());
 
             const res = await fetch("/api/support", {
                 method: "POST",
@@ -170,6 +182,7 @@ export function CustomerSupportChatbox() {
                     sessionId,
                     customerName: customerName.trim(),
                     customerEmail: customerEmail.trim(),
+                    customerPhone: customerPhone.trim(),
                     category,
                     rating: category === "Feedback" ? rating : null,
                     message: messageText.trim(),
@@ -439,14 +452,28 @@ export function CustomerSupportChatbox() {
                                 </div>
                                 <div>
                                     <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-                                        Email (Optional)
+                                        Email *
                                     </label>
                                     <input
                                         type="email"
+                                        required
                                         value={customerEmail}
                                         onChange={(e) => setCustomerEmail(e.target.value)}
                                         placeholder="juan@example.com"
                                         className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+                                        Phone Number *
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        required
+                                        value={customerPhone}
+                                        onChange={(e) => setCustomerPhone(e.target.value)}
+                                        placeholder="09171234567"
+                                        className="mt-1 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-red-500 font-mono"
                                     />
                                 </div>
                             </div>

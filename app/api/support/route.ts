@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
             sessionId,
             customerName,
             customerEmail,
+            customerPhone,
             category,
             subject,
             message,
@@ -124,9 +125,9 @@ export async function POST(req: NextRequest) {
         }
 
         // Customer starting a new thread
-        if (!sessionId || !customerName?.trim()) {
+        if (!sessionId || !customerName?.trim() || !customerEmail?.trim() || !customerPhone?.trim()) {
             return NextResponse.json(
-                { success: false, error: "Name and session are required." },
+                { success: false, error: "Name, Email, and Phone Number are all required." },
                 { status: 400 }
             );
         }
@@ -145,7 +146,8 @@ export async function POST(req: NextRequest) {
         const thread = await createSupportThread({
             session_id: sessionId,
             customer_name: customerName,
-            customer_email: customerEmail || "",
+            customer_email: customerEmail,
+            customer_phone: customerPhone,
             category: safeCategory,
             subject: subject || "",
             message,

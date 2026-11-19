@@ -25,6 +25,7 @@ export interface SupportThread {
     session_id: string;
     customer_name: string;
     customer_email: string;
+    customer_phone?: string;
     category: SupportCategory;
     subject: string;
     status: SupportStatus;
@@ -111,6 +112,7 @@ export async function getAllThreadsForAdmin(): Promise<SupportThread[]> {
             return (threads as Omit<SupportThread, "messages">[]).map((t) => ({
                 ...t,
                 customer_email: t.customer_email || "",
+                customer_phone: t.customer_phone || "",
                 subject: t.subject || "",
                 messages: msgMap.get(t.id) || [],
             }));
@@ -143,7 +145,8 @@ export async function getThreadsForCustomer(
 export async function createSupportThread(input: {
     session_id: string;
     customer_name: string;
-    customer_email?: string;
+    customer_email: string;
+    customer_phone: string;
     category: SupportCategory;
     subject?: string;
     message: string;
@@ -160,7 +163,8 @@ export async function createSupportThread(input: {
         id: threadId,
         session_id: input.session_id,
         customer_name: input.customer_name.trim(),
-        customer_email: (input.customer_email || "").trim(),
+        customer_email: input.customer_email.trim(),
+        customer_phone: input.customer_phone.trim(),
         category: input.category,
         subject: derivedSubject,
         status: "OPEN",
@@ -188,6 +192,7 @@ export async function createSupportThread(input: {
             session_id: newThread.session_id,
             customer_name: newThread.customer_name,
             customer_email: newThread.customer_email,
+            customer_phone: newThread.customer_phone,
             category: newThread.category,
             subject: newThread.subject,
             status: newThread.status,
