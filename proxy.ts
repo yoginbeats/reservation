@@ -145,7 +145,7 @@ export default async function proxy(request: NextRequest) {
                 user = parsed.user
                 role = parsed.role || user.role || user.user_metadata?.role || 'PASSENGER'
             }
-        } catch {}
+        } catch { }
     }
 
     // 2. Fallback to Supabase Database Auth if not logged in via system session
@@ -204,13 +204,11 @@ export default async function proxy(request: NextRequest) {
 
     // Protect /admin routes - require ADMIN role
     if (url.pathname.startsWith('/admin')) {
-        if (user && role !== 'ADMIN') {
-            return NextResponse.redirect(new URL(getRoleHomePage(role), request.url))
-        }
         if (url.pathname === '/admin/login' || url.pathname === '/admin/register') {
             if (user && role === 'ADMIN') {
                 return NextResponse.redirect(new URL('/admin', request.url))
             }
+            // Allow /admin/login even if currently signed in as PASSENGER/TELLER/CONDUCTOR so staff can switch/sign in
             return response
         }
         if (!user) {

@@ -20,7 +20,12 @@ export default async function AdminLayout({
         try {
             const parsed = JSON.parse(sessionCookie);
             role = parsed.role || role;
-        } catch {}
+        } catch {
+            try {
+                const parsed = JSON.parse(decodeURIComponent(sessionCookie));
+                role = parsed.role || role;
+            } catch {}
+        }
     }
 
     const supabase = await createClient();

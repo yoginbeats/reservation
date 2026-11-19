@@ -13,7 +13,7 @@ export default async function TellerLayout({
     const { user, role, terminal } = await getUserWithRoleAndTerminal();
 
     if (!user || (role !== 'TELLER' && role !== 'ADMIN')) {
-        redirect("/login");
+        redirect("/admin/login");
     }
 
     const tellerName = user.user_metadata?.full_name || user.email?.split('@')[0] || "Teller";

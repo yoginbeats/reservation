@@ -13,7 +13,7 @@ export default async function ConductorLayout({
     const { user, role } = await getUserWithRoleAndTerminal();
 
     if (!user || (role !== 'CONDUCTOR' && role !== 'ADMIN')) {
-        redirect("/login");
+        redirect("/admin/login");
     }
 
     const conductorName = user.user_metadata?.full_name || user.email?.split('@')[0] || "Conductor";

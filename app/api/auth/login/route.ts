@@ -82,11 +82,15 @@ export async function POST(req: NextRequest) {
                 loggedInAt: new Date().toISOString(),
             });
 
+            const isHttps =
+                req.url.startsWith("https://") ||
+                req.headers.get("x-forwarded-proto") === "https";
+
             response.cookies.set("superlines_auth_session", sessionPayload, {
                 path: "/",
                 sameSite: "lax",
                 httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
+                secure: isHttps,
                 maxAge: SESSION_MAX_AGE_SECONDS, // 15-minute timeout
             });
 
@@ -94,7 +98,7 @@ export async function POST(req: NextRequest) {
                 path: "/",
                 sameSite: "lax",
                 httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
+                secure: isHttps,
                 maxAge: SESSION_MAX_AGE_SECONDS, // 15-minute timeout
             });
 

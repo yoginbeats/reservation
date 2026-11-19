@@ -75,14 +75,13 @@ export default function AdminLoginPage() {
                 });
             } catch {}
 
-            // Redirect to appropriate operational dashboard
+            // Redirect to appropriate operational dashboard with full navigation so fresh session cookies are sent
             let target = data.redirectUrl || "/admin";
             if (role === "ADMIN") target = "/admin";
             else if (role === "TELLER") target = "/teller/walk-in";
             else if (role === "CONDUCTOR") target = "/conductor";
 
-            router.refresh();
-            router.push(target);
+            window.location.href = target;
         } catch (err: any) {
             console.error("Admin Login Error:", err);
             setError(err?.message || "An unexpected error occurred during administrator authentication.");
