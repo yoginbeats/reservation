@@ -140,8 +140,11 @@ export async function dispatchTicketEmail(payload: TicketEmailPayload) {
         <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #71717a;">
           Conductor Digital Scan Token
         </div>
+        <div style="margin: 14px auto; width: 170px; height: 170px; background: #ffffff; padding: 8px; border: 1px solid #e4e4e7; border-radius: 12px;">
+          <img src="${appOrigin}/api/qr?token=${encodeURIComponent(token)}&size=220" width="170" height="170" alt="Superlines Boarding Pass QR Code" style="display: block; width: 100%; height: 100%;" />
+        </div>
         <div class="token-text">${token}</div>
-        <div style="font-size: 11px; color: #71717a;">Present this token or the QR code at the bus door for instant boarding</div>
+        <div style="font-size: 11px; color: #71717a;">Present this QR code or token at the bus door for instant boarding</div>
       </div>
 
       <!-- MANDATORY PHYSICAL ID DISCLAIMER FOR DISCOUNTED TICKETS -->
