@@ -3,6 +3,9 @@ import { createClient, getUserWithRoleAndTerminal } from "@/lib/supabase/server"
 
 interface RemittanceRecord {
     id: string;
+    z_sequence?: string;
+    previous_z_reading?: string;
+    previous_z_date?: string;
     timestamp: string;
     teller_name: string;
     terminal_name: string;
@@ -14,6 +17,18 @@ interface RemittanceRecord {
     net_cash_expected: number;
     total_cash_counted: number;
     variance: number;
+    accumulated_sales_prev?: number;
+    accumulated_sales_new?: number;
+    sales_since_reset?: number;
+    regular_tickets_count?: number;
+    regular_tickets_sales?: number;
+    discounted_tickets_count?: number;
+    discounted_tickets_sales?: number;
+    senior_count?: number;
+    student_count?: number;
+    pwd_count?: number;
+    void_tickets_count?: number;
+    void_tickets_amount?: number;
     denominations: {
         thousands: number;
         fiveHundreds: number;
@@ -24,7 +39,8 @@ interface RemittanceRecord {
         coins: number;
     };
     notes?: string;
-    status: "REMITTED" | "VERIFIED";
+    status: "REMITTED" | "VERIFIED" | "CLOSED_RESET";
+    closing_record?: string;
 }
 
 const globalStore = globalThis as unknown as {
@@ -130,12 +146,31 @@ export async function POST(req: NextRequest) {
             net_cash_expected,
             total_cash_counted,
             variance,
+            regular_tickets_count,
+            regular_tickets_sales,
+            discounted_tickets_count,
+            discounted_tickets_sales,
+            senior_count,
+            student_count,
+            pwd_count,
+            void_tickets_count,
+            void_tickets_amount,
+            accumulated_sales_prev,
             denominations,
             notes
         } = body;
 
+        const currentSeq = (globalStore.tellerRemittances?.length || 0) + 1;
+        const prevZ = globalStore.tellerRemittances?.[0];
+        const prevSales = Number(accumulated_sales_prev) || (prevZ ? (prevZ.accumulated_sales_new || 454310) : 454310);
+        const shiftNet = Number(net_cash_expected) || 29750;
+        const newAccumulated = prevSales + shiftNet;
+
         const newRecord: RemittanceRecord = {
             id: `ZREAD-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+            z_sequence: `Z-READING #${currentSeq < 10 ? `000${currentSeq}` : currentSeq < 100 ? `00${currentSeq}` : `0${currentSeq}`}`,
+            previous_z_reading: prevZ?.z_sequence || "Z-READING #0023",
+            previous_z_date: prevZ?.shift_date || "Nov 22, 2026, 04:15 PM",
             timestamp: new Date().toISOString(),
             teller_name: teller_name || "Teller Cashier",
             terminal_name: terminal_name || "Superlines Terminal",
@@ -144,9 +179,21 @@ export async function POST(req: NextRequest) {
             total_tickets: Number(total_tickets) || 35,
             gross_sales: Number(gross_sales) || 30940,
             total_discounts: Number(total_discounts) || 1190,
-            net_cash_expected: Number(net_cash_expected) || 29750,
+            net_cash_expected: shiftNet,
             total_cash_counted: Number(total_cash_counted) || 29750,
             variance: Number(variance) || 0,
+            accumulated_sales_prev: prevSales,
+            accumulated_sales_new: newAccumulated,
+            sales_since_reset: shiftNet,
+            regular_tickets_count: Number(regular_tickets_count) || Math.max(0, (Number(total_tickets) || 35) - 7),
+            regular_tickets_sales: Number(regular_tickets_sales) || 23800,
+            discounted_tickets_count: Number(discounted_tickets_count) || 7,
+            discounted_tickets_sales: Number(discounted_tickets_sales) || 4760,
+            senior_count: Number(senior_count) || 4,
+            student_count: Number(student_count) || 2,
+            pwd_count: Number(pwd_count) || 1,
+            void_tickets_count: Number(void_tickets_count) || 0,
+            void_tickets_amount: Number(void_tickets_amount) || 0,
             denominations: denominations || {
                 thousands: 25,
                 fiveHundreds: 8,
@@ -157,7 +204,8 @@ export async function POST(req: NextRequest) {
                 coins: 0
             },
             notes: notes || "End of shift cash turnover to Vault / Head Cashier",
-            status: "REMITTED"
+            status: "CLOSED_RESET",
+            closing_record: "OFFICIALLY CLOSED & RESET (SYSTEM RESET COMPLETE)"
         };
 
         if (!globalStore.tellerRemittances) {

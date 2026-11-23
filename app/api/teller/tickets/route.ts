@@ -11,6 +11,7 @@ import {
 
 interface XReadingRecord {
     id: string;
+    reading_sequence?: string;
     timestamp: string;
     teller_name: string;
     terminal_name: string;
@@ -22,8 +23,29 @@ interface XReadingRecord {
     net_cash_expected: number;
     total_cash_counted: number;
     variance: number;
+    regular_tickets_count?: number;
+    regular_tickets_sales?: number;
+    discounted_tickets_count?: number;
+    discounted_tickets_sales?: number;
+    senior_count?: number;
+    student_count?: number;
+    pwd_count?: number;
+    ticket_transactions?: Array<{
+        qr_token: string;
+        time: string;
+        passenger_name: string;
+        seat_number: number;
+        route: string;
+        bus_type: string;
+        passenger_type: string;
+        fare: number;
+        discount_amount: number;
+        net_fare: number;
+        payment_method?: string;
+    }>;
     denominations: Record<string, number>;
     notes?: string;
+    status?: string;
 }
 
 const tellerAuditStore = globalThis as unknown as {
@@ -515,8 +537,10 @@ export async function POST(req: NextRequest) {
         // =========================================================================
         if (action === "RECORD_X_READING") {
             const auditData = x_reading_data || {};
+            const runCount = (tellerAuditStore.xReadings?.length || 0) + 1;
             const record: XReadingRecord = {
                 id: `XREAD-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+                reading_sequence: auditData.reading_sequence || `X-READING RUN #${runCount < 10 ? `0${runCount}` : runCount}`,
                 timestamp: new Date().toISOString(),
                 teller_name: auditData.teller_name || user?.email?.split("@")[0] || "Teller",
                 terminal_name: auditData.terminal_name || "Superlines Terminal",
@@ -528,8 +552,17 @@ export async function POST(req: NextRequest) {
                 net_cash_expected: Number(auditData.net_cash_expected) || 0,
                 total_cash_counted: Number(auditData.total_cash_counted) || 0,
                 variance: Number(auditData.variance) || 0,
+                regular_tickets_count: Number(auditData.regular_tickets_count) || 0,
+                regular_tickets_sales: Number(auditData.regular_tickets_sales) || 0,
+                discounted_tickets_count: Number(auditData.discounted_tickets_count) || 0,
+                discounted_tickets_sales: Number(auditData.discounted_tickets_sales) || 0,
+                senior_count: Number(auditData.senior_count) || 0,
+                student_count: Number(auditData.student_count) || 0,
+                pwd_count: Number(auditData.pwd_count) || 0,
+                ticket_transactions: Array.isArray(auditData.ticket_transactions) ? auditData.ticket_transactions : [],
                 denominations: auditData.denominations || {},
                 notes: auditData.notes || "Mid-shift spot drawer audit by supervisor",
+                status: "ACTIVE / MID-SHIFT (DRAWER NOT RESET)"
             };
 
             if (!tellerAuditStore.xReadings) {
