@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -187,6 +188,17 @@ export default function AdminReportsPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="border-emerald-600/50 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 font-bold"
+                    >
+                        <Link href="/admin/analytics">
+                            <TrendingUp className="mr-1.5 h-4 w-4 text-emerald-600" />
+                            Live BI Analytics &amp; Graphs
+                        </Link>
+                    </Button>
                     <Button
                         variant="outline"
                         size="sm"

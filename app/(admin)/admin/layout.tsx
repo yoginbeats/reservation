@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, MapPin, Bus, Route, Calendar, Users, Ticket, BarChart3, ShieldCheck, Settings, Megaphone, CalendarCheck, Zap, Clock, Globe, ExternalLink, Headphones } from "lucide-react";
+import { LayoutDashboard, MapPin, Bus, Route, Calendar, Users, Ticket, BarChart3, ShieldCheck, Settings, Megaphone, CalendarCheck, Zap, Clock, Globe, ExternalLink, Headphones, Activity } from "lucide-react";
 import { AdminLogoutButton } from "@/components/admin-logout-button";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
@@ -151,6 +151,13 @@ export default async function AdminLayout({
                         >
                             <Users className="h-4 w-4 text-red-600" />
                             Staff &amp; Credentials
+                        </Link>
+                        <Link
+                            href="/admin/analytics"
+                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-emerald-700 hover:text-emerald-950 hover:bg-emerald-50 transition-colors font-bold"
+                        >
+                            <Activity className="h-4 w-4 text-emerald-600" />
+                            BI &amp; Analytics
                         </Link>
                         <Link
                             href="/admin/reports"

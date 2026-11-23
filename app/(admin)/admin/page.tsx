@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarCheck, Ticket, Users, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CalendarCheck, Ticket, Users, TrendingUp, Activity, ArrowRight, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 
 interface RecentReservation {
@@ -56,11 +58,20 @@ export default async function AdminDashboard() {
 
     return (
         <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-black tracking-tight text-zinc-900 h-9 leading-9 flex items-center">Admin Dashboard</h1>
-                <p className="text-zinc-500 text-sm mt-1">
-                    Welcome back! Here&apos;s an overview of your system.
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-black tracking-tight text-zinc-900 h-9 leading-9 flex items-center">Admin Dashboard</h1>
+                    <p className="text-zinc-500 text-sm mt-1">
+                        Welcome back! Here&apos;s an overview of your system.
+                    </p>
+                </div>
+                <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm">
+                    <Link href="/admin/analytics">
+                        <Activity className="mr-1.5 h-4 w-4" />
+                        BI &amp; Operational Analytics
+                        <ArrowRight className="ml-1.5 h-4 w-4" />
+                    </Link>
+                </Button>
             </div>
 
             {/* Stats Grid */}
