@@ -44,18 +44,22 @@ export async function POST(req: NextRequest) {
 
             const localBooking = getLocalBookingById(bookingId);
             if (localBooking?.passenger_email) {
-                dispatchTicketEmail({
-                    bookingId,
-                    recipientEmail: localBooking.passenger_email,
-                    passengerName: localBooking.passenger_name,
-                    trip: localBooking.trip,
-                    seatNumber: localBooking.seat_number,
-                    seatNumbers: localBooking.seat_numbers,
-                    totalPrice: localBooking.total_price,
-                    qrToken: localBooking.qr_token,
-                    transactionRef: txId,
-                    req,
-                }).catch((err) => console.warn("Webhook ticket email notice:", err));
+                try {
+                    await dispatchTicketEmail({
+                        bookingId,
+                        recipientEmail: localBooking.passenger_email,
+                        passengerName: localBooking.passenger_name,
+                        trip: localBooking.trip,
+                        seatNumber: localBooking.seat_number,
+                        seatNumbers: localBooking.seat_numbers,
+                        totalPrice: localBooking.total_price,
+                        qrToken: localBooking.qr_token,
+                        transactionRef: txId,
+                        req,
+                    });
+                } catch (err) {
+                    console.warn("Webhook ticket email notice:", err);
+                }
             }
         }
 

@@ -14,6 +14,53 @@ interface SendEmailResult {
     error?: string;
 }
 
+// Reuse pooled SMTP transporter across requests for fast, on-time delivery
+let cachedTransporter: nodemailer.Transporter | null = null;
+let cachedTransporterKey = "";
+
+function getPooledTransporter(user: string, pass: string, smtpHost?: string, forcePort587 = false) {
+    const isCustomHost = Boolean(smtpHost && !smtpHost.includes("gmail"));
+    const key = `${user}:${smtpHost || "gmail"}:${forcePort587 ? "587" : "465"}`;
+    if (cachedTransporter && cachedTransporterKey === key && !forcePort587) {
+        return { transporter: cachedTransporter, isCustomHost };
+    }
+
+    const transporter = nodemailer.createTransport(
+        isCustomHost
+            ? {
+                  pool: true,
+                  maxConnections: 5,
+                  maxMessages: 100,
+                  host: smtpHost,
+                  port: Number(process.env.SMTP_PORT) || 465,
+                  secure: (process.env.SMTP_SECURE || "true") === "true",
+                  connectionTimeout: 8000,
+                  greetingTimeout: 8000,
+                  socketTimeout: 12000,
+                  auth: { user, pass },
+              }
+            : {
+                  pool: true,
+                  maxConnections: 5,
+                  maxMessages: 100,
+                  host: "smtp.gmail.com",
+                  port: forcePort587 ? 587 : 465,
+                  secure: !forcePort587,
+                  connectionTimeout: 8000,
+                  greetingTimeout: 8000,
+                  socketTimeout: 12000,
+                  auth: { user, pass },
+              }
+    );
+
+    if (!forcePort587) {
+        cachedTransporter = transporter;
+        cachedTransporterKey = key;
+    }
+
+    return { transporter, isCustomHost };
+}
+
 /**
  * Universal Production Email Dispatcher
  * Automatically detects whether Gmail SMTP, Custom SMTP, or Resend API is configured.
@@ -35,39 +82,20 @@ export async function sendLiveEmail({
         };
     }
 
-    const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER || "djeugenerasco11@gmail.com";
+    const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER || "djeugenerasco@gmail.com";
     const gmailAppPass = (process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || "zaxetukbahpgcdyz").replace(/\s+/g, "");
     const smtpHost = process.env.SMTP_HOST;
     const resendApiKey = process.env.RESEND_API_KEY;
 
     // =========================================================================
-    // 1. GMAIL / CUSTOM SMTP DISPATCH (Free, sends to ANY Gmail address)
+    // 1. GMAIL / CUSTOM SMTP DISPATCH (Pooled, fast, sends to ANY Gmail address)
     // =========================================================================
     if (gmailUser && gmailAppPass) {
+        const senderAddress = process.env.SMTP_FROM || `"${fromName}" <${gmailUser}>`;
+        const cleanPass = gmailAppPass.replace(/\s+/g, "");
+
         try {
-            const isCustomHost = Boolean(smtpHost && !smtpHost.includes("gmail"));
-            const transporter = nodemailer.createTransport(
-                isCustomHost
-                    ? {
-                          host: smtpHost,
-                          port: Number(process.env.SMTP_PORT) || 465,
-                          secure: (process.env.SMTP_SECURE || "true") === "true",
-                          auth: {
-                              user: gmailUser,
-                              pass: gmailAppPass.replace(/\s+/g, ""), // clean spaces in app password
-                          },
-                      }
-                    : {
-                          service: "gmail",
-                          auth: {
-                              user: gmailUser,
-                              pass: gmailAppPass.replace(/\s+/g, ""),
-                          },
-                      }
-            );
-
-            const senderAddress = process.env.SMTP_FROM || `"${fromName}" <${gmailUser}>`;
-
+            const { transporter, isCustomHost } = getPooledTransporter(gmailUser, cleanPass, smtpHost, false);
             const info = await transporter.sendMail({
                 from: senderAddress,
                 to: cleanRecipients.join(", "),
@@ -82,8 +110,30 @@ export async function sendLiveEmail({
                 messageId: info.messageId,
             };
         } catch (smtpErr: any) {
-            console.error("[Email Service] SMTP dispatch error:", smtpErr?.message || smtpErr);
-            // Fall through to Resend if available
+            console.warn("[Email Service] Primary SMTP port 465 error, retrying port 587 STARTTLS:", smtpErr?.message || smtpErr);
+            cachedTransporter = null;
+            cachedTransporterKey = "";
+
+            // Retry once via port 587 STARTTLS if not using a custom host
+            if (!smtpHost || smtpHost.includes("gmail")) {
+                try {
+                    const { transporter } = getPooledTransporter(gmailUser, cleanPass, smtpHost, true);
+                    const info = await transporter.sendMail({
+                        from: senderAddress,
+                        to: cleanRecipients.join(", "),
+                        subject,
+                        html,
+                    });
+                    console.log(`[Email Service] Live SMTP (587) delivered to ${cleanRecipients.join(", ")} (ID: ${info.messageId})`);
+                    return {
+                        success: true,
+                        provider: "GMAIL_SMTP",
+                        messageId: info.messageId,
+                    };
+                } catch (retryErr: any) {
+                    console.error("[Email Service] SMTP 587 retry error:", retryErr?.message || retryErr);
+                }
+            }
         }
     }
 

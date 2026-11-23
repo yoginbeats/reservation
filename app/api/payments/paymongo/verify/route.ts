@@ -53,18 +53,22 @@ export async function GET(req: NextRequest) {
 
             // Auto-dispatch e-ticket to passenger's Gmail upon payment confirmation
             if (localBooking?.passenger_email) {
-                dispatchTicketEmail({
-                    bookingId,
-                    recipientEmail: localBooking.passenger_email,
-                    passengerName: localBooking.passenger_name,
-                    trip: localBooking.trip,
-                    seatNumber: localBooking.seat_number,
-                    seatNumbers: localBooking.seat_numbers,
-                    totalPrice: localBooking.total_price,
-                    qrToken: localBooking.qr_token,
-                    transactionRef: localBooking.transaction_ref || sessionId || "PAYMONGO-GCASH",
-                    req,
-                }).catch((mailErr) => console.warn("[PayMongo Verify] Auto ticket mail notice:", mailErr));
+                try {
+                    await dispatchTicketEmail({
+                        bookingId,
+                        recipientEmail: localBooking.passenger_email,
+                        passengerName: localBooking.passenger_name,
+                        trip: localBooking.trip,
+                        seatNumber: localBooking.seat_number,
+                        seatNumbers: localBooking.seat_numbers,
+                        totalPrice: localBooking.total_price,
+                        qrToken: localBooking.qr_token,
+                        transactionRef: localBooking.transaction_ref || sessionId || "PAYMONGO-GCASH",
+                        req,
+                    });
+                } catch (mailErr) {
+                    console.warn("[PayMongo Verify] Auto ticket mail notice:", mailErr);
+                }
             }
 
             return NextResponse.json({
@@ -115,18 +119,22 @@ export async function GET(req: NextRequest) {
                 } catch {}
 
                 if (localBooking?.passenger_email) {
-                    dispatchTicketEmail({
-                        bookingId,
-                        recipientEmail: localBooking.passenger_email,
-                        passengerName: localBooking.passenger_name,
-                        trip: localBooking.trip,
-                        seatNumber: localBooking.seat_number,
-                        seatNumbers: localBooking.seat_numbers,
-                        totalPrice: localBooking.total_price,
-                        qrToken: localBooking.qr_token,
-                        transactionRef: localBooking.transaction_ref || transactionRef || "PAYMONGO-GCASH",
-                        req,
-                    }).catch((mailErr) => console.warn("[PayMongo Verify] Auto ticket mail notice:", mailErr));
+                    try {
+                        await dispatchTicketEmail({
+                            bookingId,
+                            recipientEmail: localBooking.passenger_email,
+                            passengerName: localBooking.passenger_name,
+                            trip: localBooking.trip,
+                            seatNumber: localBooking.seat_number,
+                            seatNumbers: localBooking.seat_numbers,
+                            totalPrice: localBooking.total_price,
+                            qrToken: localBooking.qr_token,
+                            transactionRef: localBooking.transaction_ref || transactionRef || "PAYMONGO-GCASH",
+                            req,
+                        });
+                    } catch (mailErr) {
+                        console.warn("[PayMongo Verify] Auto ticket mail notice:", mailErr);
+                    }
                 }
 
                 return NextResponse.json({

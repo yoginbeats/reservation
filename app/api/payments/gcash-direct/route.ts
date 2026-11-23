@@ -362,10 +362,11 @@ export async function POST(req: NextRequest) {
                 slotHoldManager.releaseHold(tripId, sNum);
             }
 
-            // Step 6: Dispatch e-ticket boarding pass to passenger email
+            // Step 6: Await e-ticket boarding pass dispatch so Gmail receives it on-time
+            let emailSent = false;
             if (passengerEmail) {
                 try {
-                    dispatchTicketEmail({
+                    const emailRes = await dispatchTicketEmail({
                         bookingId,
                         recipientEmail: passengerEmail,
                         passengerName,
@@ -376,7 +377,8 @@ export async function POST(req: NextRequest) {
                         qrToken,
                         transactionRef: cleanRef,
                         req,
-                    }).catch(err => console.warn("Email auto-dispatch notice:", err));
+                    });
+                    emailSent = Boolean(emailRes?.success);
                 } catch (mailErr) {
                     console.warn("Email dispatch notice:", mailErr);
                 }
@@ -393,7 +395,7 @@ export async function POST(req: NextRequest) {
                 discounted_passengers: discountedPassengers,
                 total_price: totalPrice,
                 verification_mode: mode,
-                email_sent: !!passengerEmail,
+                email_sent: emailSent,
                 redirect_url: isAuto
                     ? `/my-tickets?booking_id=${bookingId}&payment=success`
                     : `/my-tickets?booking_id=${bookingId}&status=pending_verification`,
