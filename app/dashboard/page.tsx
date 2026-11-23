@@ -5,7 +5,6 @@ import { CalendarCheck, Ticket, Clock, ArrowRight, User, Phone, MapPin, Calendar
 import { createClient, getUserWithRoleAndTerminal } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { FacebookProfileCard } from "@/components/facebook-profile-card";
-import { PassengerAnnouncements } from "@/components/passenger-announcements";
 
 export default async function ClientDashboard() {
     const supabase = await createClient();
@@ -132,11 +131,6 @@ export default async function ClientDashboard() {
                 isProfileComplete={Boolean(isProfileComplete)}
                 role={role}
             />
-
-            {/* Official Headquarters Announcements & Advisories */}
-            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/80 p-6 sm:p-7 shadow-sm">
-                <PassengerAnnouncements limit={3} showViewAllButton={true} compact={true} />
-            </div>
 
             {/* Quick Actions */}
             <div className="grid gap-4 md:grid-cols-2">
