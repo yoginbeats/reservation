@@ -275,6 +275,22 @@ export function AdminNewReservationDialog({
             return;
         }
 
+        if (paymentMethod === "CASH") {
+            if (!amountTendered || amountTendered.trim() === "") {
+                setError("Cash Payment Required: Please enter the specific cash amount collected before issuing the ticket. Cannot issue a ticket without cash received in the drawer.");
+                return;
+            }
+            const numTendered = Number(amountTendered);
+            if (isNaN(numTendered) || numTendered <= 0) {
+                setError("Invalid Cash Tendered: Please enter a valid positive cash amount.");
+                return;
+            }
+            if (numTendered < netFare) {
+                setError(`Insufficient Cash Tendered: Lacking ₱${(netFare - numTendered).toLocaleString()}.00. Amount collected (₱${numTendered.toLocaleString()}.00) is less than total due (₱${netFare.toLocaleString()}.00).`);
+                return;
+            }
+        }
+
         if (effectiveDiscountCount > 0) {
             for (let i = 0; i < effectiveDiscountCount; i++) {
                 const p = discountPersons[i];
@@ -951,19 +967,57 @@ export function AdminNewReservationDialog({
                                             )}
 
                                             {paymentMethod === "CASH" && (
-                                                <div className="pt-2 space-y-1">
-                                                    <Label htmlFor="admCashTendered" className="text-xs font-semibold text-muted-foreground">
-                                                        Cash Amount Tendered (Optional)
-                                                    </Label>
+                                                <div className="pt-2 space-y-1.5">
+                                                    <div className="flex justify-between items-center">
+                                                        <Label htmlFor="admCashTendered" className="text-xs font-bold text-foreground">
+                                                            Cash Amount Tendered (₱) <span className="text-red-500">*</span>
+                                                        </Label>
+                                                        <span className="text-[10px] text-muted-foreground font-semibold">
+                                                            Required for Cash Drawer
+                                                        </span>
+                                                    </div>
                                                     <Input
                                                         id="admCashTendered"
                                                         type="number"
                                                         placeholder={`Exact fare: ₱${netFare}`}
-                                                        className="font-mono text-xs"
+                                                        className={`font-mono text-xs ${!amountTendered || Number(amountTendered) < netFare ? "border-amber-500 focus-visible:ring-amber-500" : "border-emerald-500"}`}
                                                         value={amountTendered}
                                                         onChange={(e) => setAmountTendered(e.target.value)}
                                                     />
-                                                    {Number(amountTendered) > netFare && (
+                                                    <div className="flex gap-1.5 pt-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setAmountTendered(String(netFare))}
+                                                            className="text-[10px] px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-muted font-bold"
+                                                        >
+                                                            Exact (₱{netFare})
+                                                        </button>
+                                                        {netFare <= 1000 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setAmountTendered("1000")}
+                                                                className="text-[10px] px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-muted font-bold"
+                                                            >
+                                                                ₱1,000
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setAmountTendered(String(Math.ceil(netFare / 500) * 500 || 1000))}
+                                                            className="text-[10px] px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 hover:bg-muted font-bold"
+                                                        >
+                                                            ₱{Math.ceil(netFare / 500) * 500 || 1000}
+                                                        </button>
+                                                    </div>
+                                                    {!amountTendered || amountTendered.trim() === "" ? (
+                                                        <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                                                            * Input specific cash amount collected from passenger.
+                                                        </p>
+                                                    ) : Number(amountTendered) < netFare ? (
+                                                        <p className="text-[11px] font-bold text-red-600 dark:text-red-400">
+                                                            * Insufficient cash: Short by ₱{(netFare - Number(amountTendered)).toLocaleString()}.00
+                                                        </p>
+                                                    ) : (
                                                         <p className="text-[11px] font-bold text-emerald-600">
                                                             Change to return: ₱{changeAmount.toFixed(2)}
                                                         </p>
@@ -1006,10 +1060,18 @@ export function AdminNewReservationDialog({
                                         <Button
                                             type="button"
                                             onClick={handleCreateBooking}
-                                            disabled={submitting || (!selectedSeat && selectedSeats.length === 0)}
+                                            disabled={
+                                                submitting || 
+                                                (!selectedSeat && selectedSeats.length === 0) ||
+                                                (paymentMethod === "CASH" && (!amountTendered || Number(amountTendered) < netFare))
+                                            }
                                             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold h-11 shadow-md text-sm cursor-pointer"
                                         >
-                                            {submitting ? "Confirming & Locking Seats..." : `Confirm Reservation & Lock Seats (₱${netFare}.00)`}
+                                            {submitting
+                                                ? "Confirming & Locking Seats..."
+                                                : paymentMethod === "CASH" && (!amountTendered || Number(amountTendered) < netFare)
+                                                ? `Enter Cash Received (₱${netFare}.00 Due)`
+                                                : `Confirm Reservation & Lock Seats (₱${netFare}.00)`}
                                         </Button>
                                     </div>
                                 </div>

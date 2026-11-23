@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SeatPicker } from "@/components/seat-picker";
 import { TicketQrCode } from "@/components/ticket-qr-code";
-import { Ticket, Bus, ArrowRight, Printer, CheckCircle, AlertCircle, RefreshCw, Calculator } from "lucide-react";
+import { Ticket, Bus, ArrowRight, Printer, CheckCircle, AlertCircle, RefreshCw, Calculator, AlertTriangle, CheckCircle2, DollarSign } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { BusClassificationBadge } from "@/components/bus-classification-badge";
 
@@ -203,6 +203,23 @@ export default function TellerWalkInBookingPage() {
                     return;
                 }
             }
+        }
+
+        // 🔒 CASH DRAWER AUDIT GUARD: Require specific cash amount and ensure no underpayment
+        if (!amountTendered || amountTendered.trim() === "") {
+            setError("Cash Payment Required: Please enter the specific cash amount collected from the passenger before issuing a ticket. Blank entries are strictly blocked to protect the cash drawer.");
+            return;
+        }
+
+        const numericAmountTendered = Number(amountTendered);
+        if (isNaN(numericAmountTendered) || numericAmountTendered <= 0) {
+            setError("Invalid Cash Tendered: Please enter a valid positive cash amount collected.");
+            return;
+        }
+
+        if (numericAmountTendered < fare) {
+            setError(`Insufficient Cash Tendered: Lacking ₱${(fare - numericAmountTendered).toLocaleString()}.00. The cash collected (₱${numericAmountTendered.toLocaleString()}.00) is less than the required total fare (₱${fare.toLocaleString()}.00). Ticket generation is blocked until full cash is in the drawer.`);
+            return;
         }
 
         setError(null);
@@ -834,36 +851,128 @@ export default function TellerWalkInBookingPage() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="wAmount">Cash Amount Tendered (₱)</Label>
-                                        <Input
-                                            id="wAmount"
-                                            type="number"
-                                            placeholder={`Minimum ₱${fare}`}
-                                            value={amountTendered}
-                                            onChange={(e) => setAmountTendered(e.target.value)}
-                                        />
-                                        {Number(amountTendered) >= fare && (
-                                            <p className="text-xs font-bold text-emerald-600">
-                                                Change: ₱{change.toFixed(2)}
-                                            </p>
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="wAmount" className="text-xs font-black uppercase tracking-wider flex items-center gap-1 text-foreground">
+                                                <span>Cash Amount Tendered (₱)</span>
+                                                <span className="text-red-500">*</span>
+                                            </Label>
+                                            <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                                                Required for Cash Drawer
+                                            </span>
+                                        </div>
+
+                                        <div className="relative">
+                                            <Input
+                                                id="wAmount"
+                                                type="number"
+                                                placeholder={`Enter exact or higher: ₱${fare}`}
+                                                value={amountTendered}
+                                                onChange={(e) => setAmountTendered(e.target.value)}
+                                                className={`font-mono text-sm font-bold ${
+                                                    !amountTendered || amountTendered.trim() === ""
+                                                        ? "border-amber-400 focus-visible:ring-amber-500"
+                                                        : Number(amountTendered) < fare
+                                                        ? "border-red-500 focus-visible:ring-red-500 bg-red-50/30 dark:bg-red-950/20"
+                                                        : "border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20"
+                                                }`}
+                                            />
+                                        </div>
+
+                                        {/* Quick Bill Denomination Shortcut Buttons */}
+                                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                            <span className="text-[10px] text-muted-foreground font-semibold">Quick Bills:</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setAmountTendered(String(fare))}
+                                                className="text-[11px] px-2 py-0.5 rounded-md border border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold hover:bg-emerald-100 transition-colors"
+                                            >
+                                                Exact ₱{fare}
+                                            </button>
+                                            {fare <= 1000 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAmountTendered("1000")}
+                                                    className="text-[11px] px-2 py-0.5 rounded-md border border-zinc-300 dark:border-zinc-700 hover:bg-muted font-bold transition-colors"
+                                                >
+                                                    ₱1,000
+                                                </button>
+                                            )}
+                                            {fare <= 1500 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAmountTendered("1500")}
+                                                    className="text-[11px] px-2 py-0.5 rounded-md border border-zinc-300 dark:border-zinc-700 hover:bg-muted font-bold transition-colors"
+                                                >
+                                                    ₱1,500
+                                                </button>
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={() => setAmountTendered(String(Math.max(2000, Math.ceil(fare / 500) * 500)))}
+                                                className="text-[11px] px-2 py-0.5 rounded-md border border-zinc-300 dark:border-zinc-700 hover:bg-muted font-bold transition-colors"
+                                            >
+                                                ₱{Math.max(2000, Math.ceil(fare / 500) * 500).toLocaleString()}
+                                            </button>
+                                        </div>
+
+                                        {/* Status Message */}
+                                        {!amountTendered || amountTendered.trim() === "" ? (
+                                            <div className="rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 p-2.5 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2 font-medium">
+                                                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                                                <span>Specific cash amount required to open cash drawer and confirm walk-in payment.</span>
+                                            </div>
+                                        ) : Number(amountTendered) < fare ? (
+                                            <div className="rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/40 p-2.5 text-xs text-red-800 dark:text-red-300 flex items-center justify-between font-bold">
+                                                <div className="flex items-center gap-1.5">
+                                                    <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+                                                    <span>Insufficient Cash Received:</span>
+                                                </div>
+                                                <span className="font-mono text-red-600 dark:text-red-400 font-black text-sm">
+                                                    Short by ₱{(fare - Number(amountTendered)).toLocaleString()}.00
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-lg border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 text-xs text-emerald-900 dark:text-emerald-200 flex items-center justify-between font-bold">
+                                                <div className="flex items-center gap-1.5">
+                                                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                                                    <span>Cash Tender Verified:</span>
+                                                </div>
+                                                <span className="font-mono text-emerald-700 dark:text-emerald-300 font-black text-sm">
+                                                    Change: ₱{change.toFixed(2)}
+                                                </span>
+                                            </div>
                                         )}
                                     </div>
 
                                     <Button
                                         type="submit"
                                         size="lg"
-                                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                                        className={`w-full font-bold shadow-md transition-all ${
+                                            !amountTendered || Number(amountTendered) < fare
+                                                ? "bg-zinc-700 hover:bg-zinc-700 text-zinc-300 cursor-not-allowed"
+                                                : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                        }`}
                                         disabled={
                                             submitting ||
                                             (!selectedSeat && selectedSeats.length === 0) ||
                                             !passengerName.trim() ||
+                                            !amountTendered ||
+                                            amountTendered.trim() === "" ||
+                                            isNaN(Number(amountTendered)) ||
+                                            Number(amountTendered) < fare ||
                                             (effectiveDiscountCount > 0 &&
                                                 discountPersons.some(
                                                     (p, i) => i < effectiveDiscountCount && (!p.name.trim() || !p.idNumber.trim())
                                                 ))
                                         }
                                     >
-                                        {submitting ? "Processing Walk-in..." : `Confirm & Issue Cash Ticket (₱${fare}.00)`}
+                                        {submitting
+                                            ? "Processing Walk-in..."
+                                            : !amountTendered || amountTendered.trim() === ""
+                                            ? `Input Cash Tendered (₱${fare}.00 Due)`
+                                            : Number(amountTendered) < fare
+                                            ? `Insufficient Cash (Short by ₱${(fare - Number(amountTendered)).toLocaleString()})`
+                                            : `Confirm & Issue Cash Ticket (Change: ₱${change.toFixed(2)})`}
                                     </Button>
                                 </form>
                             </CardContent>
