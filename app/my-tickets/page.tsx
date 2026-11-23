@@ -29,6 +29,7 @@ import {
     Search,
     QrCode,
     Sparkles,
+    CreditCard,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDatePH, formatTimePH, formatDateTimePH } from "@/lib/date-utils";
@@ -124,6 +125,8 @@ function TicketsContent() {
     const [paymentVerified, setPaymentVerified] = useState(false);
     const searchParams = useSearchParams();
     const paymentStatus = searchParams.get("payment");
+    const rebookStatus = searchParams.get("rebook");
+    const [rebookBanner, setRebookBanner] = useState<string | null>(null);
     const statusParam = searchParams.get("status");
     const bookingId = searchParams.get("booking_id");
     const [isWaitingForApproval, setIsWaitingForApproval] = useState(statusParam === "pending_verification");
@@ -479,7 +482,14 @@ function TicketsContent() {
         } else {
             fetchTickets();
         }
-    }, [paymentStatus, bookingId, isWaitingForApproval]);
+
+        if (rebookStatus === "success") {
+            setRebookBanner("Rebooking Verified: Your 80% usable travel credit was applied, and your balance payment was confirmed. Your ticket has been updated with your new schedule and QR boarding pass!");
+            fetchTickets();
+        } else if (rebookStatus === "cancelled") {
+            setRebookError("Rebooking payment was cancelled. Your previous seat and schedule remain active.");
+        }
+    }, [paymentStatus, bookingId, isWaitingForApproval, rebookStatus]);
 
     // Open Rebook Modal and fetch available trip schedules
     const handleOpenRebooking = async (ticket: UserTicket) => {
@@ -540,7 +550,7 @@ function TicketsContent() {
     };
 
     // Confirm Rebooking API call
-    const handleConfirmRebooking = async () => {
+    const handleConfirmRebooking = async (mode: "PAYMONGO" | "DEMO" = "PAYMONGO") => {
         if (!selectedTicketForRebooking || !selectedTripForRebook || !selectedSeatForRebook) return;
         setRebookSubmitting(true);
         setRebookError(null);
@@ -561,11 +571,18 @@ function TicketsContent() {
                         fare_amount: selectedTripForRebook.fare_amount || 850,
                     },
                     new_seat_number: selectedSeatForRebook,
+                    payment_mode: mode,
                 }),
             });
 
             const data = await res.json();
             if (data.success) {
+                // If PayMongo GCash checkout is required to settle the top-up balance, redirect!
+                if (data.requires_payment && data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                    return;
+                }
+
                 setRebookSuccess(data.rebooking);
 
                 // Update localStorage if guest
@@ -810,6 +827,41 @@ function TicketsContent() {
                         <p className="text-xs text-muted-foreground">
                             Your payment reference has been submitted. As soon as the Superlines Cashier confirms your payment, your validated digital ticket will automatically appear here in real-time!
                         </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Rebook Verified & Confirmed Banner */}
+            {rebookBanner && (
+                <div className="relative overflow-hidden rounded-2xl border-2 border-blue-500/40 bg-gradient-to-br from-blue-500/15 via-blue-500/5 to-transparent p-5 sm:p-6 shadow-xl backdrop-blur-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-start gap-3.5">
+                            <div className="h-12 w-12 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/30">
+                                <CheckCircle2 className="h-7 w-7" />
+                            </div>
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <h3 className="text-base sm:text-lg font-black text-blue-950 dark:text-blue-100">
+                                        Rebooking Confirmed &amp; Seat Allocated!
+                                    </h3>
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-black uppercase px-2.5 py-0.5 rounded-full bg-blue-200 dark:bg-blue-900 text-blue-900 dark:text-blue-100 border border-blue-400">
+                                        <Sparkles className="h-3 w-3" /> Rebooked
+                                    </span>
+                                </div>
+                                <p className="text-xs sm:text-sm text-muted-foreground">
+                                    {rebookBanner}
+                                </p>
+                            </div>
+                        </div>
+
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setRebookBanner(null)}
+                            className="text-xs shrink-0"
+                        >
+                            Dismiss
+                        </Button>
                     </div>
                 </div>
             )}
@@ -1441,36 +1493,98 @@ function TicketsContent() {
                                     </div>
                                 )}
 
-                                {/* Error alert */}
-                                {rebookError && (
-                                    <div className="p-3 rounded-lg border border-red-500/50 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-xs">
-                                        {rebookError}
-                                    </div>
-                                )}
+                                {(() => {
+                                    const calc = getRebookCalculation(selectedTicketForRebooking, selectedTripForRebook);
+                                    return (
+                                        <div className="space-y-3 pt-2 border-t">
+                                            {calc.topUpAmount > 0 ? (
+                                                <div className="rounded-xl border border-blue-500/30 bg-blue-50/70 dark:bg-blue-950/40 p-3.5 space-y-2 text-xs">
+                                                    <div className="flex items-center justify-between font-bold">
+                                                        <span className="flex items-center gap-1.5 text-blue-700 dark:text-blue-300">
+                                                            <CreditCard className="h-4 w-4" /> 80% Usable Credit Applied:
+                                                        </span>
+                                                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black text-sm">
+                                                            -₱{calc.usableCredit}.00 Credit
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between border-t border-blue-200 dark:border-blue-900 pt-1.5 font-bold">
+                                                        <span className="text-foreground">Remaining Top-up Balance to Settle:</span>
+                                                        <span className="font-mono text-blue-600 dark:text-blue-400 font-black text-base">
+                                                            ₱{calc.topUpAmount}.00
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                                        ⚡ <strong>Instant Rebooking:</strong> No admin approval needed. Settle the ₱{calc.topUpAmount}.00 balance via PayMongo GCash to instantly lock your seat and get your new digital boarding pass!
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-xl border border-emerald-500/30 bg-emerald-50/60 dark:bg-emerald-950/30 p-3 text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                                                    <CheckCircle2 className="h-4 w-4" />
+                                                    <span>Free Rebooking (0% deduction): Your full prior fare covers this schedule. No payment needed!</span>
+                                                </div>
+                                            )}
 
-                                {/* Submit button */}
-                                <div className="flex gap-2 pt-2 border-t">
-                                    <Button
-                                        variant="outline"
-                                        className="w-1/3 text-xs"
-                                        onClick={() => setSelectedTicketForRebooking(null)}
-                                        disabled={rebookSubmitting}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        className="w-2/3 bg-blue-600 hover:bg-blue-700 text-xs font-bold"
-                                        disabled={!selectedTripForRebook || !selectedSeatForRebook || rebookSubmitting}
-                                        onClick={handleConfirmRebooking}
-                                    >
-                                        {rebookSubmitting ? (
-                                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Check className="mr-2 h-4 w-4" />
-                                        )}
-                                        Confirm Rebooking to Seat #{selectedSeatForRebook || "--"}
-                                    </Button>
-                                </div>
+                                            {/* Error alert */}
+                                            {rebookError && (
+                                                <div className="p-3 rounded-lg border border-red-500/50 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-xs">
+                                                    {rebookError}
+                                                </div>
+                                            )}
+
+                                            {/* Submit buttons */}
+                                            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                                                <Button
+                                                    variant="outline"
+                                                    className="text-xs"
+                                                    onClick={() => setSelectedTicketForRebooking(null)}
+                                                    disabled={rebookSubmitting}
+                                                >
+                                                    Cancel
+                                                </Button>
+
+                                                {calc.topUpAmount > 0 ? (
+                                                    <>
+                                                        <Button
+                                                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs font-bold text-white shadow"
+                                                            disabled={!selectedTripForRebook || !selectedSeatForRebook || rebookSubmitting}
+                                                            onClick={() => handleConfirmRebooking("PAYMONGO")}
+                                                        >
+                                                            {rebookSubmitting ? (
+                                                                <RefreshCw className="mr-1.5 h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <DollarSign className="mr-1.5 h-4 w-4" />
+                                                            )}
+                                                            Pay ₱{calc.topUpAmount}.00 via GCash &amp; Confirm
+                                                        </Button>
+
+                                                        <Button
+                                                            variant="secondary"
+                                                            className="text-xs font-bold"
+                                                            disabled={!selectedTripForRebook || !selectedSeatForRebook || rebookSubmitting}
+                                                            onClick={() => handleConfirmRebooking("DEMO")}
+                                                            title="Instant confirm for demonstration / testing"
+                                                        >
+                                                            Instant Demo Rebook
+                                                        </Button>
+                                                    </>
+                                                ) : (
+                                                    <Button
+                                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white shadow"
+                                                        disabled={!selectedTripForRebook || !selectedSeatForRebook || rebookSubmitting}
+                                                        onClick={() => handleConfirmRebooking("DEMO")}
+                                                    >
+                                                        {rebookSubmitting ? (
+                                                            <RefreshCw className="mr-1.5 h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Check className="mr-1.5 h-4 w-4" />
+                                                        )}
+                                                        Confirm Free Rebooking to Seat #{selectedSeatForRebook || "--"}
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         )}
                     </div>

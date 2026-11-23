@@ -5,6 +5,8 @@ import {
     getLocalBookingById,
     getLocalBookingByQrToken,
 } from "@/lib/local-booking-store";
+import { createPayMongoCheckoutSession } from "@/lib/paymongo";
+import { resolveAppOrigin } from "@/lib/app-url";
 
 export async function POST(req: NextRequest) {
     let body: any;
@@ -20,6 +22,7 @@ export async function POST(req: NextRequest) {
             qr_token,
             new_trip,
             new_seat_number,
+            payment_mode = "PAYMONGO", // "PAYMONGO" | "DEMO"
         } = body || {};
 
         if (!booking_id && !qr_token) {
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
 
         const identifier = booking_id || qr_token;
 
-        // 1. Process in resilient local booking store with automatic 20% calculation
+        // 1. Process in resilient local booking store with automatic 20% deduction calculation
         const localResult = rebookOnlineBooking(identifier, {
             origin: new_trip.origin,
             destination: new_trip.destination,
@@ -61,11 +64,36 @@ export async function POST(req: NextRequest) {
         }
 
         const rebooking = localResult.rebooking;
+        const targetId = booking_id || localResult.booking?.id;
+        const topUp = rebooking.top_up_amount || 0;
 
-        // 2. Synchronize to Supabase database
+        // 2. If there is a top-up balance (e.g. ₱200) and passenger selected PayMongo GCash checkout
+        if (topUp > 0 && payment_mode === "PAYMONGO") {
+            const originUrl = resolveAppOrigin(req);
+            const checkoutSession = await createPayMongoCheckoutSession({
+                bookingId: targetId || "rebook",
+                amountInCentavos: Math.round(topUp * 100),
+                description: `Superlines Rebooking Top-up: Seat #${seatNum} (${new_trip.origin} to ${new_trip.destination}) - ₱${rebooking.usable_credit}.00 Usable Credit Applied`,
+                passengerName: localResult.booking?.passenger_name || "Passenger",
+                passengerEmail: localResult.booking?.passenger_email || "passenger@superlines.com",
+                successUrl: `${originUrl}/my-tickets?rebook=success&booking_id=${targetId}&new_seat=${seatNum}&trip_id=${new_trip.id || ""}&top_up=${topUp}`,
+                cancelUrl: `${originUrl}/my-tickets?rebook=cancelled&booking_id=${targetId}`,
+            });
+
+            return NextResponse.json({
+                success: true,
+                requires_payment: true,
+                checkout_url: checkoutSession.checkout_url,
+                top_up_amount: topUp,
+                usable_credit: rebooking.usable_credit,
+                rebooking,
+                message: `Redirecting to PayMongo GCash to settle the remaining balance of ₱${topUp}.00...`,
+            });
+        }
+
+        // 3. Complete rebooking and synchronize to Supabase database
         const supabase = await createClient();
         try {
-            const targetId = booking_id || localResult.booking?.id;
             if (targetId) {
                 // Free previous seat
                 try {
@@ -80,6 +108,7 @@ export async function POST(req: NextRequest) {
                     seat_number: seatNum,
                     total_price: rebooking.new_fare,
                     booking_status: "CONFIRMED",
+                    payment_status: "PAID",
                 };
                 if (new_trip.id) {
                     updatePayload.trip_id = new_trip.id;
@@ -105,8 +134,9 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
             success: true,
+            requires_payment: false,
             message: rebooking.is_within_3_days
-                ? `Ticket rebooked to Seat #${seatNum < 10 ? `0${seatNum}` : seatNum}! A 20% deduction (₱${rebooking.deduction_amount}.00) was automatically deducted because rebooking was requested within 3 days prior to departure.`
+                ? `Ticket successfully rebooked to Seat #${seatNum < 10 ? `0${seatNum}` : seatNum}! Your 80% usable credit (₱${rebooking.usable_credit}.00) was applied, and the 20% balance (₱${rebooking.deduction_amount}.00) has been confirmed.`
                 : `Ticket rebooked to Seat #${seatNum < 10 ? `0${seatNum}` : seatNum}! Free rebooking (0% deduction) applied as you rebooked more than 3 days ahead.`,
             rebooking,
             booking: localResult.booking,
