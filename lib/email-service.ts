@@ -82,8 +82,8 @@ export async function sendLiveEmail({
         };
     }
 
-    const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER || "djeugenerasco@gmail.com";
-    const gmailAppPass = (process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || "zaxetukbahpgcdyz").replace(/\s+/g, "");
+    const gmailUser = process.env.GMAIL_USER || process.env.SMTP_USER || "djeugenerasco11@gmail.com";
+    const gmailAppPass = (process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || "vzhzkbebacdwprwh").replace(/\s+/g, "");
     const smtpHost = process.env.SMTP_HOST;
     const resendApiKey = process.env.RESEND_API_KEY;
 
