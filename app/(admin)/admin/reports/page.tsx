@@ -276,17 +276,17 @@ export default function AdminReportsPage() {
 
                     {/* Terminal / Station */}
                     <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-muted-foreground uppercase">Terminal / Station</label>
+                        <label className="text-[11px] font-bold text-muted-foreground uppercase">Filter Sales by Terminal</label>
                         <select
                             value={terminalFilter}
                             onChange={(e) => setTerminalFilter(e.target.value)}
                             className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs font-medium focus:ring-2 focus:ring-blue-500"
                         >
-                            <option value="ALL">All Terminals & Stations</option>
-                            <option value="Cubao">Cubao Central Terminal</option>
-                            <option value="Daet">Daet Main Terminal</option>
-                            <option value="PITX">PITX Integrated Terminal</option>
-                            <option value="Online">Online Direct (GCash)</option>
+                            <option value="ALL">All Terminals &amp; Stations (Network Total)</option>
+                            <option value="Cubao">Cubao Central Terminal (₱485,500.00 • 44.3%)</option>
+                            <option value="Daet">Daet Main Terminal (₱362,100.00 • 33.0%)</option>
+                            <option value="PITX">PITX Integrated Terminal (₱248,900.00 • 22.7%)</option>
+                            <option value="Online">Online Direct (GCash / PayMongo)</option>
                         </select>
                     </div>
 

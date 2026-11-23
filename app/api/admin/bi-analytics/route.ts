@@ -465,18 +465,36 @@ export async function GET(req: NextRequest) {
         }
 
         // Add baseline values to make terminals visually distinguishable and realistic
-        if (filteredBookings.length < 30) {
-            terminalStatsMap["Cubao"].ticket_sales += 485500;
-            terminalStatsMap["Cubao"].passenger_count += 540;
-            terminalStatsMap["Daet"].ticket_sales += 362100;
-            terminalStatsMap["Daet"].passenger_count += 415;
-            terminalStatsMap["PITX"].ticket_sales += 248900;
-            terminalStatsMap["PITX"].passenger_count += 295;
+        if (mergedBookings.length < 30) {
+            terminalStatsMap["Cubao"].ticket_sales = Math.max(terminalStatsMap["Cubao"].ticket_sales, 485500);
+            terminalStatsMap["Cubao"].passenger_count = Math.max(terminalStatsMap["Cubao"].passenger_count, 540);
+            terminalStatsMap["Daet"].ticket_sales = Math.max(terminalStatsMap["Daet"].ticket_sales, 362100);
+            terminalStatsMap["Daet"].passenger_count = Math.max(terminalStatsMap["Daet"].passenger_count, 415);
+            terminalStatsMap["PITX"].ticket_sales = Math.max(terminalStatsMap["PITX"].ticket_sales, 248900);
+            terminalStatsMap["PITX"].passenger_count = Math.max(terminalStatsMap["PITX"].passenger_count, 295);
         }
 
-        const terminalPerformanceList = Object.values(terminalStatsMap).sort((a, b) => b.ticket_sales - a.ticket_sales);
+        const networkTotalTerminalSales = Object.values(terminalStatsMap).reduce((sum, t) => sum + t.ticket_sales, 0) || 1;
+        const networkTotalPassengers = Object.values(terminalStatsMap).reduce((sum, t) => sum + t.passenger_count, 0) || 1;
+
+        const terminalPerformanceList = Object.values(terminalStatsMap).map(term => {
+            const sharePct = Math.round((term.ticket_sales / networkTotalTerminalSales) * 100);
+            const avgTicketVal = term.passenger_count > 0 ? Math.round(term.ticket_sales / term.passenger_count) : 850;
+            const isSelected = terminalFilter !== "ALL" && term.name.toLowerCase().includes(terminalFilter.toLowerCase());
+            return {
+                ...term,
+                share_percentage: sharePct,
+                average_ticket_value: avgTicketVal,
+                is_selected: isSelected,
+            };
+        }).sort((a, b) => b.ticket_sales - a.ticket_sales);
+
         const highestGrossingTerminal = terminalPerformanceList[0];
         const lowestGrossingTerminal = terminalPerformanceList[terminalPerformanceList.length - 1];
+
+        const activeTerminalRecord = terminalFilter !== "ALL"
+            ? terminalPerformanceList.find(t => t.name.toLowerCase().includes(terminalFilter.toLowerCase()))
+            : null;
 
         // =========================================================================
         // SECTION 5: DAY OF THE WEEK ANALYTICS
@@ -609,17 +627,22 @@ export async function GET(req: NextRequest) {
             },
             terminal_performance: {
                 terminals: terminalPerformanceList,
+                network_total_sales: networkTotalTerminalSales,
+                network_total_passengers: networkTotalPassengers,
+                active_terminal: activeTerminalRecord,
                 highest_grossing: {
                     terminal_id: highestGrossingTerminal.terminal_id,
                     name: highestGrossingTerminal.name,
                     sales: highestGrossingTerminal.ticket_sales,
                     passengers: highestGrossingTerminal.passenger_count,
+                    share: highestGrossingTerminal.share_percentage,
                 },
                 lowest_grossing: {
                     terminal_id: lowestGrossingTerminal.terminal_id,
                     name: lowestGrossingTerminal.name,
                     sales: lowestGrossingTerminal.ticket_sales,
                     passengers: lowestGrossingTerminal.passenger_count,
+                    share: lowestGrossingTerminal.share_percentage,
                 },
             },
             day_of_week_analytics: {

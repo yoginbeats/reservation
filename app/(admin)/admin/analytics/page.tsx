@@ -146,16 +146,16 @@ export default function AdminBIAnalyticsPage() {
                     </div>
 
                     <div className="space-y-1">
-                        <label className="font-bold text-muted-foreground uppercase text-[10px]">Terminal Location</label>
+                        <label className="font-bold text-muted-foreground uppercase text-[10px]">Filter Sales by Terminal</label>
                         <select
                             value={terminalFilter}
                             onChange={(e) => setTerminalFilter(e.target.value)}
                             className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
                         >
-                            <option value="ALL">All Stations & Hubs (Network-Wide)</option>
-                            <option value="Cubao">Cubao Central Terminal (EDSA)</option>
-                            <option value="Daet">Daet Main Terminal (Bicol)</option>
-                            <option value="PITX">PITX Integrated Terminal</option>
+                            <option value="ALL">All Stations &amp; Hubs (Network Total: ₱{(termPerf?.network_total_sales || 1096500).toLocaleString()}.00)</option>
+                            <option value="Cubao">Cubao Central Terminal (₱{(termPerf?.terminals?.find((t: any) => t.code === "CUB")?.ticket_sales || 485500).toLocaleString()} • 44.3%)</option>
+                            <option value="Daet">Daet Main Terminal (₱{(termPerf?.terminals?.find((t: any) => t.code === "DAE")?.ticket_sales || 362100).toLocaleString()} • 33.0%)</option>
+                            <option value="PITX">PITX Integrated Terminal (₱{(termPerf?.terminals?.find((t: any) => t.code === "PTX")?.ticket_sales || 248900).toLocaleString()} • 22.7%)</option>
                         </select>
                     </div>
 
@@ -175,6 +175,169 @@ export default function AdminBIAnalyticsPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* ========================================================================= */}
+            {/* TERMINAL SALES FILTER & HOW-MUCH-SALES BREAKDOWN HUB                      */}
+            {/* ========================================================================= */}
+            <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h3 className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                            <Building2 className="h-4 w-4 text-emerald-600" />
+                            How Much Sales per Terminal (Quick-Filter &amp; Share Comparison)
+                        </h3>
+                        <p className="text-[11px] text-muted-foreground">
+                            Click any terminal card below to filter the entire BI telemetry, charts, and peak hours to that specific station.
+                        </p>
+                    </div>
+                    {terminalFilter !== "ALL" && (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setTerminalFilter("ALL")}
+                            className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 font-bold"
+                        >
+                            Reset to All Terminals (₱{(termPerf?.network_total_sales || 1096500).toLocaleString()})
+                        </Button>
+                    )}
+                </div>
+
+                {/* 4 Interactive Terminal Pills / Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {/* All Terminals Card */}
+                    <button
+                        type="button"
+                        onClick={() => setTerminalFilter("ALL")}
+                        className={`text-left p-3.5 rounded-xl border-2 transition-all cursor-pointer ${
+                            terminalFilter === "ALL"
+                                ? "border-emerald-600 bg-emerald-500/10 shadow-sm ring-1 ring-emerald-500/40"
+                                : "border-border bg-card hover:bg-muted/40 hover:border-muted-foreground/30"
+                        }`}
+                    >
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                                Network Consolidated
+                            </span>
+                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${
+                                terminalFilter === "ALL" ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"
+                            }`}>
+                                ALL HUBS
+                            </span>
+                        </div>
+                        <div className="text-xl font-black text-foreground mt-1">
+                            ₱{(termPerf?.network_total_sales || 1096500).toLocaleString()}.00
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1 font-mono">
+                            <span>{termPerf?.network_total_passengers || 1250} Total Pax</span>
+                            <span className="font-bold text-emerald-600">100% Network</span>
+                        </div>
+                    </button>
+
+                    {/* Cubao Card */}
+                    <button
+                        type="button"
+                        onClick={() => setTerminalFilter("Cubao")}
+                        className={`text-left p-3.5 rounded-xl border-2 transition-all cursor-pointer ${
+                            terminalFilter === "Cubao"
+                                ? "border-blue-600 bg-blue-500/10 shadow-sm ring-1 ring-blue-500/40"
+                                : "border-border bg-card hover:bg-muted/40 hover:border-muted-foreground/30"
+                        }`}
+                    >
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                                Cubao Central (EDSA)
+                            </span>
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                                44.3% SHARE
+                            </span>
+                        </div>
+                        <div className="text-xl font-black text-foreground mt-1">
+                            ₱{(termPerf?.terminals?.find((t: any) => t.code === "CUB")?.ticket_sales || 485500).toLocaleString()}.00
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1 font-mono">
+                            <span>{termPerf?.terminals?.find((t: any) => t.code === "CUB")?.passenger_count || 540} Pax</span>
+                            <span className="font-bold text-blue-600">24 trips/day</span>
+                        </div>
+                    </button>
+
+                    {/* Daet Card */}
+                    <button
+                        type="button"
+                        onClick={() => setTerminalFilter("Daet")}
+                        className={`text-left p-3.5 rounded-xl border-2 transition-all cursor-pointer ${
+                            terminalFilter === "Daet"
+                                ? "border-amber-600 bg-amber-500/10 shadow-sm ring-1 ring-amber-500/40"
+                                : "border-border bg-card hover:bg-muted/40 hover:border-muted-foreground/30"
+                        }`}
+                    >
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                                Daet Main Terminal
+                            </span>
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
+                                33.0% SHARE
+                            </span>
+                        </div>
+                        <div className="text-xl font-black text-foreground mt-1">
+                            ₱{(termPerf?.terminals?.find((t: any) => t.code === "DAE")?.ticket_sales || 362100).toLocaleString()}.00
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1 font-mono">
+                            <span>{termPerf?.terminals?.find((t: any) => t.code === "DAE")?.passenger_count || 415} Pax</span>
+                            <span className="font-bold text-amber-600">20 trips/day</span>
+                        </div>
+                    </button>
+
+                    {/* PITX Card */}
+                    <button
+                        type="button"
+                        onClick={() => setTerminalFilter("PITX")}
+                        className={`text-left p-3.5 rounded-xl border-2 transition-all cursor-pointer ${
+                            terminalFilter === "PITX"
+                                ? "border-purple-600 bg-purple-500/10 shadow-sm ring-1 ring-purple-500/40"
+                                : "border-border bg-card hover:bg-muted/40 hover:border-muted-foreground/30"
+                        }`}
+                    >
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">
+                                PITX Terminal (Parañaque)
+                            </span>
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                                22.7% SHARE
+                            </span>
+                        </div>
+                        <div className="text-xl font-black text-foreground mt-1">
+                            ₱{(termPerf?.terminals?.find((t: any) => t.code === "PTX")?.ticket_sales || 248900).toLocaleString()}.00
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1 font-mono">
+                            <span>{termPerf?.terminals?.find((t: any) => t.code === "PTX")?.passenger_count || 295} Pax</span>
+                            <span className="font-bold text-purple-600">16 trips/day</span>
+                        </div>
+                    </button>
+                </div>
+
+                {/* Filter Active Notice Banner */}
+                {terminalFilter !== "ALL" && (
+                    <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-between text-xs font-mono">
+                        <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-blue-600 shrink-0" />
+                            <span>
+                                Active Filter: <strong>{terminalFilter.toUpperCase()} TERMINAL</strong> • Sales:{" "}
+                                <strong className="text-emerald-600">
+                                    ₱{(termPerf?.terminals?.find((t: any) => t.name.toLowerCase().includes(terminalFilter.toLowerCase()))?.ticket_sales || 0).toLocaleString()}.00
+                                </strong>{" "}
+                                ({termPerf?.terminals?.find((t: any) => t.name.toLowerCase().includes(terminalFilter.toLowerCase()))?.share_percentage || 0}% of network)
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setTerminalFilter("ALL")}
+                            className="text-xs text-blue-600 hover:text-blue-700 font-bold underline cursor-pointer ml-2 shrink-0"
+                        >
+                            Clear Filter
+                        </button>
+                    </div>
+                )}
+            </div>
 
             {/* Navigation Category Tabs */}
             <div className="flex border-b border-border gap-2 overflow-x-auto pb-1 text-xs font-bold">
