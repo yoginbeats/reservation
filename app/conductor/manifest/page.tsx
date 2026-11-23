@@ -33,7 +33,8 @@ import {
     SUPERLINES_BUS_CLASSIFICATIONS, 
     getBusClassification, 
     BusClassification,
-    SeatGridCell 
+    SeatGridCell,
+    isPwdPrioritySeat
 } from "@/lib/constants/bus-layouts";
 
 interface ManifestPassenger {
@@ -817,35 +818,23 @@ function ConductorManifestContent() {
                                     )}
                                 </div>
 
-                                {/* Column Headers: DRIVER'S SEAT | AISLE | CONDUCTOR SEAT */}
-                                <div className="grid grid-cols-12 gap-1 items-end text-center">
-                                    <div className="col-span-5 rounded-t-md bg-[#70B0E0] text-zinc-950 font-black text-[11px] sm:text-xs uppercase py-1.5 shadow-sm border border-[#5A9AC8]">
-                                        DRIVER&apos;S SEAT
-                                    </div>
-                                    <div className="col-span-2 text-[10px] font-black uppercase text-red-600 dark:text-red-400 py-1 font-mono">
-                                        {/* Aisle Spacer */}
-                                    </div>
-                                    <div className="col-span-5 rounded-t-md bg-[#70B0E0] text-zinc-950 font-black text-[11px] sm:text-xs uppercase py-1.5 shadow-sm border border-[#5A9AC8]">
-                                        CONDUCTOR SEAT
-                                    </div>
-                                </div>
-
-                                {/* Official Rows Grid */}
-                                <div className="space-y-1 sm:space-y-1.5 bg-white dark:bg-zinc-950/70 p-2 sm:p-2.5 rounded-xl border border-zinc-300 dark:border-zinc-800 shadow-inner">
+                                {/* Grid Rows Container */}
+                                <div className="space-y-1 sm:space-y-1.5 bg-white dark:bg-zinc-950/70 p-2 sm:p-2.5 rounded-xl border border-zinc-300 dark:border-zinc-800 shadow-inner print:border-black print:p-1">
                                     {(() => {
-                                        const totalRows = manifestLayout.rows.length;
+                                        const row1 = manifestLayout.rows[0];
+                                        const otherRows = manifestLayout.rows.slice(1);
                                         const aisleLetters = ["A", "I", "S", "L", "E"];
-                                        const startRowIdx = Math.max(1, Math.floor((totalRows - aisleLetters.length) / 2));
+                                        const startRowIdx = Math.max(0, Math.floor((otherRows.length - aisleLetters.length) / 2));
 
                                         const renderCell = (cell: SeatGridCell, isBackRow = false) => {
                                             if (!cell || cell.type === "empty") {
-                                                return <div className="h-10 w-11 sm:h-11 sm:w-12" />;
+                                                return <div className="h-11 w-11 sm:h-12 sm:w-12" />;
                                             }
 
                                             if (cell.type === "cr") {
                                                 return (
                                                     <div
-                                                        className="flex h-10 w-[94px] sm:h-11 sm:w-[102px] items-center justify-center rounded-md bg-[#4A7BB0] text-white font-black text-[10px] sm:text-[11px] shadow-sm gap-1 border border-[#3A6B9E] select-none"
+                                                        className="flex h-11 w-[96px] sm:h-12 sm:w-[104px] items-center justify-center rounded-lg bg-[#4A7BB0] text-white font-black text-[10px] sm:text-[11px] shadow-sm gap-1 border border-[#3A6B9E] select-none print:bg-zinc-200 print:text-black print:border-black"
                                                         title="Comfort Room (Restroom)"
                                                     >
                                                         <Bath className="h-3.5 w-3.5 shrink-0" />
@@ -857,7 +846,7 @@ function ConductorManifestContent() {
                                             if (cell.type === "stairs") {
                                                 return (
                                                     <div
-                                                        className="flex h-10 w-[94px] sm:h-11 sm:w-[102px] items-center justify-center rounded-md bg-[#70B0E0] text-zinc-950 font-black text-[10px] sm:text-[11px] shadow-sm gap-1 border border-[#5A9AC8] select-none"
+                                                        className="flex h-11 w-[96px] sm:h-12 sm:w-[104px] items-center justify-center rounded-lg bg-[#70B0E0] text-zinc-950 font-black text-[10px] sm:text-[11px] shadow-sm gap-1 border border-[#5A9AC8] select-none print:bg-zinc-200 print:text-black print:border-black"
                                                         title="Exit / Entrance Stairs"
                                                     >
                                                         <DoorOpen className="h-3.5 w-3.5 shrink-0" />
@@ -871,6 +860,7 @@ function ConductorManifestContent() {
                                             const isBoarded = passenger?.ticket_status === 'USED';
                                             const isBooked = Boolean(passenger);
                                             const isSelected = selectedSeatPreview?.seat_number === seatNum || inspectedSeatNumber === seatNum;
+                                            const isPwd = isPwdPrioritySeat(seatNum);
                                             const isRedTheme = manifestLayout.seatColor === "red";
 
                                             const freeBg = isRedTheme
@@ -885,26 +875,33 @@ function ConductorManifestContent() {
                                                         setInspectedSeatNumber(seatNum);
                                                         setSelectedSeatPreview(passenger || null);
                                                     }}
-                                                    className={`relative flex h-10 w-11 sm:h-11 sm:w-12 flex-col items-center justify-center rounded-md border font-mono transition-all ${
+                                                    className={`relative flex h-11 w-11 sm:h-12 sm:w-12 flex-col items-center justify-center rounded-lg border font-mono transition-all ${
                                                         isBoarded
-                                                            ? "bg-emerald-600 text-white border-emerald-500 shadow-md hover:bg-emerald-500"
+                                                            ? "bg-emerald-600 text-white border-emerald-500 shadow-md hover:bg-emerald-500 print:bg-zinc-300 print:text-black print:border-black"
                                                             : isBooked
-                                                            ? "bg-amber-500 text-zinc-950 border-amber-400 shadow-md hover:bg-amber-400"
-                                                            : `${freeBg} shadow-sm hover:scale-105 active:scale-95`
-                                                    } ${isSelected ? "ring-4 ring-sky-500 scale-105 z-20 shadow-xl" : ""} ${isBackRow ? "flex-1 max-w-[52px]" : ""}`}
-                                                    title={`Seat #${seatNum} — ${isBoarded ? 'BOARDED' : isBooked ? `PAID (${passenger?.passenger_name})` : 'FREE'}`}
+                                                            ? "bg-amber-500 text-zinc-950 border-amber-400 shadow-md hover:bg-amber-400 print:bg-zinc-200 print:text-black print:border-black"
+                                                            : `${freeBg} shadow-sm hover:scale-105 active:scale-95 print:bg-white print:text-black print:border-zinc-400`
+                                                    } ${isSelected ? "ring-4 ring-sky-500 scale-105 z-20 shadow-xl" : ""} ${isBackRow ? "flex-1 max-w-[54px]" : ""}`}
+                                                    title={`Seat #${seatNum} — ${isPwd ? "[PWD PRIORITY SEAT] " : ""}${isBoarded ? 'BOARDED' : isBooked ? `PAID (${passenger?.passenger_name})` : 'FREE'}`}
                                                 >
                                                     <span className="text-[12px] sm:text-[13px] font-black leading-tight">
-                                                        {seatNum}
+                                                        {seatNum < 10 ? `0${seatNum}` : seatNum}
                                                     </span>
-                                                    <span className="text-[7.5px] sm:text-[8px] font-black uppercase tracking-tight">
+                                                    <span className="text-[7px] sm:text-[7.5px] font-black uppercase tracking-tight leading-none mt-0.5">
                                                         {isBoarded ? "BOARDED" : isBooked ? "PAID" : "FREE"}
                                                     </span>
+
+                                                    {/* Explicit PWD Label for Seats 1, 2, 3, 4 */}
+                                                    {isPwd && (
+                                                        <span className="mt-0.5 inline-flex items-center px-1 py-0.2 rounded font-black text-[7px] sm:text-[7.5px] tracking-wider uppercase bg-blue-700 text-white border border-blue-400 shadow-sm print:bg-black print:text-white print:border-black">
+                                                            ♿ PWD
+                                                        </span>
+                                                    )}
 
                                                     {/* 20% Discount Badge */}
                                                     {(passenger?.is_discounted || (passenger?.discounted_passengers && passenger.discounted_passengers.length > 0)) && (
                                                         <span
-                                                            className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-purple-600 rounded-full border border-white text-[7.5px] text-white flex items-center justify-center font-black shadow"
+                                                            className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-purple-600 rounded-full border border-white text-[7.5px] text-white flex items-center justify-center font-black shadow print:hidden"
                                                             title="20% Statutory Discount Verified"
                                                         >
                                                             %
@@ -914,48 +911,132 @@ function ConductorManifestContent() {
                                             );
                                         };
 
-                                        return manifestLayout.rows.map((row, rowIdx) => {
-                                            const isBackRow = Boolean(row.aisleSeat);
-                                            const aisleLetterIdx = rowIdx - startRowIdx;
-                                            const aisleLetter = (!isBackRow && aisleLetterIdx >= 0 && aisleLetterIdx < aisleLetters.length)
-                                                ? aisleLetters[aisleLetterIdx]
-                                                : null;
+                                        return (
+                                            <>
+                                                {/* ========================================================================= */}
+                                                {/* FRONT-ROW COCKPIT ALIGNMENT & PWD SEATS                                  */}
+                                                {/* [ Driver Seat ] | [ Seat 1 ] [ Seat 2 ] (Aisle) [ Seat 3 ] [ Seat 4 ] | [ Entrance Stairs ] */}
+                                                {/* ========================================================================= */}
+                                                {row1 && (
+                                                    <div className="flex items-center justify-between gap-1 sm:gap-2 p-1.5 rounded-xl bg-blue-50/80 dark:bg-zinc-900/90 border-2 border-blue-400/70 dark:border-blue-700/70 print:bg-zinc-100 print:border-black">
+                                                        {/* [ Driver Seat ] */}
+                                                        <div
+                                                            className="flex h-11 w-16 sm:h-12 sm:w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-zinc-800 text-white font-black text-[9px] sm:text-[10px] uppercase shadow-sm border border-zinc-700 select-none print:bg-zinc-200 print:text-black print:border-black"
+                                                            title="Driver's Seat Station"
+                                                        >
+                                                            <Bus className="h-3.5 w-3.5 mb-0.5 text-sky-400 print:text-black shrink-0" />
+                                                            <span className="leading-tight text-center">
+                                                                DRIVER<br />SEAT
+                                                            </span>
+                                                        </div>
 
-                                            return (
-                                                <div key={row.rowNumber} className="grid grid-cols-12 items-center gap-1">
-                                                    {/* Left Side (Driver Side - 2 Seats) */}
-                                                    <div className="col-span-5 flex justify-end gap-1 sm:gap-1.5">
-                                                        {row.leftSeats.map((cell, idx) => (
-                                                            <div key={idx} className="shrink-0">
-                                                                {renderCell(cell, isBackRow)}
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                        {/* Partition Divider */}
+                                                        <div className="h-9 w-[1px] bg-zinc-300 dark:bg-zinc-700 print:bg-black shrink-0" />
 
-                                                    {/* Center Aisle (Or Middle Back Seat) */}
-                                                    <div className="col-span-2 flex items-center justify-center">
-                                                        {row.aisleSeat ? (
-                                                            renderCell(row.aisleSeat, true)
-                                                        ) : (
-                                                            <div className="flex h-10 w-full items-center justify-center">
-                                                                <span className="text-xs sm:text-sm font-black font-serif text-red-600 dark:text-red-400 select-none">
-                                                                    {aisleLetter || "•"}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                        {/* [ Seat 1 ] [ Seat 2 ] (PWD Priority) */}
+                                                        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                                            {row1.leftSeats.map((cell, idx) => (
+                                                                <div key={idx} className="shrink-0">
+                                                                    {renderCell(cell)}
+                                                                </div>
+                                                            ))}
+                                                        </div>
 
-                                                    {/* Right Side (Conductor Side - 2 Seats / CR / Stairs) */}
-                                                    <div className="col-span-5 flex justify-start gap-1 sm:gap-1.5">
-                                                        {row.rightSeats.map((cell, idx) => (
-                                                            <div key={idx} className="shrink-0">
-                                                                {renderCell(cell, isBackRow)}
-                                                            </div>
-                                                        ))}
+                                                        {/* (Aisle) */}
+                                                        <div className="flex-1 flex items-center justify-center px-1">
+                                                            <span className="text-[10px] sm:text-xs font-black uppercase text-red-600 dark:text-red-400 font-mono tracking-wider print:text-black">
+                                                                AISLE
+                                                            </span>
+                                                        </div>
+
+                                                        {/* [ Seat 3 ] [ Seat 4 ] (PWD Priority) */}
+                                                        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                                            {row1.rightSeats.map((cell, idx) => (
+                                                                <div key={idx} className="shrink-0">
+                                                                    {renderCell(cell)}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* Partition Divider */}
+                                                        <div className="h-9 w-[1px] bg-zinc-300 dark:bg-zinc-700 print:bg-black shrink-0" />
+
+                                                        {/* [ Entrance Stairs ] */}
+                                                        <div
+                                                            className="flex h-11 w-16 sm:h-12 sm:w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-[#70B0E0] text-zinc-950 font-black text-[9px] sm:text-[10px] uppercase shadow-sm border border-[#5A9AC8] select-none print:bg-zinc-200 print:text-black print:border-black"
+                                                            title="Passenger Entrance & Exit Stairs"
+                                                        >
+                                                            <DoorOpen className="h-3.5 w-3.5 mb-0.5 text-zinc-900 print:text-black shrink-0" />
+                                                            <span className="leading-tight text-center">
+                                                                ENTRANCE<br />STAIRS
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        });
+                                                )}
+
+                                                {/* ========================================================================= */}
+                                                {/* ROWS 2 TO REAR (ALIGNED DIRECTLY BENEATH SEATS 1, 2, 3, 4)                */}
+                                                {/* ========================================================================= */}
+                                                {otherRows.map((row, rowIdx) => {
+                                                    const isBackRow = Boolean(row.aisleSeat);
+                                                    const aisleLetterIdx = rowIdx - startRowIdx;
+                                                    const aisleLetter =
+                                                        !isBackRow && aisleLetterIdx >= 0 && aisleLetterIdx < aisleLetters.length
+                                                            ? aisleLetters[aisleLetterIdx]
+                                                            : null;
+
+                                                    return (
+                                                        <div
+                                                            key={row.rowNumber}
+                                                            className="flex items-center justify-between gap-1 sm:gap-2 px-1.5 py-0.5"
+                                                        >
+                                                            {/* Left Spacer aligning with Driver Seat */}
+                                                            <div className="h-11 w-16 sm:h-12 sm:w-20 shrink-0 flex items-center justify-center font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-600 print:text-zinc-500">
+                                                                <span>R{row.rowNumber}</span>
+                                                            </div>
+
+                                                            {/* Hidden divider spacer */}
+                                                            <div className="h-8 w-[1px] opacity-0 shrink-0" />
+
+                                                            {/* Left 2 Seats (Driver Side) */}
+                                                            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                                                {row.leftSeats.map((cell, idx) => (
+                                                                    <div key={idx} className="shrink-0">
+                                                                        {renderCell(cell, isBackRow)}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+
+                                                            {/* Central Aisle */}
+                                                            <div className="flex-1 flex items-center justify-center px-1">
+                                                                {row.aisleSeat ? (
+                                                                    renderCell(row.aisleSeat, true)
+                                                                ) : (
+                                                                    <span className="text-xs font-black font-serif text-red-600 dark:text-red-400 print:text-black select-none">
+                                                                        {aisleLetter || "•"}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Right 2 Seats / CR / Stairs */}
+                                                            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                                                {row.rightSeats.map((cell, idx) => (
+                                                                    <div key={idx} className="shrink-0">
+                                                                        {renderCell(cell, isBackRow)}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+
+                                                            {/* Hidden divider spacer */}
+                                                            <div className="h-8 w-[1px] opacity-0 shrink-0" />
+
+                                                            {/* Right Spacer aligning with Entrance Stairs */}
+                                                            <div className="h-11 w-16 sm:h-12 sm:w-20 shrink-0" />
+                                                        </div>
+                                                    );
+                                                })}
+                                            </>
+                                        );
                                     })()}
                                 </div>
                             </div>
@@ -1119,8 +1200,17 @@ function ConductorManifestContent() {
 
                                                 return (
                                                     <tr key={b.id} className="hover:bg-zinc-900/40 transition-colors">
-                                                        <td className="p-3 text-center font-mono font-black text-sm text-emerald-400 print:text-black">
-                                                            #{b.seat_number < 10 ? `0${b.seat_number}` : b.seat_number}
+                                                        <td className="p-3 text-center">
+                                                            <div className="flex flex-col items-center">
+                                                                <span className="font-mono font-black text-sm text-emerald-400 print:text-black">
+                                                                    #{b.seat_number < 10 ? `0${b.seat_number}` : b.seat_number}
+                                                                </span>
+                                                                {isPwdPrioritySeat(b.seat_number) && (
+                                                                    <span className="mt-0.5 rounded px-1 py-0.2 text-[8px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-400 print:bg-black print:text-white print:border-black">
+                                                                        ♿ PWD
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                         <td className="p-3">
                                                             <div className="font-bold text-white print:text-black">{b.passenger_name}</div>
@@ -1215,17 +1305,25 @@ function ConductorManifestContent() {
                                 </table>
                             </div>
 
-                            {/* Official Print Footer Signatures */}
-                            <div className="hidden grid-cols-2 gap-12 text-xs print:grid border-t border-black p-6 mt-8 text-black">
+                            {/* Official Tri-Signature Audit Block (Unified Print Footer) */}
+                            <div className="hidden grid-cols-3 gap-8 text-xs print:grid border-t-2 border-black p-6 mt-8 text-black">
                                 <div>
-                                    <p className="font-bold">Dispatcher / Terminal Teller In-Charge:</p>
-                                    <div className="mt-10 border-b border-black w-56"></div>
-                                    <p className="mt-1 text-[10px] text-zinc-600">Signature Over Printed Name</p>
+                                    <p className="font-bold uppercase tracking-wider text-[11px]">Prepared By:</p>
+                                    <p className="text-[10px] text-zinc-600 mt-0.5">Terminal Teller / Dispatcher</p>
+                                    <div className="mt-8 border-b border-black w-44"></div>
+                                    <p className="mt-1 text-[9px] text-zinc-500 font-mono">Signature Over Printed Name</p>
                                 </div>
                                 <div>
-                                    <p className="font-bold">Verified & Boarded By (Bus Conductor):</p>
-                                    <div className="mt-10 border-b border-black w-56"></div>
-                                    <p className="mt-1 text-[10px] text-zinc-600">Signature Over Printed Name</p>
+                                    <p className="font-bold uppercase tracking-wider text-[11px]">Verified By:</p>
+                                    <p className="text-[10px] text-zinc-600 mt-0.5">Assigned Bus Conductor</p>
+                                    <div className="mt-8 border-b border-black w-44"></div>
+                                    <p className="mt-1 text-[9px] text-zinc-500 font-mono">Signature Over Printed Name</p>
+                                </div>
+                                <div>
+                                    <p className="font-bold uppercase tracking-wider text-[11px]">Approved By:</p>
+                                    <p className="text-[10px] text-zinc-600 mt-0.5">Admin / Operations Manager</p>
+                                    <div className="mt-8 border-b border-black w-44"></div>
+                                    <p className="mt-1 text-[9px] text-zinc-500 font-mono">Signature Over Printed Name</p>
                                 </div>
                             </div>
                         </CardContent>

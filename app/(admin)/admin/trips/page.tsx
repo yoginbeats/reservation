@@ -31,6 +31,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getBusFare } from "@/lib/constants/bus-layouts";
 import { DEFAULT_BUSES, BusUnit } from "@/lib/constants/bus-units";
 import { BusClassificationBadge } from "@/components/bus-classification-badge";
+import { PassengerManifest } from "@/components/passenger-manifest";
 
 interface TripItem {
     id: string;
@@ -84,6 +85,7 @@ export default function AdminTripsPage() {
 
     // Modal for viewing Bound Bus Manifest & Turnaround
     const [selectedTripForManifest, setSelectedTripForManifest] = useState<TripItem | null>(null);
+    const [adminManifestTab, setAdminManifestTab] = useState<"MANIFEST" | "ROTATION">("MANIFEST");
 
     const supabase = createClient();
 
@@ -833,32 +835,72 @@ export default function AdminTripsPage() {
                                 </Button>
                             </div>
 
-                            {/* Summary Bar */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-3 rounded-xl bg-muted/40 border">
-                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Assigned Bus Unit</p>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        <span className="text-base font-black font-mono text-foreground">{busNum}</span>
-                                        <BusClassificationBadge
-                                            busType={selectedTripForManifest.bus?.bus_type}
-                                            seatCapacity={selectedTripForManifest.bus?.seat_capacity}
-                                            showFeatures
-                                        />
-                                    </div>
-                                </div>
-                                <div className="p-3 rounded-xl bg-muted/40 border">
-                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Total Bound Passengers</p>
-                                    <p className="text-base font-black font-mono text-blue-600 mt-0.5">{totalPass} Passengers</p>
-                                </div>
-                                <div className="p-3 rounded-xl bg-muted/40 border">
-                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Rotation Revenue</p>
-                                    <p className="text-base font-black font-mono text-emerald-600 mt-0.5">₱{totalRev.toLocaleString()}.00</p>
-                                </div>
-                                <div className="p-3 rounded-xl bg-muted/40 border">
-                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Dispatch Status</p>
-                                    <p className="text-base font-black text-foreground mt-0.5">Ready for Boarding</p>
-                                </div>
+                            {/* View Mode Switcher */}
+                            <div className="flex gap-2 border-b pb-2 print:hidden">
+                                <Button
+                                    size="sm"
+                                    variant={adminManifestTab === "MANIFEST" ? "default" : "outline"}
+                                    onClick={() => setAdminManifestTab("MANIFEST")}
+                                    className="font-bold text-xs"
+                                >
+                                    Official Manifest & Seating Diagram
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant={adminManifestTab === "ROTATION" ? "default" : "outline"}
+                                    onClick={() => setAdminManifestTab("ROTATION")}
+                                    className="font-bold text-xs"
+                                >
+                                    Rotation Schedule (Leg 1 & Leg 2)
+                                </Button>
                             </div>
+
+                            {adminManifestTab === "MANIFEST" ? (
+                                <PassengerManifest
+                                    trip={{
+                                        id: selectedTripForManifest.id,
+                                        departure_time: selectedTripForManifest.departure_time,
+                                        fare_amount: selectedTripForManifest.fare_amount,
+                                        origin: selectedTripForManifest.origin,
+                                        destination: selectedTripForManifest.destination,
+                                        bus: selectedTripForManifest.bus || {
+                                            bus_number: selectedTripForManifest.bus_number || "Superlines Express",
+                                            bus_type: selectedTripForManifest.bus_type || "REGULAR AIRCON",
+                                            seat_capacity: selectedTripForManifest.seat_capacity || 49
+                                        }
+                                    }}
+                                    bookings={outboundBookings}
+                                    role="ADMIN"
+                                    onClose={() => setSelectedTripForManifest(null)}
+                                />
+                            ) : (
+                                <>
+                                    {/* Summary Bar */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                                        <div className="p-3 rounded-xl bg-muted/40 border">
+                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Assigned Bus Unit</p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <span className="text-base font-black font-mono text-foreground">{busNum}</span>
+                                                <BusClassificationBadge
+                                                    busType={selectedTripForManifest.bus?.bus_type}
+                                                    seatCapacity={selectedTripForManifest.bus?.seat_capacity}
+                                                    showFeatures
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-muted/40 border">
+                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Total Bound Passengers</p>
+                                            <p className="text-base font-black font-mono text-blue-600 mt-0.5">{totalPass} Passengers</p>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-muted/40 border">
+                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Rotation Revenue</p>
+                                            <p className="text-base font-black font-mono text-emerald-600 mt-0.5">₱{totalRev.toLocaleString()}.00</p>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-muted/40 border">
+                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Dispatch Status</p>
+                                            <p className="text-base font-black text-foreground mt-0.5">Ready for Boarding</p>
+                                        </div>
+                                    </div>
 
                             {/* Two Legs: Outbound & Turnaround Inbound */}
                             <div className="grid gap-6 md:grid-cols-2">
@@ -997,29 +1039,31 @@ export default function AdminTripsPage() {
                                 </Card>
                             </div>
 
-                            {/* Footer Actions */}
-                            <div className="flex justify-between items-center pt-2 border-t text-xs">
-                                <span className="text-muted-foreground">
-                                    Official Superlines Central Bus Dispatch • Synchronized with Terminal Counters
-                                </span>
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setSelectedTripForManifest(null)}
-                                    >
-                                        Close
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        className="bg-blue-600 hover:bg-blue-700 font-bold"
-                                        onClick={() => window.print()}
-                                    >
-                                        <Printer className="mr-1.5 h-3.5 w-3.5" />
-                                        Print Bound Manifest
-                                    </Button>
-                                </div>
-                            </div>
+                                    {/* Footer Actions */}
+                                    <div className="flex justify-between items-center pt-2 border-t text-xs">
+                                        <span className="text-muted-foreground">
+                                            Official Superlines Central Bus Dispatch • Synchronized with Terminal Counters
+                                        </span>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setSelectedTripForManifest(null)}
+                                            >
+                                                Close
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                className="bg-blue-600 hover:bg-blue-700 font-bold"
+                                                onClick={() => window.print()}
+                                            >
+                                                <Printer className="mr-1.5 h-3.5 w-3.5" />
+                                                Print Bound Manifest
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 );

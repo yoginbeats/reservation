@@ -92,7 +92,7 @@ export const SUPER_DELUXE_LAYOUT: BusClassification = {
     officialTitle: "Seating Arrangement – SUPER DELUXE",
     seaterLabel: "( 43 Seater )",
     busNotes: "Bus # 311 & 316 & 319",
-    seatColor: "red",
+    seatColor: "blue",
     rows: [
         { rowNumber: 1,  leftSeats: [{ type: "seat", seatNumber: 1 }, { type: "seat", seatNumber: 2 }], rightSeats: [{ type: "seat", seatNumber: 3 }, { type: "seat", seatNumber: 4 }] },
         { rowNumber: 2,  leftSeats: [{ type: "seat", seatNumber: 5 }, { type: "seat", seatNumber: 6 }], rightSeats: [{ type: "stairs", label: "STAIRS" }] },
@@ -210,10 +210,10 @@ export function getBusClassification(input?: string | null, busNumber?: string |
 }
 
 /**
- * Designated PWD Priority Seats (Front row, right side near entrance/exit)
+ * Designated PWD Priority Seats (Front row: Seats 1, 2, 3, 4)
  * Consistent across Regular Aircon, Super Deluxe, and First Class layouts.
  */
-export const PWD_PRIORITY_SEATS: readonly number[] = [3, 4];
+export const PWD_PRIORITY_SEATS: readonly number[] = [1, 2, 3, 4];
 
 export function isPwdPrioritySeat(seatNumber: number): boolean {
     return PWD_PRIORITY_SEATS.includes(seatNumber);

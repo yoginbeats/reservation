@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CheckCircle2, UserCheck, Armchair, DoorOpen, Bath, Accessibility, Lock } from "lucide-react";
+import { CheckCircle2, UserCheck, Armchair, DoorOpen, Bath, Accessibility, Lock, Bus } from "lucide-react";
 import { 
     SUPERLINES_BUS_CLASSIFICATIONS, 
     getBusClassification, 
@@ -257,61 +257,117 @@ export function SeatPicker({
                     )}
                 </div>
 
-                {/* Column Headers: DRIVER'S SEAT | AISLE | CONDUCTOR SEAT */}
-                <div className="grid grid-cols-12 gap-1 items-end text-center">
-                    <div className="col-span-5 rounded-t-md bg-[#70B0E0] text-zinc-950 font-black text-[11px] sm:text-xs uppercase py-1.5 shadow-sm border border-[#5A9AC8]">
-                        DRIVER&apos;S SEAT
-                    </div>
-                    <div className="col-span-2 text-[10px] font-black uppercase text-red-600 dark:text-red-400 py-1 font-mono">
-                        {/* Aisle Spacer */}
-                    </div>
-                    <div className="col-span-5 rounded-t-md bg-[#70B0E0] text-zinc-950 font-black text-[11px] sm:text-xs uppercase py-1.5 shadow-sm border border-[#5A9AC8]">
-                        CONDUCTOR SEAT
-                    </div>
-                </div>
-
-                {/* Official Rows */}
-                <div className="space-y-1 sm:space-y-1.5 bg-white dark:bg-zinc-950/60 p-2 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                    {classification.rows.map((row, rowIdx) => {
-                        const isBackRow = Boolean(row.aisleSeat);
-                        const aisleLetterIdx = rowIdx - startRowIdx;
-                        const aisleLetter = (!isBackRow && aisleLetterIdx >= 0 && aisleLetterIdx < aisleLetters.length)
-                            ? aisleLetters[aisleLetterIdx]
-                            : null;
+                {/* Official Rows Container */}
+                <div className="space-y-1 sm:space-y-1.5 bg-white dark:bg-zinc-950/60 p-2 sm:p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                    {(() => {
+                        const row1 = classification.rows[0];
+                        const otherRows = classification.rows.slice(1);
+                        const otherStartRowIdx = Math.max(0, Math.floor((otherRows.length - aisleLetters.length) / 2));
 
                         return (
-                            <div key={row.rowNumber} className="grid grid-cols-12 items-center gap-1">
-                                {/* Left Side (Driver Side - 2 Seats) */}
-                                <div className="col-span-5 flex justify-end gap-1 sm:gap-1.5">
-                                    {row.leftSeats.map((cell, idx) => (
-                                        <div key={idx} className="shrink-0">
-                                            {renderSeatButton(cell, isBackRow)}
+                            <>
+                                {/* Front-Row Cockpit Alignment: [ Driver Seat ] | [ Seat 1 ] [ Seat 2 ] (Aisle) [ Seat 3 ] [ Seat 4 ] | [ Entrance Stairs ] */}
+                                {row1 && (
+                                    <div className="flex items-center justify-between gap-1 sm:gap-2 p-1.5 rounded-xl bg-blue-50/70 dark:bg-zinc-900 border-2 border-blue-400/60 dark:border-blue-700/60">
+                                        {/* Driver Seat Flank */}
+                                        <div
+                                            className="flex h-11 w-16 sm:h-12 sm:w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-zinc-800 text-white font-black text-[9px] sm:text-[10px] uppercase shadow-sm border border-zinc-700 select-none"
+                                            title="Driver's Cockpit Station"
+                                        >
+                                            <Bus className="h-3.5 w-3.5 mb-0.5 text-sky-400 shrink-0" />
+                                            <span className="leading-tight text-center">DRIVER<br />SEAT</span>
                                         </div>
-                                    ))}
-                                </div>
 
-                                {/* Center Aisle (Or Middle Back Seat) */}
-                                <div className="col-span-2 flex items-center justify-center">
-                                    {row.aisleSeat ? (
-                                        renderSeatButton(row.aisleSeat, true)
-                                    ) : (
-                                        <div className="h-9 w-6 flex items-center justify-center font-black text-xs sm:text-sm text-red-600 dark:text-red-400 select-none font-sans">
-                                            {aisleLetter || ""}
-                                        </div>
-                                    )}
-                                </div>
+                                        {/* Divider */}
+                                        <div className="h-9 w-[1px] bg-zinc-300 dark:bg-zinc-700 shrink-0" />
 
-                                {/* Right Side (Conductor Side - 2 Seats or CR/Stairs) */}
-                                <div className="col-span-5 flex justify-start gap-1 sm:gap-1.5">
-                                    {row.rightSeats.map((cell, idx) => (
-                                        <div key={idx} className="shrink-0">
-                                            {renderSeatButton(cell, isBackRow)}
+                                        {/* Seats 1 & 2 (PWD Priority) */}
+                                        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                            {row1.leftSeats.map((cell, idx) => (
+                                                <div key={idx} className="shrink-0">{renderSeatButton(cell)}</div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
+
+                                        {/* Aisle */}
+                                        <div className="flex-1 flex items-center justify-center px-1">
+                                            <span className="text-[10px] sm:text-xs font-black uppercase text-red-600 dark:text-red-400 font-mono tracking-wider">
+                                                AISLE
+                                            </span>
+                                        </div>
+
+                                        {/* Seats 3 & 4 (PWD Priority) */}
+                                        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                            {row1.rightSeats.map((cell, idx) => (
+                                                <div key={idx} className="shrink-0">{renderSeatButton(cell)}</div>
+                                            ))}
+                                        </div>
+
+                                        {/* Divider */}
+                                        <div className="h-9 w-[1px] bg-zinc-300 dark:bg-zinc-700 shrink-0" />
+
+                                        {/* Entrance Stairs */}
+                                        <div
+                                            className="flex h-11 w-16 sm:h-12 sm:w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-[#70B0E0] text-zinc-950 font-black text-[9px] sm:text-[10px] uppercase shadow-sm border border-[#5A9AC8] select-none"
+                                            title="Passenger Entrance & Exit Stairs"
+                                        >
+                                            <DoorOpen className="h-3.5 w-3.5 mb-0.5 text-zinc-900 shrink-0" />
+                                            <span className="leading-tight text-center">ENTRANCE<br />STAIRS</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Rows 2 to Rear */}
+                                {otherRows.map((row, rowIdx) => {
+                                    const isBackRow = Boolean(row.aisleSeat);
+                                    const aisleLetterIdx = rowIdx - otherStartRowIdx;
+                                    const aisleLetter = (!isBackRow && aisleLetterIdx >= 0 && aisleLetterIdx < aisleLetters.length)
+                                        ? aisleLetters[aisleLetterIdx]
+                                        : null;
+
+                                    return (
+                                        <div key={row.rowNumber} className="flex items-center justify-between gap-1 sm:gap-2 px-1.5 py-0.5">
+                                            {/* Left spacer aligning with Driver Seat */}
+                                            <div className="h-10 w-16 sm:h-11 sm:w-20 shrink-0 flex items-center justify-center font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-600">
+                                                <span>R{row.rowNumber}</span>
+                                            </div>
+
+                                            <div className="h-8 w-[1px] opacity-0 shrink-0" />
+
+                                            {/* Left 2 Seats */}
+                                            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                                {row.leftSeats.map((cell, idx) => (
+                                                    <div key={idx} className="shrink-0">{renderSeatButton(cell, isBackRow)}</div>
+                                                ))}
+                                            </div>
+
+                                            {/* Center Aisle */}
+                                            <div className="flex-1 flex items-center justify-center px-1">
+                                                {row.aisleSeat ? (
+                                                    renderSeatButton(row.aisleSeat, true)
+                                                ) : (
+                                                    <div className="h-9 w-6 flex items-center justify-center font-black text-xs sm:text-sm text-red-600 dark:text-red-400 select-none font-sans">
+                                                        {aisleLetter || ""}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Right 2 Seats / CR / Stairs */}
+                                            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                                {row.rightSeats.map((cell, idx) => (
+                                                    <div key={idx} className="shrink-0">{renderSeatButton(cell, isBackRow)}</div>
+                                                ))}
+                                            </div>
+
+                                            <div className="h-8 w-[1px] opacity-0 shrink-0" />
+
+                                            {/* Right spacer aligning with Entrance Stairs */}
+                                            <div className="h-10 w-16 sm:h-11 sm:w-20 shrink-0" />
+                                        </div>
+                                    );
+                                })}
+                            </>
                         );
-                    })}
+                    })()}
                 </div>
             </div>
 
