@@ -233,7 +233,7 @@ export default function ResetPasswordPage() {
                                     </Button>
                                 </div>
                             ) : (
-                                <form onSubmit={handleReset} className="space-y-4">
+                                <form onSubmit={handleReset} className="space-y-4" autoComplete="off">
                                     {error && (
                                         <div className="flex items-start gap-3 rounded-xl border border-red-500/40 bg-red-950/40 p-3.5 text-xs text-red-300 animate-in fade-in-50">
                                             <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
@@ -252,6 +252,8 @@ export default function ResetPasswordPage() {
                                                 id="password"
                                                 type={showPassword ? "text" : "password"}
                                                 required
+                                                autoComplete="new-password"
+                                                data-lpignore="true"
                                                 placeholder="At least 6 characters"
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}

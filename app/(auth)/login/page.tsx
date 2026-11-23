@@ -285,7 +285,7 @@ export default function LoginPage() {
                                     </div>
                                 )}
 
-                                <form onSubmit={handleEmailLogin} className="space-y-4">
+                                <form onSubmit={handleEmailLogin} className="space-y-4" autoComplete="off">
                                     {error && (
                                         <div className="rounded-xl bg-red-950/70 border border-red-800 p-3.5 text-xs text-red-200 flex items-start gap-2.5 shadow-inner">
                                             <ShieldAlert className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
@@ -301,11 +301,15 @@ export default function LoginPage() {
                                             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                                             <Input
                                                 id="passengerEmail"
+                                                name="passenger_email_no_autofill"
                                                 type="email"
                                                 placeholder="passenger@example.com"
                                                 value={email}
                                                 onChange={(e) => setEmail(e.target.value)}
                                                 className="pl-10 bg-zinc-950 border-zinc-800 text-white text-sm h-11 placeholder:text-zinc-600 focus:border-red-500 rounded-xl"
+                                                autoComplete="off"
+                                                data-lpignore="true"
+                                                data-form-type="other"
                                                 required
                                             />
                                         </div>
@@ -324,11 +328,15 @@ export default function LoginPage() {
                                             <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                                             <Input
                                                 id="passengerPassword"
+                                                name="passenger_password_no_autofill"
                                                 type={showPassword ? "text" : "password"}
                                                 placeholder="••••••••••••"
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 className="pl-10 pr-10 bg-zinc-950 border-zinc-800 text-white text-sm h-11 placeholder:text-zinc-600 focus:border-red-500 rounded-xl"
+                                                autoComplete="new-password"
+                                                data-lpignore="true"
+                                                data-form-type="other"
                                                 required
                                             />
                                             <button
@@ -339,13 +347,6 @@ export default function LoginPage() {
                                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                             </button>
                                         </div>
-                                    </div>
-
-                                    <div className="flex items-center space-x-2 pt-1">
-                                        <Checkbox id="rememberPassenger" className="border-zinc-700 data-[state=checked]:bg-red-600 rounded" />
-                                        <label htmlFor="rememberPassenger" className="text-xs text-zinc-400 font-medium cursor-pointer">
-                                            Keep me logged in on this browser
-                                        </label>
                                     </div>
 
                                     <Button

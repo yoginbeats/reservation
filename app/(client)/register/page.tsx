@@ -534,7 +534,7 @@ export default function RegisterPage() {
                                     </div>
                                 </div>
 
-                                <form onSubmit={handleInitiateRegistration} className="space-y-4">
+                                <form onSubmit={handleInitiateRegistration} className="space-y-4" autoComplete="off">
                                     {/* Personal Names */}
                                     <div className="grid gap-3 sm:grid-cols-3">
                                         <div className="space-y-1.5">
@@ -677,6 +677,8 @@ export default function RegisterPage() {
                                                     value={formData.password}
                                                     onChange={handleChange}
                                                     className="pl-9 pr-10"
+                                                    autoComplete="new-password"
+                                                    data-lpignore="true"
                                                     required
                                                 />
                                                 <button
