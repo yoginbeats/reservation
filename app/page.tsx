@@ -18,6 +18,7 @@ import { ModernDatePicker } from "@/components/ui/modern-date-picker";
 import { getTodayPH, formatDatePH, formatTimePH, getTripDatePH } from "@/lib/date-utils";
 import { AcademicDisclaimerCard, AcademicDisclaimerModal } from "@/components/academic-disclaimer";
 import { createClient } from "@/lib/supabase/client";
+import { PassengerAnnouncements } from "@/components/passenger-announcements";
 
 export default function Home() {
     const router = useRouter();
@@ -349,6 +350,13 @@ export default function Home() {
                         </div>
 
                     </div>
+                </div>
+            </section>
+
+            {/* OFFICIAL PASSENGER ANNOUNCEMENTS & TRAVEL ADVISORIES SECTION */}
+            <section className="relative z-20 py-16 px-4 sm:px-6 lg:px-8 border-t border-zinc-800/80 bg-zinc-950">
+                <div className="container mx-auto max-w-7xl">
+                    <PassengerAnnouncements limit={3} showViewAllButton={true} />
                 </div>
             </section>
         </div>

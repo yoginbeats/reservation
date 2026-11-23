@@ -75,6 +75,8 @@ export async function addAnnouncementAction(newAnnouncement: Record<string, unkn
         
         revalidatePath("/admin/announcements");
         revalidatePath("/");
+        revalidatePath("/dashboard");
+        revalidatePath("/announcements");
         return { success: true, data };
     } catch (err: any) {
         return { success: false, error: err?.message || "Failed to add announcement" };
@@ -95,6 +97,8 @@ export async function updateAnnouncementAction(id: string, announcementData: Rec
         
         revalidatePath("/admin/announcements");
         revalidatePath("/");
+        revalidatePath("/dashboard");
+        revalidatePath("/announcements");
         return { success: true, data };
     } catch (err: any) {
         return { success: false, error: err?.message || "Failed to update announcement" };
@@ -114,6 +118,8 @@ export async function deleteAnnouncementAction(id: string) {
         
         revalidatePath("/admin/announcements");
         revalidatePath("/");
+        revalidatePath("/dashboard");
+        revalidatePath("/announcements");
         return { success: true };
     } catch (err: any) {
         return { success: false, error: err?.message || "Failed to delete announcement" };

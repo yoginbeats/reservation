@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getActiveAnnouncementsAction, AnnouncementItem } from "@/app/actions/announcement";
-import { Megaphone } from "lucide-react";
+import { Megaphone, ExternalLink } from "lucide-react";
 
 const DEFAULT_ANNOUNCEMENTS: AnnouncementItem[] = [
     {
@@ -81,15 +82,23 @@ export function AnnouncementPanel() {
             <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] mix-blend-overlay pointer-events-none" />
 
             <div className="container mx-auto px-4 sm:px-6 py-2 sm:py-2.5 relative z-10 flex items-center gap-3 overflow-hidden">
-                <div className="flex items-center gap-1.5 shrink-0 bg-red-950/80 border border-red-400/30 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-white shadow-sm">
-                    <Megaphone className="h-3.5 w-3.5 text-red-300 animate-pulse" />
+                <Link 
+                    href="/announcements" 
+                    className="flex items-center gap-1.5 shrink-0 bg-red-950/80 hover:bg-red-900 border border-red-400/30 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider text-white shadow-sm transition-colors cursor-pointer group"
+                    title="View all official Superlines announcements"
+                >
+                    <Megaphone className="h-3.5 w-3.5 text-red-300 animate-pulse group-hover:scale-110 transition-transform" />
                     <span className="hidden xs:inline">Announcements</span>
-                </div>
+                </Link>
 
                 <div className="flex-1 overflow-hidden relative h-6 flex items-center">
                     <div className="flex gap-8 whitespace-nowrap animate-marquee">
                         {announcements.map((announcement) => (
-                            <div key={announcement.id} className="flex items-center gap-2 text-xs">
+                            <Link 
+                                key={announcement.id} 
+                                href="/announcements" 
+                                className="flex items-center gap-2 text-xs hover:text-white transition-opacity group cursor-pointer"
+                            >
                                 {announcement.image_url && (
                                     announcement.image_url.match(/\.(mp4|webm|ogg|mov)$/i) ? (
                                         <video
@@ -109,15 +118,19 @@ export function AnnouncementPanel() {
                                         />
                                     )
                                 )}
-                                <span className="font-extrabold text-amber-300">{announcement.title}:</span>
+                                <span className="font-extrabold text-amber-300 group-hover:underline">{announcement.title}:</span>
                                 <span className="font-medium text-red-50">{announcement.content}</span>
                                 <span className="text-red-400/60 mx-4">•</span>
-                            </div>
+                            </Link>
                         ))}
 
                         {/* Duplicate for seamless continuous looping marquee */}
                         {announcements.map((announcement) => (
-                            <div key={`dup-${announcement.id}`} className="flex items-center gap-2 text-xs">
+                            <Link 
+                                key={`dup-${announcement.id}`} 
+                                href="/announcements" 
+                                className="flex items-center gap-2 text-xs hover:text-white transition-opacity group cursor-pointer"
+                            >
                                 {announcement.image_url && (
                                     announcement.image_url.match(/\.(mp4|webm|ogg|mov)$/i) ? (
                                         <video
@@ -137,10 +150,10 @@ export function AnnouncementPanel() {
                                         />
                                     )
                                 )}
-                                <span className="font-extrabold text-amber-300">{announcement.title}:</span>
+                                <span className="font-extrabold text-amber-300 group-hover:underline">{announcement.title}:</span>
                                 <span className="font-medium text-red-50">{announcement.content}</span>
                                 <span className="text-red-400/60 mx-4">•</span>
-                            </div>
+                            </Link>
                         ))}
                     </div>
                 </div>

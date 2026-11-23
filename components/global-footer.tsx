@@ -106,6 +106,11 @@ export function GlobalFooter() {
                                 </Link>
                             </li>
                             <li>
+                                <Link href="/announcements" className="hover:text-red-400 transition-colors flex items-center gap-1.5">
+                                    <span>Company Announcements &amp; Advisories</span>
+                                </Link>
+                            </li>
+                            <li>
                                 <Link href="/my-tickets" className="hover:text-red-400 transition-colors flex items-center gap-1.5">
                                     <span>My Digital Tickets & QR Pass</span>
                                 </Link>
