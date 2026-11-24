@@ -250,7 +250,7 @@ export async function GET(req: NextRequest) {
         // =========================================================================
         const busClassDefaults: { [key: string]: { name: string; capacity: number; baseFare: number; color: string } } = {
             "REGULAR_AIRCON": { name: "Regular Aircon (49 Seats)", capacity: 49, baseFare: 850, color: "#2563eb" },
-            "SUPER_DELUXE": { name: "Super Deluxe (43 Seats • CR)", capacity: 43, baseFare: 950, color: "#059669" },
+            "SUPER_DELUXE": { name: "Deluxe (43 Seats • CR)", capacity: 43, baseFare: 950, color: "#059669" },
             "FIRST_CLASS": { name: "First Class (41 Seats • CR)", capacity: 41, baseFare: 1100, color: "#7c3aed" },
         };
 
@@ -312,8 +312,13 @@ export async function GET(req: NextRequest) {
             };
         }).sort((a, b) => b.total_revenue - a.total_revenue);
 
-        const mostPopularBusType = [...busPerformanceList].sort((a, b) => b.passenger_count - a.passenger_count)[0] || busPerformanceList[0];
-        const leastPopularBusType = [...busPerformanceList].sort((a, b) => a.passenger_count - b.passenger_count)[0] || busPerformanceList[busPerformanceList.length - 1];
+        const totalBusPassengers = busPerformanceList.reduce((sum, b) => sum + b.passenger_count, 0);
+        const mostPopularBusType = totalBusPassengers > 0
+            ? [...busPerformanceList].sort((a, b) => b.passenger_count - a.passenger_count)[0]
+            : null;
+        const leastPopularBusType = totalBusPassengers > 0
+            ? [...busPerformanceList].sort((a, b) => a.passenger_count - b.passenger_count)[0]
+            : null;
 
         // =========================================================================
         // SECTION 3: TERMINAL PERFORMANCE ANALYTICS
@@ -542,19 +547,31 @@ export async function GET(req: NextRequest) {
             },
             bus_type_performance: {
                 bus_types: busPerformanceList,
-                most_popular: {
+                most_popular: mostPopularBusType ? {
                     bus_type: mostPopularBusType.bus_type,
                     display_name: mostPopularBusType.display_name,
                     passenger_count: mostPopularBusType.passenger_count,
                     occupancy_rate: mostPopularBusType.occupancy_rate,
                     total_revenue: mostPopularBusType.total_revenue,
+                } : {
+                    bus_type: "NONE",
+                    display_name: "No bookings yet",
+                    passenger_count: 0,
+                    occupancy_rate: 0,
+                    total_revenue: 0,
                 },
-                least_popular: {
+                least_popular: leastPopularBusType ? {
                     bus_type: leastPopularBusType.bus_type,
                     display_name: leastPopularBusType.display_name,
                     passenger_count: leastPopularBusType.passenger_count,
                     occupancy_rate: leastPopularBusType.occupancy_rate,
                     total_revenue: leastPopularBusType.total_revenue,
+                } : {
+                    bus_type: "NONE",
+                    display_name: "No bookings yet",
+                    passenger_count: 0,
+                    occupancy_rate: 0,
+                    total_revenue: 0,
                 },
             },
             terminal_performance: {

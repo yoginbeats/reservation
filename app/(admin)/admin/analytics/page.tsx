@@ -168,7 +168,7 @@ export default function AdminBIAnalyticsPage() {
                         >
                             <option value="ALL">All Fleet Classes</option>
                             <option value="REGULAR_AIRCON">Regular Aircon (49 Seats)</option>
-                            <option value="SUPER_DELUXE">Super Deluxe (43 Seats • CR)</option>
+                            <option value="SUPER_DELUXE">Deluxe (43 Seats • CR)</option>
                             <option value="FIRST_CLASS">First Class (41 Seats • CR)</option>
                         </select>
                     </div>
@@ -710,7 +710,7 @@ export default function AdminBIAnalyticsPage() {
                                 <CheckCircle2 className="h-4 w-4 text-blue-600" />
                             </p>
                             <div className="text-lg font-black text-blue-600 mt-1">
-                                {busPerf?.most_popular?.display_name || "None yet"}
+                                {(busPerf?.most_popular?.passenger_count || 0) > 0 ? busPerf.most_popular.display_name : "None yet"}
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 font-mono">
                                 <span>{busPerf?.most_popular?.passenger_count || 0} Passengers</span>
@@ -724,7 +724,7 @@ export default function AdminBIAnalyticsPage() {
                                 <AlertCircle className="h-4 w-4 text-purple-600" />
                             </p>
                             <div className="text-lg font-black text-purple-600 mt-1">
-                                {busPerf?.least_popular?.display_name || "None yet"}
+                                {(busPerf?.least_popular?.passenger_count || 0) > 0 ? busPerf.least_popular.display_name : "None yet"}
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 font-mono">
                                 <span>{busPerf?.least_popular?.passenger_count || 0} Passengers</span>
@@ -741,7 +741,7 @@ export default function AdminBIAnalyticsPage() {
                                 First Class (₱1,100)
                             </div>
                             <p className="text-xs text-muted-foreground mt-1 font-mono">
-                                Yield: ₱{(busPerf?.bus_types?.find((b: any) => b.bus_type === 'FIRST_CLASS')?.average_revenue_per_trip || 0).toLocaleString()} avg revenue / trip
+                                Yield: ₱{(busPerf?.bus_types?.find((b: any) => b.bus_type === 'FIRST_CLASS')?.average_revenue_per_trip || 0).toLocaleString()}.00 avg revenue / trip
                             </p>
                         </Card>
 
