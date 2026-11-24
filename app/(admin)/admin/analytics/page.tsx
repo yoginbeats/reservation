@@ -75,11 +75,11 @@ export default function AdminBIAnalyticsPage() {
     const dayOfWeek = data?.day_of_week_analytics;
 
     // Helper for Max Value Scaling in SVG Charts
-    const maxHourlySales = Math.max(1, ...(peakSales?.hourly_breakdown?.map((h: any) => h.sales_amount) || [10000]));
-    const maxHourlyPassengers = Math.max(1, ...(peakSales?.hourly_breakdown?.map((h: any) => h.passenger_volume) || [50]));
-    const maxBusSales = Math.max(1, ...(busPerf?.bus_types?.map((b: any) => b.total_revenue) || [100000]));
-    const maxTerminalSales = Math.max(1, ...(termPerf?.terminals?.map((t: any) => t.ticket_sales) || [100000]));
-    const maxDaySales = Math.max(1, ...(dayOfWeek?.days?.map((d: any) => d.sales) || [100000]));
+    const maxHourlySales = Math.max(0, ...(peakSales?.hourly_breakdown?.map((h: any) => h.sales_amount) || [0]));
+    const maxHourlyPassengers = Math.max(0, ...(peakSales?.hourly_breakdown?.map((h: any) => h.passenger_volume) || [0]));
+    const maxBusSales = Math.max(0, ...(busPerf?.bus_types?.map((b: any) => b.total_revenue) || [0]));
+    const maxTerminalSales = Math.max(0, ...(termPerf?.terminals?.map((t: any) => t.ticket_sales) || [0]));
+    const maxDaySales = Math.max(0, ...(dayOfWeek?.days?.map((d: any) => d.sales) || [0]));
 
     return (
         <div className="space-y-6 pb-12">
@@ -533,9 +533,9 @@ export default function AdminBIAnalyticsPage() {
                                 {(peakSales?.hourly_breakdown || []).map((hItem: any) => {
                                     const value = hourlyMetric === "SALES" ? hItem.sales_amount : hItem.passenger_volume;
                                     const maxVal = hourlyMetric === "SALES" ? maxHourlySales : maxHourlyPassengers;
-                                    const heightPercent = Math.max(6, Math.round((value / maxVal) * 100));
-                                    const isPeakSelling = hItem.hour_label === peakSales?.peak_selling_time?.short_label;
-                                    const isPeakDeparture = hItem.hour_label === peakSales?.peak_departure_time?.short_label;
+                                    const heightPercent = value > 0 && maxVal > 0 ? Math.max(6, Math.round((value / maxVal) * 100)) : 0;
+                                    const isPeakSelling = value > 0 && hItem.hour_label === peakSales?.peak_selling_time?.short_label;
+                                    const isPeakDeparture = (hItem.departures_count > 0 || hItem.passenger_volume > 0) && hItem.hour_label === peakSales?.peak_departure_time?.short_label;
 
                                     return (
                                         <div
@@ -553,9 +553,11 @@ export default function AdminBIAnalyticsPage() {
 
                                             {/* The Bar */}
                                             <div
-                                                style={{ height: `${heightPercent}%` }}
+                                                style={{ height: heightPercent > 0 ? `${heightPercent}%` : "3px" }}
                                                 className={`w-full rounded-t-md transition-all duration-200 ${
-                                                    isPeakSelling
+                                                    heightPercent === 0
+                                                        ? "bg-muted/40"
+                                                        : isPeakSelling
                                                         ? "bg-blue-600 group-hover:bg-blue-700 shadow-md ring-2 ring-blue-400/50"
                                                         : isPeakDeparture
                                                         ? "bg-emerald-600 group-hover:bg-emerald-700"
@@ -1066,8 +1068,8 @@ export default function AdminBIAnalyticsPage() {
                         <CardContent className="pt-2">
                             <div className="h-60 w-full flex items-end gap-3 sm:gap-6 pt-6 pb-6 px-4 border-b">
                                 {(dayOfWeek?.days || []).map((d: any) => {
-                                    const heightPercent = Math.max(10, Math.round((d.sales / maxDaySales) * 100));
-                                    const isPeak = d.day === dayOfWeek?.peak_day?.day;
+                                    const heightPercent = d.sales > 0 && maxDaySales > 0 ? Math.max(8, Math.round((d.sales / maxDaySales) * 100)) : 0;
+                                    const isPeak = d.sales > 0 && d.day === dayOfWeek?.peak_day?.day;
 
                                     return (
                                         <div
@@ -1083,9 +1085,11 @@ export default function AdminBIAnalyticsPage() {
                                             )}
 
                                             <div
-                                                style={{ height: `${heightPercent}%` }}
+                                                style={{ height: heightPercent > 0 ? `${heightPercent}%` : "4px" }}
                                                 className={`w-full max-w-[50px] rounded-t-lg transition-all duration-300 ${
-                                                    isPeak
+                                                    heightPercent === 0
+                                                        ? "bg-muted/40"
+                                                        : isPeak
                                                         ? "bg-rose-600 group-hover:bg-rose-700 shadow-md ring-2 ring-rose-400/50"
                                                         : d.is_weekend
                                                         ? "bg-amber-500 group-hover:bg-amber-600"
@@ -1097,7 +1101,7 @@ export default function AdminBIAnalyticsPage() {
                                                 {d.short_day}
                                             </span>
                                             <span className="text-[9px] font-mono text-muted-foreground">
-                                                ₱{Math.round(d.sales / 1000)}k
+                                                {d.sales > 0 ? `₱${Math.round(d.sales / 1000)}k` : "₱0"}
                                             </span>
                                         </div>
                                     );
