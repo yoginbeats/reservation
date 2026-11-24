@@ -107,16 +107,16 @@ export function SeatPicker({
 
     const renderSeatButton = (cell: SeatGridCell, isBackRow = false) => {
         if (!cell || cell.type === "empty") {
-            return <div className="h-10 w-11 sm:h-11 sm:w-12" />;
+            return <div className="h-9 w-8 sm:h-11 sm:w-11" />;
         }
 
         if (cell.type === "cr") {
             return (
                 <div 
-                    className="flex h-10 w-[94px] sm:h-11 sm:w-[102px] items-center justify-center rounded-md bg-[#4A7BB0] text-white font-black text-[10px] sm:text-[11px] shadow-sm gap-1 border border-[#3A6B9E] select-none"
+                    className="flex h-9 w-[68px] sm:h-11 sm:w-[92px] items-center justify-center rounded-md bg-[#4A7BB0] text-white font-black text-[8px] sm:text-[10px] shadow-sm gap-0.5 sm:gap-1 border border-[#3A6B9E] select-none px-1 text-center leading-tight"
                     title="Comfort Room (Restroom)"
                 >
-                    <Bath className="h-3.5 w-3.5 shrink-0" />
+                    <Bath className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                     <span className="tracking-tighter">COMFORT ROOM</span>
                 </div>
             );
@@ -125,10 +125,10 @@ export function SeatPicker({
         if (cell.type === "stairs") {
             return (
                 <div 
-                    className="flex h-10 w-[94px] sm:h-11 sm:w-[102px] items-center justify-center rounded-md bg-[#70B0E0] text-zinc-950 font-black text-[10px] sm:text-[11px] shadow-sm gap-1 border border-[#5A9AC8] select-none"
+                    className="flex h-9 w-[68px] sm:h-11 sm:w-[92px] items-center justify-center rounded-md bg-[#70B0E0] text-zinc-950 font-black text-[9px] sm:text-[11px] shadow-sm gap-0.5 sm:gap-1 border border-[#5A9AC8] select-none"
                     title="Exit / Entrance Stairs"
                 >
-                    <DoorOpen className="h-3.5 w-3.5 shrink-0" />
+                    <DoorOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                     <span className="tracking-wider">STAIRS</span>
                 </div>
             );
@@ -155,7 +155,7 @@ export function SeatPicker({
                 type="button"
                 disabled={isBooked || isPwdLocked}
                 onClick={() => handleSeatClick(seatNum)}
-                className={`relative flex h-10 w-11 sm:h-11 sm:w-12 flex-col items-center justify-center rounded-md border font-mono text-xs font-black transition-all ${
+                className={`relative flex h-9 w-8 sm:h-11 sm:w-11 flex-col items-center justify-center rounded-md border font-mono text-xs font-black transition-all ${
                     isBooked
                         ? "cursor-not-allowed bg-zinc-200 border-zinc-300 text-zinc-400 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-500 opacity-60 line-through select-none"
                         : isPwdLocked
@@ -163,7 +163,7 @@ export function SeatPicker({
                         : isSelected
                         ? "border-emerald-600 bg-emerald-600 text-white shadow-lg shadow-emerald-600/40 ring-4 ring-emerald-300 dark:ring-emerald-600 scale-105 z-10"
                         : `${availableBg} shadow-sm hover:scale-105 active:scale-95`
-                } ${isBackRow ? "flex-1 max-w-[52px]" : ""}`}
+                } ${isBackRow ? "shrink-0" : ""}`}
                 title={
                     isBooked
                         ? `Seat #${seatNum} (Booked)`
@@ -205,7 +205,7 @@ export function SeatPicker({
     const hasMultiSelected = selectedSeats && selectedSeats.length > 0;
 
     return (
-        <div className="mx-auto w-full max-w-sm sm:max-w-md rounded-2xl border-2 border-zinc-300 bg-white p-3 sm:p-5 shadow-xl dark:border-zinc-700 dark:bg-zinc-950 space-y-4">
+        <div className="mx-auto w-full max-w-lg sm:max-w-xl rounded-2xl border-2 border-zinc-300 bg-white p-2.5 sm:p-5 shadow-xl dark:border-zinc-700 dark:bg-zinc-950 space-y-4 overflow-hidden">
             {/* Classification Quick Switcher (if enabled) */}
             {allowClassificationSwitch && (
                 <div className="flex items-center justify-between border-b pb-3 dark:border-zinc-800 gap-2">
@@ -258,7 +258,7 @@ export function SeatPicker({
                 </div>
 
                 {/* Official Rows Container */}
-                <div className="space-y-1 sm:space-y-1.5 bg-white dark:bg-zinc-950/60 p-2 sm:p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                <div className="space-y-1 sm:space-y-1.5 bg-white dark:bg-zinc-950/60 p-1.5 sm:p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-x-auto">
                     {(() => {
                         const row1 = classification.rows[0];
                         const otherRows = classification.rows.slice(1);
@@ -268,18 +268,18 @@ export function SeatPicker({
                             <>
                                 {/* Front-Row Cockpit Alignment: [ Driver Seat ] | [ Seat 1 ] [ Seat 2 ] (Aisle) [ Seat 3 ] [ Seat 4 ] | [ Entrance Stairs ] */}
                                 {row1 && (
-                                    <div className="flex items-center justify-between gap-1 sm:gap-2 p-1.5 rounded-xl bg-blue-50/70 dark:bg-zinc-900 border-2 border-blue-400/60 dark:border-blue-700/60">
+                                    <div className="flex items-center justify-between gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-xl bg-blue-50/70 dark:bg-zinc-900 border-2 border-blue-400/60 dark:border-blue-700/60">
                                         {/* Driver Seat Flank */}
                                         <div
-                                            className="flex h-11 w-16 sm:h-12 sm:w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-zinc-800 text-white font-black text-[9px] sm:text-[10px] uppercase shadow-sm border border-zinc-700 select-none"
+                                            className="flex h-10 w-11 sm:h-12 sm:w-16 shrink-0 flex-col items-center justify-center rounded-lg bg-zinc-800 text-white font-black text-[7px] sm:text-[9px] uppercase shadow-sm border border-zinc-700 select-none px-0.5"
                                             title="Driver's Cockpit Station"
                                         >
-                                            <Bus className="h-3.5 w-3.5 mb-0.5 text-sky-400 shrink-0" />
+                                            <Bus className="h-3 w-3 sm:h-3.5 sm:w-3.5 mb-0.5 text-sky-400 shrink-0" />
                                             <span className="leading-tight text-center">DRIVER<br />SEAT</span>
                                         </div>
 
                                         {/* Divider */}
-                                        <div className="h-9 w-[1px] bg-zinc-300 dark:bg-zinc-700 shrink-0" />
+                                        <div className="h-8 w-[1px] bg-zinc-300 dark:bg-zinc-700 shrink-0" />
 
                                         {/* Seats 1 & 2 (PWD Priority) */}
                                         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
@@ -289,8 +289,8 @@ export function SeatPicker({
                                         </div>
 
                                         {/* Aisle */}
-                                        <div className="flex-1 flex items-center justify-center px-1">
-                                            <span className="text-[10px] sm:text-xs font-black uppercase text-red-600 dark:text-red-400 font-mono tracking-wider">
+                                        <div className="flex-1 min-w-[24px] flex items-center justify-center px-0.5">
+                                            <span className="text-[8px] sm:text-[11px] font-black uppercase text-red-600 dark:text-red-400 font-mono tracking-tight sm:tracking-wider">
                                                 AISLE
                                             </span>
                                         </div>
@@ -303,14 +303,14 @@ export function SeatPicker({
                                         </div>
 
                                         {/* Divider */}
-                                        <div className="h-9 w-[1px] bg-zinc-300 dark:bg-zinc-700 shrink-0" />
+                                        <div className="h-8 w-[1px] bg-zinc-300 dark:bg-zinc-700 shrink-0" />
 
                                         {/* Entrance Stairs */}
                                         <div
-                                            className="flex h-11 w-16 sm:h-12 sm:w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-[#70B0E0] text-zinc-950 font-black text-[9px] sm:text-[10px] uppercase shadow-sm border border-[#5A9AC8] select-none"
+                                            className="flex h-10 w-11 sm:h-12 sm:w-16 shrink-0 flex-col items-center justify-center rounded-lg bg-[#70B0E0] text-zinc-950 font-black text-[7px] sm:text-[9px] uppercase shadow-sm border border-[#5A9AC8] select-none px-0.5"
                                             title="Passenger Entrance & Exit Stairs"
                                         >
-                                            <DoorOpen className="h-3.5 w-3.5 mb-0.5 text-zinc-900 shrink-0" />
+                                            <DoorOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5 mb-0.5 text-zinc-900 shrink-0" />
                                             <span className="leading-tight text-center">ENTRANCE<br />STAIRS</span>
                                         </div>
                                     </div>
@@ -325,9 +325,9 @@ export function SeatPicker({
                                         : null;
 
                                     return (
-                                        <div key={row.rowNumber} className="flex items-center justify-between gap-1 sm:gap-2 px-1.5 py-0.5">
+                                        <div key={row.rowNumber} className="flex items-center justify-between gap-1 sm:gap-1.5 px-1 sm:px-1.5 py-0.5">
                                             {/* Left spacer aligning with Driver Seat */}
-                                            <div className="h-10 w-16 sm:h-11 sm:w-20 shrink-0 flex items-center justify-center font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-600">
+                                            <div className="h-9 w-11 sm:h-11 sm:w-16 shrink-0 flex items-center justify-center font-mono text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-600">
                                                 <span>R{row.rowNumber}</span>
                                             </div>
 
@@ -341,11 +341,11 @@ export function SeatPicker({
                                             </div>
 
                                             {/* Center Aisle */}
-                                            <div className="flex-1 flex items-center justify-center px-1">
+                                            <div className="flex-1 min-w-[24px] flex items-center justify-center px-0.5">
                                                 {row.aisleSeat ? (
                                                     renderSeatButton(row.aisleSeat, true)
                                                 ) : (
-                                                    <div className="h-9 w-6 flex items-center justify-center font-black text-xs sm:text-sm text-red-600 dark:text-red-400 select-none font-sans">
+                                                    <div className="h-9 w-5 flex items-center justify-center font-black text-xs sm:text-sm text-red-600 dark:text-red-400 select-none font-sans">
                                                         {aisleLetter || ""}
                                                     </div>
                                                 )}
@@ -361,7 +361,7 @@ export function SeatPicker({
                                             <div className="h-8 w-[1px] opacity-0 shrink-0" />
 
                                             {/* Right spacer aligning with Entrance Stairs */}
-                                            <div className="h-10 w-16 sm:h-11 sm:w-20 shrink-0" />
+                                            <div className="h-9 w-11 sm:h-11 sm:w-16 shrink-0" />
                                         </div>
                                     );
                                 })}
