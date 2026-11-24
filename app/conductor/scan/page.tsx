@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,15 +12,13 @@ import {
     AlertTriangle,
     Camera,
     RefreshCw,
-    User,
-    Bus,
     Check,
     Upload,
     SwitchCamera,
     ShieldAlert,
-    ExternalLink,
-    AlertCircle,
-    X
+    X,
+    Zap,
+    Flashlight
 } from "lucide-react";
 import jsQR from "jsqr";
 
@@ -31,11 +29,14 @@ export default function ConductorQrScanPage() {
     const [manualToken, setManualToken] = useState("");
     const [verifying, setVerifying] = useState(false);
     const [confirming, setConfirming] = useState(false);
-    const [cameraActive, setCameraActive] = useState(false);
+    const [cameraActive, setCameraActive] = useState(true);
     const [cameraFacing, setCameraFacing] = useState<"environment" | "user">("environment");
     const [cameraError, setCameraError] = useState<string | null>(null);
     const [idInspected, setIdInspected] = useState(false);
     const [processingPhoto, setProcessingPhoto] = useState(false);
+    const [hasTorch, setHasTorch] = useState(false);
+    const [torchOn, setTorchOn] = useState(false);
+    const [isHardwareAccelerated, setIsHardwareAccelerated] = useState(false);
 
     // Verification Result State
     const [scanResult, setScanResult] = useState<{
@@ -49,25 +50,65 @@ export default function ConductorQrScanPage() {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const animationFrameRef = useRef<number | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
+    const barcodeDetectorRef = useRef<any>(null);
 
-    // Audio beep on successful scan
-    const playSuccessBeep = () => {
+    // Initialize Native BarcodeDetector (Chrome / Android / Chromium hardware acceleration)
+    useEffect(() => {
+        if (typeof window !== "undefined" && "BarcodeDetector" in window) {
+            try {
+                const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
+                barcodeDetectorRef.current = detector;
+                setIsHardwareAccelerated(true);
+            } catch (e) {
+                console.warn("Native BarcodeDetector not available, falling back to optimized jsQR:", e);
+                barcodeDetectorRef.current = null;
+                setIsHardwareAccelerated(false);
+            }
+        }
+    }, []);
+
+    // Listen to browser permission change (e.g. if user allowed camera in site settings)
+    useEffect(() => {
+        if (typeof window !== "undefined" && navigator.permissions?.query) {
+            navigator.permissions
+                .query({ name: "camera" as any })
+                .then((permissionStatus) => {
+                    permissionStatus.onchange = () => {
+                        if (permissionStatus.state === "granted" && !cameraActive) {
+                            setCameraError(null);
+                            setCameraActive(true);
+                        }
+                    };
+                })
+                .catch(() => {});
+        }
+    }, [cameraActive]);
+
+    // Audio beep & haptic feedback on successful scan
+    const playSuccessFeedback = useCallback(() => {
         try {
             const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-            if (!AudioContextClass) return;
-            const ctx = new AudioContextClass();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(880, ctx.currentTime);
-            gain.gain.setValueAtTime(0.15, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + 0.18);
+            if (AudioContextClass) {
+                const ctx = new AudioContextClass();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                gain.gain.setValueAtTime(0.18, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.16);
+            }
         } catch {}
-    };
+
+        try {
+            if (typeof navigator !== "undefined" && navigator.vibrate) {
+                navigator.vibrate([80, 40, 80]);
+            }
+        } catch {}
+    }, []);
 
     // Extract standard ticket token from QR code content (URL, plain text, or JSON)
     const extractToken = (raw: string): string => {
@@ -77,7 +118,11 @@ export default function ConductorQrScanPage() {
 
         try {
             const url = new URL(text);
-            const ref = url.searchParams.get("ref") || url.searchParams.get("token") || url.searchParams.get("qr_token") || url.searchParams.get("booking_id");
+            const ref =
+                url.searchParams.get("ref") ||
+                url.searchParams.get("token") ||
+                url.searchParams.get("qr_token") ||
+                url.searchParams.get("booking_id");
             if (ref) return ref.toUpperCase();
         } catch {}
 
@@ -91,7 +136,209 @@ export default function ConductorQrScanPage() {
         return text.toUpperCase();
     };
 
-    // Toggle Camera Access
+    const stopCamera = useCallback(() => {
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+        }
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach((t) => {
+                try {
+                    t.stop();
+                } catch {}
+            });
+            streamRef.current = null;
+        }
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
+        setTorchOn(false);
+        setHasTorch(false);
+    }, []);
+
+    const runScanLoop = useCallback(() => {
+        let isProcessing = false;
+        let lastScanTime = 0;
+
+        const scan = async () => {
+            if (!streamRef.current || !videoRef.current) return;
+
+            const now = performance.now();
+            const video = videoRef.current;
+
+            if (
+                video &&
+                video.readyState >= video.HAVE_CURRENT_DATA &&
+                !isProcessing &&
+                now - lastScanTime >= 65 // ~15 scans/sec: instant detection without CPU choke
+            ) {
+                lastScanTime = now;
+                isProcessing = true;
+
+                try {
+                    let detectedToken: string | null = null;
+
+                    // 1. Hardware Accelerated BarcodeDetector (instant < 15ms)
+                    if (barcodeDetectorRef.current) {
+                        try {
+                            const barcodes = await barcodeDetectorRef.current.detect(video);
+                            if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+                                detectedToken = extractToken(barcodes[0].rawValue);
+                            }
+                        } catch {
+                            // Fallback to jsQR below
+                        }
+                    }
+
+                    // 2. High-speed jsQR fallback with hardware downscaling
+                    if (!detectedToken && video.videoWidth > 0 && video.videoHeight > 0) {
+                        const canvas = canvasRef.current || document.createElement("canvas");
+                        const vw = video.videoWidth;
+                        const vh = video.videoHeight;
+
+                        // Downscale to max ~640px: 8x faster than raw 1080p frame
+                        const maxDim = 640;
+                        const scale = Math.min(1, maxDim / Math.max(vw, vh));
+                        const sw = Math.max(1, Math.round(vw * scale));
+                        const sh = Math.max(1, Math.round(vh * scale));
+
+                        canvas.width = sw;
+                        canvas.height = sh;
+                        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+                        if (ctx) {
+                            ctx.drawImage(video, 0, 0, sw, sh);
+                            const imgData = ctx.getImageData(0, 0, sw, sh);
+
+                            const code = jsQR(imgData.data, sw, sh, {
+                                inversionAttempts: "attemptBoth",
+                            });
+
+                            if (code && code.data && code.data.trim()) {
+                                detectedToken = extractToken(code.data);
+                            }
+                        }
+                    }
+
+                    if (detectedToken) {
+                        playSuccessFeedback();
+                        setManualToken(detectedToken);
+                        setCameraActive(false);
+                        stopCamera();
+                        handleLookupTicket(detectedToken);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn("Scan frame error:", e);
+                } finally {
+                    isProcessing = false;
+                }
+            }
+
+            animationFrameRef.current = requestAnimationFrame(scan);
+        };
+
+        animationFrameRef.current = requestAnimationFrame(scan);
+    }, [playSuccessFeedback, stopCamera]);
+
+    const startCamera = useCallback(async () => {
+        setCameraError(null);
+
+        if (typeof window === "undefined") return;
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            setCameraError(
+                "Camera access is not supported on this browser or requires a secure HTTPS connection. Please use 'Snap Photo / Upload' or enter the ticket token manually."
+            );
+            return;
+        }
+
+        stopCamera();
+
+        let stream: MediaStream | null = null;
+
+        // Multi-tier fallback constraints for maximum hardware compatibility
+        const constraintTiers: MediaStreamConstraints[] = [
+            {
+                video: {
+                    facingMode: { ideal: cameraFacing },
+                    width: { ideal: 1280, max: 1920 },
+                    height: { ideal: 720, max: 1080 },
+                    advanced: [{ focusMode: "continuous" } as any],
+                },
+            },
+            {
+                video: {
+                    facingMode: { ideal: cameraFacing },
+                },
+            },
+            {
+                video: {
+                    facingMode: "environment",
+                },
+            },
+            {
+                video: true,
+            },
+        ];
+
+        let lastErr: any = null;
+        for (const constraints of constraintTiers) {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                if (stream) break;
+            } catch (err: any) {
+                lastErr = err;
+                if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+                    break; // User denied or permission blocked; don't hammer other constraints
+                }
+            }
+        }
+
+        if (!stream) {
+            setCameraActive(false);
+            let msg = "Hindi ma-access ang camera sa device na ito.";
+            if (lastErr?.name === "NotAllowedError" || lastErr?.name === "PermissionDeniedError") {
+                msg =
+                    "Naka-Block ang camera sa iyong browser. Upang magamit ang live scanner, i-click ang lock icon (🔒) o site settings sa tabi ng URL bar, piliin ang 'Allow' para sa Camera, at i-refresh ang page.";
+            } else if (lastErr?.name === "NotFoundError" || lastErr?.name === "DevicesNotFoundError") {
+                msg = "Walang nakitang camera hardware sa device na ito. Gamitin ang 'Snap Photo / Upload' button sa ibaba.";
+            } else if (lastErr?.name === "NotReadableError" || lastErr?.name === "TrackStartError") {
+                msg = "Kasalukuyang ginagamit ang camera ng ibang app (halimbawa: Zoom o camera app). Pakisara muna ang ibang app.";
+            }
+            setCameraError(msg);
+            return;
+        }
+
+        // Check torch capability
+        try {
+            const track = stream.getVideoTracks()[0];
+            const caps = (track as any)?.getCapabilities?.();
+            if (caps && "torch" in caps) {
+                setHasTorch(true);
+            }
+            if (caps?.focusMode?.includes("continuous")) {
+                (track as any).applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(() => {});
+            }
+        } catch {}
+
+        streamRef.current = stream;
+
+        if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.setAttribute("playsinline", "true");
+            videoRef.current.setAttribute("autoplay", "true");
+            videoRef.current.muted = true;
+            try {
+                await videoRef.current.play();
+            } catch (e) {
+                console.warn("Video play notice:", e);
+            }
+            runScanLoop();
+        }
+    }, [cameraFacing, runScanLoop, stopCamera]);
+
+    // Toggle Camera on/off or change facing mode
     useEffect(() => {
         if (cameraActive) {
             startCamera();
@@ -99,112 +346,19 @@ export default function ConductorQrScanPage() {
             stopCamera();
         }
         return () => stopCamera();
-    }, [cameraActive, cameraFacing]);
+    }, [cameraActive, cameraFacing, startCamera, stopCamera]);
 
-    const startCamera = async () => {
-        setCameraError(null);
-
-        if (typeof window === "undefined") return;
-
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            setCameraError(
-                "Camera access is not supported or is blocked because this page is not served over HTTPS/localhost. You can use 'Take Photo / Upload QR' or enter the token manually."
-            );
-            return;
-        }
-
+    const toggleTorch = async () => {
+        if (!streamRef.current || !hasTorch) return;
         try {
-            // Strategy 1: Preferred environment (back) camera
-            let stream: MediaStream | null = null;
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: { ideal: cameraFacing },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                    },
-                });
-            } catch {
-                // Strategy 2: Fallback to any available video camera (webcam, laptop front camera)
-                stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            }
-
-            streamRef.current = stream;
-
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                videoRef.current.setAttribute("playsinline", "true");
-                await videoRef.current.play().catch((e) => {
-                    console.warn("Camera video play notice:", e);
-                });
-
-                // Start continuous frame scan loop
-                runScanLoop();
-            }
-        } catch (err: any) {
-            console.warn("Camera access request notice:", err?.name, err?.message);
-            setCameraActive(false);
-            let msg = "Could not access device camera.";
-            if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-                msg = "Naka-Block ang camera sa iyong browser. Upang magamit ang live scanner, i-click ang lock icon (🔒) o site settings sa tabi ng URL bar, piliin ang 'Allow' para sa Camera, at i-refresh ang page.";
-            } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
-                msg = "Walang nakitang camera hardware sa device na ito. Gamitin ang 'Snap Photo / Upload' button sa ibaba.";
-            } else if (err?.name === "NotReadableError" || err?.name === "TrackStartError") {
-                msg = "Kasalukuyang ginagamit ang camera ng ibang app (halimbawa: Zoom, Teams, o camera app). Pakisara muna ang ibang app.";
-            }
-            setCameraError(msg);
-        }
-    };
-
-    const runScanLoop = () => {
-        const scan = () => {
-            const video = videoRef.current;
-            if (video && video.readyState >= video.HAVE_CURRENT_DATA) {
-                const canvas = canvasRef.current || document.createElement("canvas");
-                const width = video.videoWidth || 640;
-                const height = video.videoHeight || 480;
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-                if (ctx && width > 0 && height > 0) {
-                    ctx.drawImage(video, 0, 0, width, height);
-                    const imageData = ctx.getImageData(0, 0, width, height);
-
-                    // Universal jsQR decoder (works on 100% of browsers, handles light & dark mode screens)
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "attemptBoth",
-                    });
-
-                    if (code && code.data && code.data.trim()) {
-                        const token = extractToken(code.data);
-                        if (token) {
-                            playSuccessBeep();
-                            setManualToken(token);
-                            handleLookupTicket(token);
-                            setCameraActive(false);
-                            return;
-                        }
-                    }
-                }
-            }
-            animationFrameRef.current = requestAnimationFrame(scan);
-        };
-        animationFrameRef.current = requestAnimationFrame(scan);
-    };
-
-    const stopCamera = () => {
-        if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-            animationFrameRef.current = null;
-        }
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach((t) => t.stop());
-            streamRef.current = null;
-        }
-        if (videoRef.current) {
-            videoRef.current.srcObject = null;
+            const track = streamRef.current.getVideoTracks()[0];
+            const nextTorch = !torchOn;
+            await (track as any).applyConstraints({
+                advanced: [{ torch: nextTorch }],
+            });
+            setTorchOn(nextTorch);
+        } catch (e) {
+            console.warn("Torch toggle error:", e);
         }
     };
 
@@ -213,7 +367,7 @@ export default function ConductorQrScanPage() {
     };
 
     // Photo Upload / Instant Snap Scanner
-    const handleFileScan = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -223,34 +377,51 @@ export default function ConductorQrScanPage() {
         const reader = new FileReader();
         reader.onload = (event) => {
             const img = new Image();
-            img.onload = () => {
-                const maxDim = 1000;
-                const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-                const w = Math.max(1, Math.round(img.width * scale));
-                const h = Math.max(1, Math.round(img.height * scale));
-                const canvas = document.createElement("canvas");
-                canvas.width = w;
-                canvas.height = h;
-                const ctx = canvas.getContext("2d");
-                if (!ctx) {
-                    setProcessingPhoto(false);
-                    return;
+            img.onload = async () => {
+                let tokenFound: string | null = null;
+
+                // 1. Try Hardware BarcodeDetector on image
+                if (barcodeDetectorRef.current) {
+                    try {
+                        const barcodes = await barcodeDetectorRef.current.detect(img);
+                        if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+                            tokenFound = extractToken(barcodes[0].rawValue);
+                        }
+                    } catch {}
                 }
-                ctx.drawImage(img, 0, 0, w, h);
-                const imageData = ctx.getImageData(0, 0, w, h);
-                const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                    inversionAttempts: "attemptBoth",
-                });
+
+                // 2. Fallback to jsQR
+                if (!tokenFound) {
+                    const maxDim = 1000;
+                    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+                    const w = Math.max(1, Math.round(img.width * scale));
+                    const h = Math.max(1, Math.round(img.height * scale));
+                    const canvas = document.createElement("canvas");
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext("2d");
+                    if (ctx) {
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const imageData = ctx.getImageData(0, 0, w, h);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: "attemptBoth",
+                        });
+                        if (code && code.data && code.data.trim()) {
+                            tokenFound = extractToken(code.data);
+                        }
+                    }
+                }
 
                 setProcessingPhoto(false);
 
-                if (code && code.data && code.data.trim()) {
-                    const token = extractToken(code.data);
-                    playSuccessBeep();
-                    setManualToken(token);
-                    handleLookupTicket(token);
+                if (tokenFound) {
+                    playSuccessFeedback();
+                    setManualToken(tokenFound);
+                    handleLookupTicket(tokenFound);
                 } else {
-                    alert("Could not detect a clear QR Code in the selected image. Please try taking a closer, well-lit photo or enter the token manually.");
+                    alert(
+                        "Hindi madetect ang QR Code sa litratong ito. Pakitutok nang mas malinaw, liwanagan, o i-type nang direkta ang Ticket Token sa ibaba."
+                    );
                 }
             };
             img.src = event.target?.result as string;
@@ -267,14 +438,13 @@ export default function ConductorQrScanPage() {
         setIdInspected(false);
 
         try {
-            // Call resilient conductor ticket lookup endpoint
             const res = await fetch(`/api/conductor/tickets?token=${encodeURIComponent(cleanToken)}`);
             const data = await res.json();
 
             if (!res.ok || !data.ticket) {
                 setScanResult({
                     status: "NOT_FOUND",
-                    message: `✕ TICKET INVALID: Ticket token "${cleanToken}" not found in system or manifest.`,
+                    message: `✕ TICKET INVALID: Hindi natagpuan ang ticket token "${cleanToken}" sa system o manifest.`,
                 });
                 return;
             }
@@ -285,7 +455,7 @@ export default function ConductorQrScanPage() {
             if (ticket.ticket_status === "USED") {
                 setScanResult({
                     status: "ALREADY_USED",
-                    message: "✕ TICKET ALREADY USED: This ticket was already verified for boarding.",
+                    message: "✕ TICKET ALREADY USED: Nagamit na ang ticket na ito para sa pagsakay.",
                     ticket,
                 });
                 return;
@@ -295,7 +465,7 @@ export default function ConductorQrScanPage() {
             if (ticket.ticket_status === "CANCELLED" || ticket.booking_status === "CANCELLED") {
                 setScanResult({
                     status: "CANCELLED",
-                    message: "✕ TICKET CANCELLED: This reservation has been cancelled.",
+                    message: "✕ TICKET CANCELLED: Ang reservation na ito ay nakansela na.",
                     ticket,
                 });
                 return;
@@ -305,7 +475,7 @@ export default function ConductorQrScanPage() {
             if (ticket.payment_status && ticket.payment_status !== "PAID") {
                 setScanResult({
                     status: "PAYMENT_UNPAID",
-                    message: `✕ PAYMENT NOT CONFIRMED: Status is ${ticket.payment_status}.`,
+                    message: `✕ PAYMENT NOT CONFIRMED: Status ay ${ticket.payment_status}.`,
                     ticket,
                 });
                 return;
@@ -315,7 +485,7 @@ export default function ConductorQrScanPage() {
             if (tripIdFilter && ticket.trip?.id && ticket.trip.id !== tripIdFilter) {
                 setScanResult({
                     status: "WRONG_TRIP",
-                    message: "✕ WRONG TRIP: This ticket is for a different scheduled trip.",
+                    message: "✕ WRONG TRIP: Ang ticket na ito ay para sa ibang scheduled trip.",
                     ticket,
                 });
                 return;
@@ -324,21 +494,21 @@ export default function ConductorQrScanPage() {
             // Valid Ticket Result!
             setScanResult({
                 status: "VALID",
-                message: "✓ TICKET VALID: Verified and ready for boarding.",
+                message: "✓ TICKET VALID: Beripikado at handa na para sa pagsakay.",
                 ticket,
             });
         } catch (err: any) {
             console.error("QR Scan Error:", err);
             setScanResult({
                 status: "NOT_FOUND",
-                message: "✕ Error retrieving ticket status. Please check network connection.",
+                message: "✕ Nagka-problema sa pagkuha ng ticket status. Pakisuri ang koneksyon sa internet.",
             });
         } finally {
             setVerifying(false);
         }
     };
 
-    // Confirm Boarding Action - Triggered manually by conductor
+    // Confirm Boarding Action
     const handleConfirmBoarding = async () => {
         if (!scanResult?.ticket) return;
 
@@ -373,7 +543,7 @@ export default function ConductorQrScanPage() {
             );
         } catch (err: any) {
             console.error("Boarding confirmation error:", err);
-            alert("Failed to confirm boarding: " + err.message);
+            alert("Bigo sa pag-confirm ng boarding: " + err.message);
         } finally {
             setConfirming(false);
         }
@@ -386,7 +556,33 @@ export default function ConductorQrScanPage() {
     );
 
     return (
-        <div className="container mx-auto max-w-3xl space-y-6">
+        <div className="container mx-auto max-w-3xl space-y-6 pb-12">
+            <style jsx>{`
+                @keyframes scanlaser {
+                    0% {
+                        top: 5%;
+                        opacity: 0.8;
+                    }
+                    50% {
+                        top: 92%;
+                        opacity: 1;
+                    }
+                    100% {
+                        top: 5%;
+                        opacity: 0.8;
+                    }
+                }
+                .laser-line {
+                    position: absolute;
+                    left: 4%;
+                    right: 4%;
+                    height: 2px;
+                    background: #ef4444;
+                    box-shadow: 0 0 12px 2px #ef4444;
+                    animation: scanlaser 2s ease-in-out infinite;
+                }
+            `}</style>
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
                 <div>
                     <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
@@ -394,11 +590,16 @@ export default function ConductorQrScanPage() {
                         Conductor Boarding QR Scanner
                     </h1>
                     <p className="text-xs text-zinc-400">
-                        Scan via camera, snap/upload photo, or enter passenger QR code token to verify boarding.
+                        Mabilisang QR scanner gamit ang camera, instant photo snap, o manual ticket token entry.
                     </p>
                 </div>
                 {tripIdFilter && (
-                    <Button variant="outline" size="sm" asChild className="border-zinc-700 bg-zinc-800 text-zinc-100 hover:bg-zinc-700 hover:text-white">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="border-zinc-700 bg-zinc-800 text-zinc-100 hover:bg-zinc-700 hover:text-white"
+                    >
                         <a href={`/conductor/manifest?trip_id=${tripIdFilter}`}>View Trip Manifest</a>
                     </Button>
                 )}
@@ -418,28 +619,67 @@ export default function ConductorQrScanPage() {
             />
 
             {/* Camera / Manual Input Toggle Box */}
-            <Card className="border-zinc-800 bg-zinc-950 text-white shadow-xl">
-                <CardHeader className="pb-3">
+            <Card className="border-zinc-800 bg-zinc-950 text-white shadow-xl overflow-hidden">
+                <CardHeader className="pb-3 border-b border-zinc-800/80">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
                             <CardTitle className="text-base font-bold flex items-center gap-2">
                                 <Camera className="h-5 w-5 text-red-500" />
-                                QR Scanner Input Controls
+                                Live QR Scanner
+                                {isHardwareAccelerated && (
+                                    <span className="text-[10px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800/80 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <Zap className="h-3 w-3 text-emerald-400" /> Instant Detection
+                                    </span>
+                                )}
                             </CardTitle>
                             <CardDescription className="text-xs text-zinc-400">
-                                Choose between Live Camera, Snap Photo / Upload Image, or Manual Token Entry.
+                                Itutok ang camera sa QR code ng pasahero upang ma-detect agad.
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                             <Button
                                 size="sm"
                                 variant={cameraActive ? "destructive" : "default"}
-                                onClick={() => setCameraActive(!cameraActive)}
-                                className={cameraActive ? "" : "bg-red-600 hover:bg-red-700 text-white font-bold"}
+                                onClick={() => {
+                                    setCameraError(null);
+                                    setCameraActive(!cameraActive);
+                                }}
+                                className={cameraActive ? "font-bold text-xs" : "bg-red-600 hover:bg-red-700 text-white font-bold text-xs"}
                             >
                                 <Camera className="mr-1.5 h-4 w-4" />
-                                {cameraActive ? "Close Camera" : "Open Live Camera"}
+                                {cameraActive ? "Pause Camera" : "Open Camera"}
                             </Button>
+
+                            {cameraActive && (
+                                <>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={toggleCameraFacing}
+                                        className="border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:text-white font-semibold text-xs"
+                                        title="Switch Camera (Front/Back)"
+                                    >
+                                        <SwitchCamera className="mr-1 h-3.5 w-3.5" /> Flip
+                                    </Button>
+
+                                    {hasTorch && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={toggleTorch}
+                                            className={`text-xs font-semibold ${
+                                                torchOn
+                                                    ? "bg-amber-500 text-black border-amber-400 font-bold"
+                                                    : "border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+                                            }`}
+                                            title="Toggle Flashlight / Torch"
+                                        >
+                                            <Flashlight className="mr-1 h-3.5 w-3.5" /> {torchOn ? "Flash ON" : "Flash"}
+                                        </Button>
+                                    )}
+                                </>
+                            )}
+
                             <Button
                                 size="sm"
                                 variant="outline"
@@ -448,13 +688,14 @@ export default function ConductorQrScanPage() {
                                 className="border-zinc-700 bg-zinc-800 text-zinc-100 hover:bg-zinc-700 hover:text-white font-semibold text-xs"
                             >
                                 <Upload className="mr-1.5 h-4 w-4" />
-                                {processingPhoto ? "Reading QR..." : "Snap Photo / Upload"}
+                                {processingPhoto ? "Reading QR..." : "Snap / Upload"}
                             </Button>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    {/* Camera Error Alert with Actionable Help */}
+
+                <CardContent className="space-y-4 pt-4">
+                    {/* Camera Error Notice with 1-Click Retry */}
                     {cameraError && (
                         <div className="rounded-xl border border-red-500/50 bg-red-950/60 p-4 space-y-3 text-xs shadow-lg animate-in fade-in">
                             <div className="flex items-center justify-between gap-2">
@@ -479,8 +720,13 @@ export default function ConductorQrScanPage() {
                                     <span>💡</span> Paano i-Allow ang Camera sa iyong Browser:
                                 </p>
                                 <ol className="list-decimal list-inside space-y-1 text-zinc-300 pl-1">
-                                    <li>I-click ang <strong>🔒 Lock icon</strong> o <strong>🎛️ Site Settings</strong> sa tabi ng URL sa address bar.</li>
-                                    <li>Hanapin ang <strong>Camera</strong> at ilipat ito mula <span className="text-red-400 font-semibold">Block</span> patungong <strong className="text-emerald-400">Allow</strong>.</li>
+                                    <li>
+                                        I-click ang <strong>🔒 Lock icon</strong> o <strong>🎛️ Site Settings</strong> sa tabi ng URL sa address bar.
+                                    </li>
+                                    <li>
+                                        Hanapin ang <strong>Camera</strong> at ilipat ito patungong{" "}
+                                        <strong className="text-emerald-400">Allow</strong>.
+                                    </li>
                                     <li>Pindutin ang <strong>Subukang Muli</strong> sa ibaba o i-refresh ang page.</li>
                                 </ol>
                             </div>
@@ -491,6 +737,7 @@ export default function ConductorQrScanPage() {
                                     onClick={() => {
                                         setCameraError(null);
                                         setCameraActive(true);
+                                        startCamera();
                                     }}
                                     className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold"
                                 >
@@ -503,90 +750,96 @@ export default function ConductorQrScanPage() {
                                     className="border-amber-500/50 bg-amber-950/40 text-amber-200 hover:bg-amber-900/50 text-xs font-bold"
                                 >
                                     <Camera className="mr-1.5 h-3.5 w-3.5 text-amber-400" />
-                                    Snap Photo with Camera Directly (No Permission Needed)
+                                    Snap Photo with Camera Directly
                                 </Button>
                             </div>
                         </div>
                     )}
 
-                    {/* Live Video Feed Modal / Overlay */}
-                    {cameraActive && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-                            <div className="relative w-full max-w-lg bg-zinc-950 rounded-2xl border-2 border-zinc-800 overflow-hidden shadow-2xl p-4 space-y-3">
-                                <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-                                    <div className="flex items-center gap-2">
-                                        <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-ping" />
-                                        <span className="font-extrabold text-sm text-white">Live QR Scanner</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={toggleCameraFacing}
-                                            className="text-zinc-400 hover:text-white text-xs"
-                                            title="Switch Camera (Front/Back)"
-                                        >
-                                            <SwitchCamera className="h-4 w-4 mr-1" /> Flip
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="destructive"
-                                            onClick={() => setCameraActive(false)}
-                                            className="text-xs font-bold"
-                                        >
-                                            <XCircle className="h-4 w-4 mr-1" /> Close
-                                        </Button>
-                                    </div>
-                                </div>
+                    {/* LIVE CAMERA VIEWFINDER (IN-PAGE RESPONSIVE) */}
+                    {cameraActive && !cameraError && (
+                        <div className="relative rounded-2xl overflow-hidden aspect-[4/3] sm:aspect-[16/10] bg-black border-2 border-zinc-800 flex items-center justify-center shadow-2xl">
+                            <video
+                                ref={videoRef}
+                                autoPlay
+                                playsInline
+                                muted
+                                className="w-full h-full object-cover select-none"
+                            />
 
-                                <div className="relative rounded-xl overflow-hidden aspect-[4/3] bg-black flex items-center justify-center">
-                                    <video
-                                        ref={videoRef}
-                                        autoPlay
-                                        playsInline
-                                        muted
-                                        className="w-full h-full object-cover"
-                                    />
-                                    {/* Viewfinder Target Graphic */}
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                        <div className="w-56 h-56 border-2 border-red-500/80 rounded-2xl relative animate-pulse flex items-center justify-center">
-                                            {/* Corner Accents */}
-                                            <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-red-500 -mt-1 -ml-1 rounded-tl" />
-                                            <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-red-500 -mt-1 -mr-1 rounded-tr" />
-                                            <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-red-500 -mb-1 -ml-1 rounded-bl" />
-                                            <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-red-500 -mb-1 -mr-1 rounded-br" />
-                                            <p className="text-[11px] font-bold text-white bg-black/60 px-3 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm">
-                                                Align QR Code Here
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
+                            {/* Viewfinder Target Graphic with Sweeping Laser Line */}
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="w-64 h-64 sm:w-72 sm:h-72 border border-red-500/40 rounded-3xl relative flex items-center justify-center">
+                                    {/* Sweeping Laser Line */}
+                                    <div className="laser-line" />
 
-                                <p className="text-center text-[11px] text-zinc-400">
-                                    Point camera steadily at passenger&apos;s printed or mobile QR Boarding Pass.
-                                </p>
+                                    {/* Corner Reticles */}
+                                    <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-red-500 -mt-1 -ml-1 rounded-tl-xl" />
+                                    <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-red-500 -mt-1 -mr-1 rounded-tr-xl" />
+                                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-red-500 -mb-1 -ml-1 rounded-bl-xl" />
+                                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-red-500 -mb-1 -mr-1 rounded-br-xl" />
+
+                                    <p className="text-[11px] font-black text-white bg-black/75 px-3 py-1 rounded-full uppercase tracking-wider backdrop-blur-md border border-white/10 shadow-lg">
+                                        Align QR Code Here
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Live Status Overlay Pill */}
+                            <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/70 backdrop-blur-md px-3 py-1 rounded-full border border-zinc-700/60 pointer-events-none">
+                                <div className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                                <span className="text-[11px] font-bold text-white tracking-wide">SCANNING...</span>
                             </div>
                         </div>
                     )}
 
-                    {/* Manual Token Input Fallback */}
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            handleLookupTicket(manualToken);
-                        }}
-                        className="flex flex-col sm:flex-row gap-2 pt-1"
-                    >
-                        <Input
-                            placeholder="Enter Ticket Token (e.g. TKT-20261109-XXXXXX)"
-                            value={manualToken}
-                            onChange={(e) => setManualToken(e.target.value)}
-                            className="bg-zinc-900 border-zinc-700 text-white font-mono text-sm tracking-wide"
-                        />
-                        <Button type="submit" className="bg-red-600 hover:bg-red-700 font-bold px-6 shrink-0" disabled={verifying}>
-                            {verifying ? "Checking..." : "Verify Token"}
-                        </Button>
-                    </form>
+                    {/* Camera Paused Placeholder */}
+                    {!cameraActive && !scanResult && (
+                        <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-900/40 p-8 text-center space-y-3">
+                            <Camera className="h-10 w-10 text-zinc-500 mx-auto" />
+                            <div>
+                                <p className="font-bold text-white text-sm">Naka-pause ang Live Camera</p>
+                                <p className="text-xs text-zinc-400 mt-0.5">
+                                    Pindutin ang button sa ibaba upang buksan muli ang camera scanner.
+                                </p>
+                            </div>
+                            <Button
+                                onClick={() => {
+                                    setCameraError(null);
+                                    setCameraActive(true);
+                                }}
+                                className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
+                            >
+                                <Camera className="mr-1.5 h-4 w-4" /> Buksan ang Live Camera (Open Scanner)
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* Manual Token Input Form */}
+                    <div className="pt-2 border-t border-zinc-800/80">
+                        <p className="text-xs font-semibold text-zinc-400 mb-2">O i-type ang Ticket Token nang mano-mano:</p>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                handleLookupTicket(manualToken);
+                            }}
+                            className="flex flex-col sm:flex-row gap-2"
+                        >
+                            <Input
+                                placeholder="e.g. TKT-20261123-G9UA3J"
+                                value={manualToken}
+                                onChange={(e) => setManualToken(e.target.value)}
+                                className="bg-zinc-900 border-zinc-700 text-white font-mono text-sm tracking-wider"
+                            />
+                            <Button
+                                type="submit"
+                                className="bg-red-600 hover:bg-red-700 font-bold px-6 shrink-0"
+                                disabled={verifying}
+                            >
+                                {verifying ? "Checking..." : "Verify Token"}
+                            </Button>
+                        </form>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -624,7 +877,9 @@ export default function ConductorQrScanPage() {
                                 </CardTitle>
                                 <CardDescription className="text-zinc-400 text-xs mt-0.5">
                                     Status Check Timestamp: {new Date().toLocaleTimeString()} • Token:{" "}
-                                    <span className="font-mono text-white font-bold">{scanResult.ticket?.qr_token || manualToken}</span>
+                                    <span className="font-mono text-white font-bold">
+                                        {scanResult.ticket?.qr_token || manualToken}
+                                    </span>
                                 </CardDescription>
                             </div>
                         </div>
@@ -634,10 +889,14 @@ export default function ConductorQrScanPage() {
                         <CardContent className="p-6 space-y-4 text-zinc-200">
                             <div className="grid grid-cols-2 gap-4 border-b border-zinc-800 pb-4">
                                 <div>
-                                    <p className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">Primary Passenger</p>
+                                    <p className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">
+                                        Primary Passenger
+                                    </p>
                                     <p className="text-lg font-bold text-white">{scanResult.ticket.passenger_name}</p>
                                     {scanResult.ticket.passenger_contact && (
-                                        <p className="text-xs text-zinc-400 font-mono mt-0.5">📞 {scanResult.ticket.passenger_contact}</p>
+                                        <p className="text-xs text-zinc-400 font-mono mt-0.5">
+                                            📞 {scanResult.ticket.passenger_contact}
+                                        </p>
                                     )}
                                 </div>
                                 <div className="text-right">
@@ -646,8 +905,14 @@ export default function ConductorQrScanPage() {
                                     </p>
                                     <p className="font-mono text-3xl font-black text-emerald-400">
                                         {scanResult.ticket.seat_numbers?.length > 1
-                                            ? scanResult.ticket.seat_numbers.map((s: number) => `#${s < 10 ? `0${s}` : s}`).join(", ")
-                                            : `#${scanResult.ticket.seat_number < 10 ? `0${scanResult.ticket.seat_number}` : scanResult.ticket.seat_number}`}
+                                            ? scanResult.ticket.seat_numbers
+                                                  .map((s: number) => `#${s < 10 ? `0${s}` : s}`)
+                                                  .join(", ")
+                                            : `#${
+                                                  scanResult.ticket.seat_number < 10
+                                                      ? `0${scanResult.ticket.seat_number}`
+                                                      : scanResult.ticket.seat_number
+                                              }`}
                                     </p>
                                 </div>
                             </div>
@@ -671,14 +936,17 @@ export default function ConductorQrScanPage() {
 
                                     {/* Beneficiaries List */}
                                     <div className="space-y-2">
-                                        {scanResult.ticket.discounted_passengers && scanResult.ticket.discounted_passengers.length > 0 ? (
+                                        {scanResult.ticket.discounted_passengers &&
+                                        scanResult.ticket.discounted_passengers.length > 0 ? (
                                             scanResult.ticket.discounted_passengers.map((p: any, idx: number) => (
                                                 <div
                                                     key={idx}
                                                     className="bg-zinc-900/80 p-2.5 rounded-lg border border-purple-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs"
                                                 >
                                                     <div>
-                                                        <span className="font-bold text-white">#{idx + 1} {p.name}</span>
+                                                        <span className="font-bold text-white">
+                                                            #{idx + 1} {p.name}
+                                                        </span>
                                                         <span className="ml-2 font-semibold text-purple-400">
                                                             ({p.classification === "SENIOR" ? "Senior Citizen" : p.classification})
                                                         </span>
@@ -712,8 +980,12 @@ export default function ConductorQrScanPage() {
                                                 onChange={(e) => setIdInspected(e.target.checked)}
                                                 className="mt-0.5 h-4 w-4 rounded border-purple-400 text-purple-600 focus:ring-purple-500 cursor-pointer"
                                             />
-                                            <label htmlFor="inspectCheckbox" className="text-xs text-purple-200 font-semibold cursor-pointer select-none">
-                                                I confirm that I have physically inspected and verified the passenger&apos;s valid ID card matches the name and ID number above.
+                                            <label
+                                                htmlFor="inspectCheckbox"
+                                                className="text-xs text-purple-200 font-semibold cursor-pointer select-none"
+                                            >
+                                                Kumpirmado: Personal kong nasuri ang valid ID card ng pasahero at tumutugma
+                                                ito sa pangalan at ID number sa itaas.
                                             </label>
                                         </div>
                                     )}
@@ -735,7 +1007,9 @@ export default function ConductorQrScanPage() {
                                 </div>
                                 <div>
                                     <p className="text-zinc-400">Bus Assigned</p>
-                                    <p className="font-bold text-white">{scanResult.ticket.trip?.bus_number || "Superlines Bus"}</p>
+                                    <p className="font-bold text-white">
+                                        {scanResult.ticket.trip?.bus_number || "Superlines Bus"}
+                                    </p>
                                 </div>
                                 <div>
                                     <p className="text-zinc-400">Departure Schedule</p>
@@ -753,7 +1027,7 @@ export default function ConductorQrScanPage() {
                         </CardContent>
                     )}
 
-                    {/* CONFIRM BOARDING ACTION BUTTON */}
+                    {/* ACTION FOOTER */}
                     <CardFooter className="bg-zinc-900/50 p-4 border-t border-zinc-800 flex flex-col gap-2">
                         {scanResult.status === "VALID" ? (
                             <Button
@@ -775,14 +1049,17 @@ export default function ConductorQrScanPage() {
                             <Button
                                 variant="outline"
                                 className="w-full bg-white text-black hover:bg-zinc-100 hover:text-black font-bold border-zinc-300"
-                                onClick={() => setScanResult(null)}
+                                onClick={() => {
+                                    setScanResult(null);
+                                    setCameraActive(true);
+                                }}
                             >
-                                Clear and Scan Next Ticket
+                                <Camera className="mr-2 h-4 w-4" /> Scan Next Ticket (Reopen Camera)
                             </Button>
                         )}
                         {hasDiscount && scanResult.status === "VALID" && !idInspected && (
                             <p className="text-[11px] text-amber-400 text-center font-semibold">
-                                ⚠️ Please check the physical ID inspection confirmation above to unlock boarding.
+                                ⚠️ Pakilagyan ng check ang physical ID inspection confirmation sa itaas upang ma-unlock ang boarding.
                             </p>
                         )}
                     </CardFooter>
