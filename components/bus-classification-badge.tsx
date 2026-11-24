@@ -64,7 +64,7 @@ export function BusClassificationBadge({
             badgeBg: "bg-purple-100 text-purple-950 border-purple-300 dark:bg-purple-950/80 dark:text-purple-200 dark:border-purple-700",
             icon: <Crown className="h-3 w-3 shrink-0 text-purple-600 dark:text-purple-400" />,
             accentText: "text-purple-700 dark:text-purple-400",
-            featureTag: "41 Sleeper • With CR",
+            featureTag: "41 Seats • With CR",
         },
     }[norm];
 

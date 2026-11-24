@@ -632,7 +632,7 @@ export default function AdminRoutesPage() {
                                 >
                                     <option value="REGULAR AIRCON">Regular Aircon (49 Seats) - ₱850.00</option>
                                     <option value="SUPER DELUXE">Super Deluxe w/ Restroom (43 Seats) - ₱950.00</option>
-                                    <option value="FIRST CLASS">First Class Premier Sleeper (41 Seats) - ₱1,100.00</option>
+                                    <option value="FIRST CLASS">First Class Premier (41 Seats) - ₱1,100.00</option>
                                 </select>
                             </div>
 

@@ -118,7 +118,7 @@ export const DEFAULT_BUSES: BusUnit[] = [
         status: "ACTIVE",
     },
 
-    // 3. FIRST CLASS (41 Seater • Premier Sleeper & CR • ₱1,100)
+    // 3. FIRST CLASS (41 Seater • Premier & CR • ₱1,100)
     {
         id: "bus-sl501",
         bus_number: "SL-501",
@@ -127,7 +127,7 @@ export const DEFAULT_BUSES: BusUnit[] = [
         seat_capacity: 41,
         fare: 1100,
         has_cr: true,
-        features: ["41 Premier Sleeper Recliners", "Onboard Comfort Room (CR)", "Leg Rest & Extra Spacing", "VIP Cabin Service"],
+        features: ["41 Premier Recliners", "Onboard Comfort Room (CR)", "Leg Rest & Extra Spacing", "VIP Cabin Service"],
         status: "ACTIVE",
     },
     {
@@ -138,7 +138,7 @@ export const DEFAULT_BUSES: BusUnit[] = [
         seat_capacity: 41,
         fare: 1100,
         has_cr: true,
-        features: ["41 Premier Sleeper Recliners", "Onboard Comfort Room (CR)", "Leg Rest & Extra Spacing", "VIP Cabin Service"],
+        features: ["41 Premier Recliners", "Onboard Comfort Room (CR)", "Leg Rest & Extra Spacing", "VIP Cabin Service"],
         status: "ACTIVE",
     },
     {
@@ -149,7 +149,7 @@ export const DEFAULT_BUSES: BusUnit[] = [
         seat_capacity: 41,
         fare: 1100,
         has_cr: true,
-        features: ["41 Premier Sleeper Recliners", "Onboard Comfort Room (CR)", "Leg Rest & Extra Spacing", "VIP Cabin Service"],
+        features: ["41 Premier Recliners", "Onboard Comfort Room (CR)", "Leg Rest & Extra Spacing", "VIP Cabin Service"],
         status: "ACTIVE",
     },
     {
@@ -160,7 +160,7 @@ export const DEFAULT_BUSES: BusUnit[] = [
         seat_capacity: 41,
         fare: 1100,
         has_cr: true,
-        features: ["41 Premier Sleeper Recliners", "Onboard Comfort Room (CR)", "Leg Rest & Extra Spacing", "VIP Cabin Service"],
+        features: ["41 Premier Recliners", "Onboard Comfort Room (CR)", "Leg Rest & Extra Spacing", "VIP Cabin Service"],
         status: "ACTIVE",
     },
     {
@@ -171,7 +171,7 @@ export const DEFAULT_BUSES: BusUnit[] = [
         seat_capacity: 41,
         fare: 1100,
         has_cr: true,
-        features: ["41 Premier Sleeper Recliners", "Onboard Comfort Room (CR)", "Leg Rest & Extra Spacing", "VIP Cabin Service"],
+        features: ["41 Premier Recliners", "Onboard Comfort Room (CR)", "Leg Rest & Extra Spacing", "VIP Cabin Service"],
         status: "ACTIVE",
     },
 ];

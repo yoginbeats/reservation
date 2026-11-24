@@ -275,10 +275,9 @@ export async function GET(req: NextRequest) {
         // SECTION 2: BUS TYPE PERFORMANCE ANALYTICS
         // =========================================================================
         const busClassDefaults: { [key: string]: { name: string; capacity: number; baseFare: number; color: string } } = {
-            "REGULAR_AIRCON": { name: "Regular Aircon (Standard 2x2)", capacity: 49, baseFare: 850, color: "#2563eb" },
-            "DELUXE": { name: "De Luxe (Spacious 2x2)", capacity: 38, baseFare: 950, color: "#059669" },
-            "SUPER_DELUXE": { name: "Super Deluxe (VIP 2x1 Recliner)", capacity: 28, baseFare: 1150, color: "#d97706" },
-            "SLEEPER": { name: "Sleeper Class (Luxury Bunk Berths)", capacity: 22, baseFare: 1350, color: "#7c3aed" },
+            "REGULAR_AIRCON": { name: "Regular Aircon (49 Seats)", capacity: 49, baseFare: 850, color: "#2563eb" },
+            "SUPER_DELUXE": { name: "Super Deluxe (43 Seats • CR)", capacity: 43, baseFare: 950, color: "#059669" },
+            "FIRST_CLASS": { name: "First Class (41 Seats • CR)", capacity: 41, baseFare: 1100, color: "#7c3aed" },
         };
 
         const busClassMap: { [key: string]: {
@@ -308,9 +307,8 @@ export async function GET(req: NextRequest) {
             if (b.booking_status === "CANCELLED") return;
             const rawType = (b.trip?.bus?.bus_type || b.trip?.bus_type || "REGULAR_AIRCON").toUpperCase();
             let key = "REGULAR_AIRCON";
-            if (rawType.includes("SLEEPER")) key = "SLEEPER";
-            else if (rawType.includes("SUPER")) key = "SUPER_DELUXE";
-            else if (rawType.includes("DELUXE")) key = "DELUXE";
+            if (rawType.includes("FIRST")) key = "FIRST_CLASS";
+            else if (rawType.includes("SUPER") || rawType.includes("DELUXE")) key = "SUPER_DELUXE";
 
             const netPrice = Number(b.total_price) || busClassDefaults[key].baseFare;
             busClassMap[key].total_revenue += netPrice;
@@ -319,21 +317,17 @@ export async function GET(req: NextRequest) {
 
         // Add realistic baseline if low sample count
         if (filteredBookings.length < 25) {
-            busClassMap["REGULAR_AIRCON"].passenger_count += 420;
-            busClassMap["REGULAR_AIRCON"].total_revenue += 420 * 850;
-            busClassMap["REGULAR_AIRCON"].trips_count += 10;
+            busClassMap["REGULAR_AIRCON"].passenger_count += 540;
+            busClassMap["REGULAR_AIRCON"].total_revenue += 540 * 850;
+            busClassMap["REGULAR_AIRCON"].trips_count += 12;
 
-            busClassMap["DELUXE"].passenger_count += 290;
-            busClassMap["DELUXE"].total_revenue += 290 * 950;
-            busClassMap["DELUXE"].trips_count += 8;
+            busClassMap["SUPER_DELUXE"].passenger_count += 410;
+            busClassMap["SUPER_DELUXE"].total_revenue += 410 * 950;
+            busClassMap["SUPER_DELUXE"].trips_count += 10;
 
-            busClassMap["SUPER_DELUXE"].passenger_count += 240;
-            busClassMap["SUPER_DELUXE"].total_revenue += 240 * 1150;
-            busClassMap["SUPER_DELUXE"].trips_count += 9;
-
-            busClassMap["SLEEPER"].passenger_count += 175;
-            busClassMap["SLEEPER"].total_revenue += 175 * 1350;
-            busClassMap["SLEEPER"].trips_count += 8;
+            busClassMap["FIRST_CLASS"].passenger_count += 290;
+            busClassMap["FIRST_CLASS"].total_revenue += 290 * 1100;
+            busClassMap["FIRST_CLASS"].trips_count += 8;
         } else {
             Object.keys(busClassMap).forEach(key => {
                 busClassMap[key].trips_count = Math.max(1, Math.ceil(busClassMap[key].passenger_count / (busClassMap[key].seat_capacity * 0.85)));

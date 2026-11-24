@@ -542,7 +542,7 @@ function ConductorManifestContent() {
                             <option value="ALL">-- All Classifications --</option>
                             <option value="REGULAR AIRCON">Regular Aircon (49 Seats)</option>
                             <option value="SUPER DELUXE">Super Deluxe (43 Seats • CR)</option>
-                            <option value="FIRST CLASS">First Class (41 Seats • Sleeper)</option>
+                            <option value="FIRST CLASS">First Class (41 Seats • CR)</option>
                         </select>
                     </div>
 

@@ -33,7 +33,7 @@ const FALLBACK_ANNOUNCEMENTS: Announcement[] = [
     {
         id: "default-1",
         title: "Official Superlines Service Classes & Fares",
-        content: "Regular Aircon (₱850 • 49 Seats) | Super Deluxe with Restroom (₱950 • 43 Seats) | First Class Premier Sleeper (₱1,100 • 41 Seats). Book online with instant e-boarding pass and live seat selection!",
+        content: "Regular Aircon (₱850 • 49 Seats) | Super Deluxe with Restroom (₱950 • 43 Seats) | First Class Premier (₱1,100 • 41 Seats). Book online with instant e-boarding pass and live seat selection!",
         created_at: new Date().toISOString(),
         is_active: true,
     },

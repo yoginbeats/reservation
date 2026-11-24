@@ -460,7 +460,7 @@ export default function ConductorDashboardPage() {
                                 >
                                     <option value="REGULAR AIRCON">REGULAR AIRCON (49 seats standard • ₱850)</option>
                                     <option value="SUPER DELUXE">SUPER DELUXE (43 seats with Restroom & Stairs • ₱950)</option>
-                                    <option value="FIRST CLASS">FIRST CLASS (41 seats Premier Sleeper • ₱1,100)</option>
+                                    <option value="FIRST CLASS">FIRST CLASS (41 seats Premier • ₱1,100)</option>
                                 </select>
                             </div>
 

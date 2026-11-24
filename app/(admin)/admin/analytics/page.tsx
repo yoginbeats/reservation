@@ -167,10 +167,9 @@ export default function AdminBIAnalyticsPage() {
                             className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
                         >
                             <option value="ALL">All Fleet Classes</option>
-                            <option value="REGULAR_AIRCON">Regular Aircon (Standard 2x2)</option>
-                            <option value="DELUXE">De Luxe (Spacious 2x2)</option>
-                            <option value="SUPER_DELUXE">Super Deluxe (VIP Captain 2x1)</option>
-                            <option value="SLEEPER">Sleeper Bus (Luxury Bunks)</option>
+                            <option value="REGULAR_AIRCON">Regular Aircon (49 Seats)</option>
+                            <option value="SUPER_DELUXE">Super Deluxe (43 Seats • CR)</option>
+                            <option value="FIRST_CLASS">First Class (41 Seats • CR)</option>
                         </select>
                     </div>
                 </CardContent>
@@ -725,11 +724,11 @@ export default function AdminBIAnalyticsPage() {
                                 <AlertCircle className="h-4 w-4 text-purple-600" />
                             </p>
                             <div className="text-lg font-black text-purple-600 mt-1">
-                                {busPerf?.least_popular?.display_name || "Sleeper Class (Luxury Berths)"}
+                                {busPerf?.least_popular?.display_name || "First Class (41 Seats • CR)"}
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 font-mono">
-                                <span>{busPerf?.least_popular?.passenger_count || 175} Passengers</span>
-                                <span className="text-muted-foreground">Premium Luxury Tier</span>
+                                <span>{busPerf?.least_popular?.passenger_count || 290} Passengers</span>
+                                <span className="text-muted-foreground">Premier Class</span>
                             </div>
                         </Card>
 
@@ -739,10 +738,10 @@ export default function AdminBIAnalyticsPage() {
                                 <DollarSign className="h-4 w-4 text-amber-600" />
                             </p>
                             <div className="text-lg font-black text-amber-600 mt-1">
-                                Sleeper (₱1,350)
+                                First Class (₱1,100)
                             </div>
                             <p className="text-xs text-muted-foreground mt-1 font-mono">
-                                Yield: ₱29,700 avg revenue / trip
+                                Yield: ₱39,875 avg revenue / trip
                             </p>
                         </Card>
 
@@ -752,10 +751,10 @@ export default function AdminBIAnalyticsPage() {
                                 <Activity className="h-4 w-4 text-emerald-600" />
                             </p>
                             <div className="text-2xl font-black text-emerald-600 mt-1">
-                                88.5%
+                                89.4%
                             </div>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                                Consistently high load factor across all 4 fleet classifications
+                                Consistently high load factor across all 3 fleet classifications
                             </p>
                         </Card>
                     </div>

@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import type { Transporter } from "nodemailer";
 
 interface SendEmailParams {
     to: string | string[];
@@ -15,7 +16,7 @@ interface SendEmailResult {
 }
 
 // Reuse pooled SMTP transporter across requests for fast, on-time delivery
-let cachedTransporter: nodemailer.Transporter | null = null;
+let cachedTransporter: any = null;
 let cachedTransporterKey = "";
 
 function getPooledTransporter(user: string, pass: string, smtpHost?: string, forcePort587 = false) {

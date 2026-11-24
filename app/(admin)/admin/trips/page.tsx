@@ -511,13 +511,13 @@ export default function AdminTripsPage() {
                                                 </option>
                                             ))}
                                         </optgroup>
-                                        <optgroup label="👑 FIRST CLASS PREMIER (41 Seats • Sleeper & CR • ₱1,100)">
+                                        <optgroup label="👑 FIRST CLASS PREMIER (41 Seats • CR & Stairs • ₱1,100)">
                                             {buses.filter((b: any) => {
                                                 const t = (b.bus_type || '').toUpperCase();
                                                 return t.includes('FIRST');
                                             }).map((b: any) => (
                                                 <option key={b.id} value={b.id}>
-                                                    {b.bus_number} • First Class (41 Seats, Sleeper, CR) — ₱1,100.00
+                                                    {b.bus_number} • First Class (41 Seats, CR) — ₱1,100.00
                                                 </option>
                                             ))}
                                         </optgroup>
@@ -539,7 +539,7 @@ export default function AdminTripsPage() {
                                                     <span>Onboard Amenities:</span>
                                                     <span className="font-semibold text-foreground">
                                                         {(chosen.bus_type || "").toUpperCase().includes("FIRST")
-                                                            ? "VIP Sleeper Recliner, Restroom (CR), USB Chargers"
+                                                            ? "VIP Captain Recliner, Restroom (CR), USB Chargers"
                                                             : (chosen.bus_type || "").toUpperCase().includes("DELUXE") || (chosen.bus_type || "").toUpperCase().includes("SUPER")
                                                             ? "Deluxe Reclining, Restroom (CR), Mid-Door Stairs"
                                                             : "Standard 2x2 Reclining Aircon, Audio/Video"}
