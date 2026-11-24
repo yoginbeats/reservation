@@ -264,34 +264,58 @@ export function SeatPicker({
 
                         return (
                             <>
-                                {/* Front of Bus: Driver Cockpit & Entrance Stairs (In Front of Seats 1, 2, 3, 4) */}
-                                <div className="flex items-center justify-between gap-1.5 p-1.5 sm:p-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 mb-2">
-                                    {/* Driver Seat Flank */}
-                                    <div
-                                        className="flex h-10 w-16 sm:h-11 sm:w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-zinc-800 text-white font-black text-[7px] sm:text-[9px] uppercase shadow-sm border border-zinc-700 select-none px-1"
-                                        title="Driver's Cockpit Station"
-                                    >
-                                        <Bus className="h-3 w-3 sm:h-3.5 sm:w-3.5 mb-0.5 text-sky-400 shrink-0" />
-                                        <span className="leading-tight text-center">DRIVER<br />SEAT</span>
+                                {/* Front of Bus: Driver Seat (Above Passenger 1) & Entrance Stairs (Above Passenger 4) */}
+                                <div className="flex items-center justify-between gap-1 sm:gap-1.5 px-1 sm:px-1.5 py-1 mb-1.5 rounded-lg bg-zinc-100/80 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800">
+                                    {/* Row Marker Spacer to align columns 100% with passenger rows below */}
+                                    <div className="w-7 sm:w-9 shrink-0 flex items-center justify-center font-mono text-[8px] sm:text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase">
+                                        <span>BUS</span>
                                     </div>
 
-                                    {/* Center Windshield Indicator */}
-                                    <div className="flex-1 flex flex-col items-center justify-center text-center px-1">
-                                        <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 font-mono">
-                                            ▲ FRONT OF BUS ▲
-                                        </span>
-                                        <span className="text-[7px] text-zinc-400 dark:text-zinc-500 uppercase font-mono">
-                                            Windshield &amp; Entry
+                                    {/* Left Cockpit: Driver Station directly aligned above Seat 1 & Seat 2 */}
+                                    <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                        {/* Column 1 (Directly above Passenger 1): DRIVER SEAT */}
+                                        <div
+                                            className="flex h-9 w-8 sm:h-11 sm:w-11 shrink-0 flex-col items-center justify-center rounded-md bg-zinc-900 dark:bg-zinc-800 text-white font-black text-[7px] sm:text-[8px] uppercase shadow-sm border border-zinc-700 select-none px-0.5 text-center leading-tight"
+                                            title="Driver's Seat Station (Positioned directly in front of Passenger 1)"
+                                        >
+                                            <Bus className="h-3 w-3 sm:h-3.5 sm:w-3.5 mb-0.5 text-sky-400 shrink-0" />
+                                            <span>DRIVER<br />SEAT</span>
+                                        </div>
+
+                                        {/* Column 2 (Directly above Passenger 2): Dashboard Console */}
+                                        <div
+                                            className="flex h-9 w-8 sm:h-11 sm:w-11 shrink-0 flex-col items-center justify-center rounded-md bg-zinc-200/60 dark:bg-zinc-800/40 text-zinc-400 dark:text-zinc-500 font-bold text-[7px] sm:text-[8px] uppercase border border-dashed border-zinc-300 dark:border-zinc-700 select-none px-0.5 text-center leading-tight"
+                                            title="Cockpit Dashboard & Steering Column"
+                                        >
+                                            <span>DASH<br />BOARD</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Center Aisle / Front Windshield */}
+                                    <div className="flex-1 min-w-[24px] flex flex-col items-center justify-center px-0.5">
+                                        <span className="text-[7px] sm:text-[9px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+                                            ▲ FRONT ▲
                                         </span>
                                     </div>
 
-                                    {/* Entrance Stairs */}
-                                    <div
-                                        className="flex h-10 w-16 sm:h-11 sm:w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-[#70B0E0] text-zinc-950 font-black text-[7px] sm:text-[9px] uppercase shadow-sm border border-[#5A9AC8] select-none px-1"
-                                        title="Passenger Entrance & Exit Stairs"
-                                    >
-                                        <DoorOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5 mb-0.5 text-zinc-900 shrink-0" />
-                                        <span className="leading-tight text-center">ENTRANCE<br />STAIRS</span>
+                                    {/* Right Cockpit: Entrance Station directly aligned above Seat 3 & Seat 4 */}
+                                    <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                                        {/* Column 3 (Directly above Passenger 3): Entry Walkway */}
+                                        <div
+                                            className="flex h-9 w-8 sm:h-11 sm:w-11 shrink-0 flex-col items-center justify-center rounded-md bg-zinc-200/60 dark:bg-zinc-800/40 text-zinc-400 dark:text-zinc-500 font-bold text-[7px] sm:text-[8px] uppercase border border-dashed border-zinc-300 dark:border-zinc-700 select-none px-0.5 text-center leading-tight"
+                                            title="Passenger Entry Walkway"
+                                        >
+                                            <span>ENTRY<br />WAY</span>
+                                        </div>
+
+                                        {/* Column 4 (Directly above Passenger 4): ENTRANCE STAIRS */}
+                                        <div
+                                            className="flex h-9 w-8 sm:h-11 sm:w-11 shrink-0 flex-col items-center justify-center rounded-md bg-[#70B0E0] text-zinc-950 font-black text-[7px] sm:text-[8px] uppercase shadow-sm border border-[#5A9AC8] select-none px-0.5 text-center leading-tight"
+                                            title="Passenger Entrance & Exit Stairs (Positioned directly in front of Passenger 4)"
+                                        >
+                                            <DoorOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5 mb-0.5 text-zinc-900 shrink-0" />
+                                            <span>ENTRANCE<br />STAIRS</span>
+                                        </div>
                                     </div>
                                 </div>
 
