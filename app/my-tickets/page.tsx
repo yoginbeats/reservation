@@ -35,6 +35,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDatePH, formatTimePH, formatDateTimePH } from "@/lib/date-utils";
 import { SeatPicker } from "@/components/seat-picker";
 import { TicketQrCode } from "@/components/ticket-qr-code";
+import QRCode from "qrcode";
 
 interface UserTicket {
     id: string;
@@ -154,6 +155,265 @@ function TicketsContent() {
     // Printable Slips State
     const [viewingRefundSlip, setViewingRefundSlip] = useState<any | null>(null);
     const [viewingBoardingPass, setViewingBoardingPass] = useState<UserTicket | null>(null);
+    const [printPaperSize, setPrintPaperSize] = useState<"letter" | "thermal">("letter");
+
+    const handlePrintBoardingPass = async () => {
+        if (!viewingBoardingPass) return;
+
+        const token = viewingBoardingPass.qr_token;
+        let qrDataUrl = "";
+        try {
+            qrDataUrl = await QRCode.toDataURL(token, {
+                width: 300,
+                margin: 2,
+                errorCorrectionLevel: "M",
+                color: { dark: "#000000", light: "#FFFFFF" },
+            });
+        } catch {
+            qrDataUrl = `${window.location.origin}/api/qr?token=${encodeURIComponent(token)}&size=300`;
+        }
+
+        const originName = viewingBoardingPass.booking?.trip?.route?.origin?.name || "Cubao";
+        const destName = viewingBoardingPass.booking?.trip?.route?.destination?.name || "Daet";
+        const passengerName = viewingBoardingPass.booking?.passenger_name || "Passenger";
+        const seatNum = viewingBoardingPass.booking?.seat_number || "-";
+        const departure = formatDateTimePH(viewingBoardingPass.booking?.trip?.departure_time);
+        const busNum =
+            viewingBoardingPass.booking?.trip?.bus?.bus_number ||
+            (viewingBoardingPass.booking?.trip as any)?.bus_number ||
+            "Bus TBD (Assigned at Bay)";
+        const busClass = String(
+            viewingBoardingPass.booking?.trip?.bus?.bus_type ||
+                (viewingBoardingPass.booking?.trip as any)?.bus_type ||
+                "REGULAR AIRCON"
+        ).replace(/[-_]/g, " ");
+        const farePaid = viewingBoardingPass.booking?.total_price || 850;
+        const isDiscounted =
+            Boolean(viewingBoardingPass.booking?.discounted_passengers && viewingBoardingPass.booking.discounted_passengers.length > 0) ||
+            Boolean(viewingBoardingPass.booking?.discount_amount && viewingBoardingPass.booking.discount_amount > 0) ||
+            Boolean(viewingBoardingPass.booking?.passenger_type && viewingBoardingPass.booking.passenger_type !== "REGULAR");
+
+        const isThermal = printPaperSize === "thermal";
+
+        const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Boarding Pass - ${token}</title>
+  <style>
+    @page {
+      size: ${isThermal ? "80mm auto" : "8.5in 11in"};
+      margin: ${isThermal ? "3mm" : "0.45in"};
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #111827;
+      font-family: 'Courier New', Courier, monospace;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .sheet {
+      width: 100%;
+      ${isThermal ? "max-width: 74mm;" : "max-width: 7.4in;"}
+      margin: 0 auto;
+    }
+    .stub {
+      border: 2px dashed #52525b;
+      border-radius: ${isThermal ? "8px" : "14px"};
+      padding: ${isThermal ? "10px" : "24px 28px"};
+      background: #ffffff;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 1.5px dashed #a1a1aa;
+      padding-bottom: ${isThermal ? "8px" : "14px"};
+      margin-bottom: ${isThermal ? "8px" : "16px"};
+    }
+    .brand {
+      font-size: ${isThermal ? "14px" : "20px"};
+      font-weight: 900;
+      letter-spacing: 1px;
+      margin: 0;
+      color: #111827;
+    }
+    .subtitle {
+      font-size: ${isThermal ? "10px" : "12px"};
+      color: #52525b;
+      margin: 3px 0 6px;
+    }
+    .token {
+      font-size: ${isThermal ? "11px" : "14px"};
+      font-weight: 900;
+      color: #2563eb;
+      letter-spacing: 0.5px;
+      margin: 4px 0 10px;
+    }
+    .qr-wrap {
+      display: inline-block;
+      padding: 6px;
+      border: 1.5px solid #d4d4d8;
+      border-radius: 10px;
+      background: #ffffff;
+    }
+    .qr-wrap img {
+      display: block;
+      width: ${isThermal ? "125px" : "165px"};
+      height: ${isThermal ? "125px" : "165px"};
+    }
+    .details {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: ${isThermal ? "10.5px" : "13px"};
+      margin-bottom: ${isThermal ? "8px" : "16px"};
+    }
+    .details td {
+      padding: ${isThermal ? "3px 0" : "6px 0"};
+      vertical-align: top;
+    }
+    .details td.label {
+      color: #52525b;
+      width: 44%;
+    }
+    .details td.val {
+      text-align: right;
+      font-weight: 700;
+      color: #111827;
+    }
+    .details tr.fare td {
+      border-top: 1.5px solid #d4d4d8;
+      padding-top: ${isThermal ? "6px" : "10px"};
+      font-size: ${isThermal ? "12px" : "15px"};
+      font-weight: 900;
+    }
+    .seat {
+      color: #2563eb;
+      font-size: ${isThermal ? "13px" : "16px"};
+      font-weight: 900;
+    }
+    .bus-class {
+      color: #2563eb;
+      text-transform: uppercase;
+    }
+    .id-box {
+      border: 1.5px solid #f59e0b;
+      background: #fffbeb;
+      border-radius: 8px;
+      padding: ${isThermal ? "6px 8px" : "10px 14px"};
+      text-align: center;
+      margin-bottom: ${isThermal ? "8px" : "14px"};
+      color: #78350f;
+    }
+    .id-title {
+      font-weight: 900;
+      font-size: ${isThermal ? "9.5px" : "11.5px"};
+      margin-bottom: 3px;
+    }
+    .id-desc {
+      font-size: ${isThermal ? "8.5px" : "10.5px"};
+      line-height: 1.35;
+      margin: 0;
+    }
+    .footer {
+      border-top: 1.5px dashed #a1a1aa;
+      padding-top: ${isThermal ? "8px" : "12px"};
+      text-align: center;
+      font-size: ${isThermal ? "9px" : "11px"};
+      color: #52525b;
+      line-height: 1.45;
+    }
+    .cut-line {
+      margin-top: 14px;
+      border-top: 1px dashed #9ca3af;
+      text-align: center;
+      font-size: 9px;
+      color: #9ca3af;
+      padding-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="stub">
+      <div class="header">
+        <p class="brand">SUPERLINES EXPRESS</p>
+        <p class="subtitle">Official Passenger Boarding Pass</p>
+        <div class="token">${token}</div>
+        <div class="qr-wrap">
+          <img src="${qrDataUrl}" alt="Boarding Pass QR" />
+        </div>
+      </div>
+
+      <table class="details">
+        <tr><td class="label">Passenger:</td><td class="val">${passengerName}</td></tr>
+        <tr><td class="label">Route:</td><td class="val">${originName} &rarr; ${destName}</td></tr>
+        <tr><td class="label">Seat Number:</td><td class="val seat">#${seatNum}</td></tr>
+        <tr><td class="label">Departure:</td><td class="val">${departure}</td></tr>
+        <tr><td class="label">Bus Unit:</td><td class="val">${busNum}</td></tr>
+        <tr><td class="label">Bus Classification:</td><td class="val bus-class">${busClass}</td></tr>
+        <tr class="fare"><td class="label">Fare Paid:</td><td class="val">&#8369;${farePaid}.00</td></tr>
+      </table>
+
+      ${
+          isDiscounted
+              ? `<div class="id-box">
+                  <div class="id-title">&#9888; MANDATORY PHYSICAL ID / KAILANGAN ANG PISIKAL NA ID</div>
+                  <p class="id-desc">
+                    Original physical ID (Senior / Student / PWD) must be presented to conductor upon boarding.<br/>
+                    <em>(Dapat ipakita ang orihinal na pisikal na ID sa konduktor bago sumakay.)</em>
+                  </p>
+                </div>`
+              : ""
+      }
+
+      <div class="footer">
+        <p style="margin:0 0 4px;">
+          &#128062; Pet Policy: Pets must be in a carrier/cage, wearing a diaper, with a paid seat.<br/>
+          <em>(Alaga: Dapat nasa kulungan, may diaper, at may bayad na upuan.)</em>
+        </p>
+        <p style="margin:0;">
+          Present this stub or QR code upon boarding at the terminal platform.<br/>
+          <em>(Ipakita ang stub o QR code na ito sa konduktor pagdating sa terminal.)</em>
+        </p>
+      </div>
+    </div>
+    ${!isThermal ? `<div class="cut-line">&#9986; TEAR / PERFORATED LINE (8.5&quot; x 11&quot; LETTER TICKET STUB) &#9986;</div>` : ""}
+  </div>
+</body>
+</html>`;
+
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.right = "0";
+        iframe.style.bottom = "0";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "0";
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow?.document;
+        if (!doc) {
+            document.body.removeChild(iframe);
+            window.print();
+            return;
+        }
+
+        doc.open();
+        doc.write(html);
+        doc.close();
+
+        iframe.onload = () => {
+            setTimeout(() => {
+                iframe.contentWindow?.focus();
+                iframe.contentWindow?.print();
+                setTimeout(() => {
+                    if (iframe.parentNode) document.body.removeChild(iframe);
+                }, 1500);
+            }, 250);
+        };
+    };
 
     // Claim Ticket by GCash Ref State
     const refParam = searchParams.get("ref");
@@ -1935,21 +2195,48 @@ function TicketsContent() {
                             </div>
                         </div>
 
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                className="w-1/2 text-xs"
-                                onClick={() => setViewingBoardingPass(null)}
-                            >
-                                Close
-                            </Button>
-                            <Button
-                                className="w-1/2 bg-blue-600 hover:bg-blue-700 text-xs font-bold"
-                                onClick={() => window.print()}
-                            >
-                                <Printer className="mr-1.5 h-3.5 w-3.5" />
-                                Print Stub
-                            </Button>
+                        <div className="space-y-2.5 print:hidden">
+                            <div className="flex items-center justify-between gap-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 p-1 text-[10px] font-bold">
+                                <button
+                                    type="button"
+                                    onClick={() => setPrintPaperSize("letter")}
+                                    className={`flex-1 py-1.5 px-2 rounded-lg transition-colors ${
+                                        printPaperSize === "letter"
+                                            ? "bg-white dark:bg-zinc-900 text-blue-600 shadow-xs"
+                                            : "text-zinc-500 hover:text-zinc-800"
+                                    }`}
+                                >
+                                    8.5&quot; x 11&quot; Letter (Perforated)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPrintPaperSize("thermal")}
+                                    className={`flex-1 py-1.5 px-2 rounded-lg transition-colors ${
+                                        printPaperSize === "thermal"
+                                            ? "bg-white dark:bg-zinc-900 text-blue-600 shadow-xs"
+                                            : "text-zinc-500 hover:text-zinc-800"
+                                    }`}
+                                >
+                                    Thermal Paper (80mm)
+                                </button>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="w-1/2 text-xs"
+                                    onClick={() => setViewingBoardingPass(null)}
+                                >
+                                    Close
+                                </Button>
+                                <Button
+                                    className="w-1/2 bg-blue-600 hover:bg-blue-700 text-xs font-bold"
+                                    onClick={handlePrintBoardingPass}
+                                >
+                                    <Printer className="mr-1.5 h-3.5 w-3.5" />
+                                    Print Stub
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
