@@ -244,7 +244,7 @@ export default function ConductorDashboardPage() {
                             className="pl-9 bg-zinc-950 border-zinc-800 text-zinc-100 text-xs"
                         />
                     </div>
-                    <div className="flex gap-1.5 overflow-x-auto">
+                    <div className="flex flex-wrap gap-1.5">
                         {(["ALL", "TODAY", "BOARDING", "UNASSIGNED"] as const).map((cat) => (
                             <button
                                 key={cat}
