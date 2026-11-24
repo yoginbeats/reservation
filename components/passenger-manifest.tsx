@@ -263,10 +263,8 @@ export function PassengerManifest({
         );
     };
 
-    const row1 = manifestLayout.rows[0];
-    const otherRows = manifestLayout.rows.slice(1);
     const aisleLetters = ["A", "I", "S", "L", "E"];
-    const startRowIdx = Math.max(0, Math.floor((otherRows.length - aisleLetters.length) / 2));
+    const startRowIdx = Math.max(1, Math.floor((manifestLayout.rows.length - aisleLetters.length) / 2));
 
     return (
         <div className="space-y-6">
@@ -478,89 +476,67 @@ export function PassengerManifest({
                         {/* Grid Rows Container */}
                         <div className="space-y-1 sm:space-y-1.5 bg-white dark:bg-zinc-950/70 p-2 sm:p-2.5 rounded-xl border border-zinc-300 dark:border-zinc-800 shadow-inner print:border-black print:p-1">
                             {/* ========================================================================= */}
-                            {/* FRONT-ROW COCKPIT ALIGNMENT & PWD SEATS                                  */}
-                            {/* [ Driver Seat ] | [ Seat 1 ] [ Seat 2 ] (Aisle) [ Seat 3 ] [ Seat 4 ] | [ Entrance Stairs ] */}
+                            {/* FRONT OF BUS: DRIVER COCKPIT & ENTRANCE STAIRS (IN FRONT OF PWD SEATS)   */}
                             {/* ========================================================================= */}
-                            {row1 && (
-                                <div className="flex items-center justify-between gap-1 sm:gap-2 p-1.5 rounded-xl bg-blue-50/80 dark:bg-zinc-900/90 border-2 border-blue-400/70 dark:border-blue-700/70 print:bg-zinc-100 print:border-black">
-                                    {/* [ Driver Seat ] */}
-                                    <div
-                                        className="flex h-11 w-16 sm:h-12 sm:w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-zinc-800 text-white font-black text-[9px] sm:text-[10px] uppercase shadow-sm border border-zinc-700 select-none print:bg-zinc-200 print:text-black print:border-black"
-                                        title="Driver's Seat Station"
-                                    >
-                                        <Bus className="h-3.5 w-3.5 mb-0.5 text-sky-400 print:text-black shrink-0" />
-                                        <span className="leading-tight text-center">
-                                            DRIVER<br />SEAT
-                                        </span>
-                                    </div>
-
-                                    {/* Partition Divider */}
-                                    <div className="h-9 w-[1px] bg-zinc-300 dark:bg-zinc-700 print:bg-black shrink-0" />
-
-                                    {/* [ Seat 1 ] [ Seat 2 ] (PWD Priority) */}
-                                    <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                                        {row1.leftSeats.map((cell, idx) => (
-                                            <div key={idx} className="shrink-0">
-                                                {renderSeatCell(cell)}
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* (Aisle) */}
-                                    <div className="flex-1 flex items-center justify-center px-1">
-                                        <span className="text-[10px] sm:text-xs font-black uppercase text-red-600 dark:text-red-400 font-mono tracking-wider print:text-black">
-                                            AISLE
-                                        </span>
-                                    </div>
-
-                                    {/* [ Seat 3 ] [ Seat 4 ] (PWD Priority) */}
-                                    <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                                        {row1.rightSeats.map((cell, idx) => (
-                                            <div key={idx} className="shrink-0">
-                                                {renderSeatCell(cell)}
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Partition Divider */}
-                                    <div className="h-9 w-[1px] bg-zinc-300 dark:bg-zinc-700 print:bg-black shrink-0" />
-
-                                    {/* [ Entrance Stairs ] */}
-                                    <div
-                                        className="flex h-11 w-16 sm:h-12 sm:w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-[#70B0E0] text-zinc-950 font-black text-[9px] sm:text-[10px] uppercase shadow-sm border border-[#5A9AC8] select-none print:bg-zinc-200 print:text-black print:border-black"
-                                        title="Passenger Entrance & Exit Stairs"
-                                    >
-                                        <DoorOpen className="h-3.5 w-3.5 mb-0.5 text-zinc-900 print:text-black shrink-0" />
-                                        <span className="leading-tight text-center">
-                                            ENTRANCE<br />STAIRS
-                                        </span>
-                                    </div>
+                            <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 mb-2 print:border-black print:bg-white">
+                                {/* [ Driver Seat ] */}
+                                <div
+                                    className="flex h-11 w-20 sm:h-12 sm:w-24 shrink-0 flex-col items-center justify-center rounded-lg bg-zinc-800 text-white font-black text-[9px] sm:text-[10px] uppercase shadow-sm border border-zinc-700 select-none print:bg-zinc-200 print:text-black print:border-black"
+                                    title="Driver's Seat Station"
+                                >
+                                    <Bus className="h-4 w-4 mb-0.5 text-sky-400 print:text-black shrink-0" />
+                                    <span className="leading-tight text-center">
+                                        DRIVER<br />SEAT
+                                    </span>
                                 </div>
-                            )}
+
+                                {/* Center Windshield & Entrance Indicator */}
+                                <div className="flex-1 flex flex-col items-center justify-center text-center px-1">
+                                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-300 print:text-black font-mono">
+                                        ▲ FRONT OF BUS ▲
+                                    </span>
+                                    <span className="text-[8px] text-zinc-400 dark:text-zinc-500 print:text-zinc-600 uppercase font-mono">
+                                        Cockpit &amp; Main Entrance Door
+                                    </span>
+                                </div>
+
+                                {/* [ Entrance Stairs ] */}
+                                <div
+                                    className="flex h-11 w-20 sm:h-12 sm:w-24 shrink-0 flex-col items-center justify-center rounded-lg bg-[#70B0E0] text-zinc-950 font-black text-[9px] sm:text-[10px] uppercase shadow-sm border border-[#5A9AC8] select-none print:bg-zinc-200 print:text-black print:border-black"
+                                    title="Passenger Entrance & Exit Stairs"
+                                >
+                                    <DoorOpen className="h-4 w-4 mb-0.5 text-zinc-900 print:text-black shrink-0" />
+                                    <span className="leading-tight text-center">
+                                        ENTRANCE<br />STAIRS
+                                    </span>
+                                </div>
+                            </div>
 
                             {/* ========================================================================= */}
-                            {/* ROWS 2 TO REAR (ALIGNED DIRECTLY BENEATH SEATS 1, 2, 3, 4)                */}
+                            {/* PASSENGER SEAT ROWS (ROW 1: SEATS 1-4 PWD PRIORITY, ROWS 2 TO REAR)       */}
                             {/* ========================================================================= */}
-                            {otherRows.map((row, rowIdx) => {
+                            {manifestLayout.rows.map((row, rowIdx) => {
                                 const isBackRow = Boolean(row.aisleSeat);
+                                const isRow1 = row.rowNumber === 1;
                                 const aisleLetterIdx = rowIdx - startRowIdx;
                                 const aisleLetter =
-                                    !isBackRow && aisleLetterIdx >= 0 && aisleLetterIdx < aisleLetters.length
+                                    !isBackRow && !isRow1 && aisleLetterIdx >= 0 && aisleLetterIdx < aisleLetters.length
                                         ? aisleLetters[aisleLetterIdx]
                                         : null;
 
                                 return (
                                     <div
                                         key={row.rowNumber}
-                                        className="flex items-center justify-between gap-1 sm:gap-2 px-1.5 py-0.5"
+                                        className={`flex items-center justify-between gap-1 sm:gap-2 px-1.5 py-0.5 rounded-lg transition-colors ${
+                                            isRow1
+                                                ? "bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50 print:bg-transparent print:border-none"
+                                                : ""
+                                        }`}
                                     >
-                                        {/* Left Spacer aligning with Driver Seat */}
-                                        <div className="h-11 w-16 sm:h-12 sm:w-20 shrink-0 flex items-center justify-center font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-600 print:text-zinc-500">
+                                        {/* Row Number Marker */}
+                                        <div className="w-8 sm:w-10 shrink-0 flex items-center justify-center font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-600 print:text-zinc-500">
                                             <span>R{row.rowNumber}</span>
                                         </div>
-
-                                        {/* Hidden divider spacer */}
-                                        <div className="h-8 w-[1px] opacity-0 shrink-0" />
 
                                         {/* Left 2 Seats (Driver Side) */}
                                         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
@@ -575,6 +551,10 @@ export function PassengerManifest({
                                         <div className="flex-1 flex items-center justify-center px-1">
                                             {row.aisleSeat ? (
                                                 renderSeatCell(row.aisleSeat, true)
+                                            ) : isRow1 ? (
+                                                <span className="text-[10px] sm:text-xs font-black uppercase text-red-600 dark:text-red-400 font-mono tracking-wider print:text-black">
+                                                    AISLE
+                                                </span>
                                             ) : (
                                                 <span className="text-xs font-black font-serif text-red-600 dark:text-red-400 print:text-black select-none">
                                                     {aisleLetter || "•"}
@@ -590,12 +570,6 @@ export function PassengerManifest({
                                                 </div>
                                             ))}
                                         </div>
-
-                                        {/* Hidden divider spacer */}
-                                        <div className="h-8 w-[1px] opacity-0 shrink-0" />
-
-                                        {/* Right Spacer aligning with Entrance Stairs */}
-                                        <div className="h-11 w-16 sm:h-12 sm:w-20 shrink-0" />
                                     </div>
                                 );
                             })}

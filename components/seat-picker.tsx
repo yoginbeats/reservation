@@ -260,78 +260,63 @@ export function SeatPicker({
                 {/* Official Rows Container */}
                 <div className="space-y-1 sm:space-y-1.5 bg-white dark:bg-zinc-950/60 p-1.5 sm:p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-x-auto">
                     {(() => {
-                        const row1 = classification.rows[0];
-                        const otherRows = classification.rows.slice(1);
-                        const otherStartRowIdx = Math.max(0, Math.floor((otherRows.length - aisleLetters.length) / 2));
+                        const startRowIdx = Math.max(1, Math.floor((classification.rows.length - aisleLetters.length) / 2));
 
                         return (
                             <>
-                                {/* Front-Row Cockpit Alignment: [ Driver Seat ] | [ Seat 1 ] [ Seat 2 ] (Aisle) [ Seat 3 ] [ Seat 4 ] | [ Entrance Stairs ] */}
-                                {row1 && (
-                                    <div className="flex items-center justify-between gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-xl bg-blue-50/70 dark:bg-zinc-900 border-2 border-blue-400/60 dark:border-blue-700/60">
-                                        {/* Driver Seat Flank */}
-                                        <div
-                                            className="flex h-10 w-11 sm:h-12 sm:w-16 shrink-0 flex-col items-center justify-center rounded-lg bg-zinc-800 text-white font-black text-[7px] sm:text-[9px] uppercase shadow-sm border border-zinc-700 select-none px-0.5"
-                                            title="Driver's Cockpit Station"
-                                        >
-                                            <Bus className="h-3 w-3 sm:h-3.5 sm:w-3.5 mb-0.5 text-sky-400 shrink-0" />
-                                            <span className="leading-tight text-center">DRIVER<br />SEAT</span>
-                                        </div>
-
-                                        {/* Divider */}
-                                        <div className="h-8 w-[1px] bg-zinc-300 dark:bg-zinc-700 shrink-0" />
-
-                                        {/* Seats 1 & 2 (PWD Priority) */}
-                                        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                                            {row1.leftSeats.map((cell, idx) => (
-                                                <div key={idx} className="shrink-0">{renderSeatButton(cell)}</div>
-                                            ))}
-                                        </div>
-
-                                        {/* Aisle */}
-                                        <div className="flex-1 min-w-[24px] flex items-center justify-center px-0.5">
-                                            <span className="text-[8px] sm:text-[11px] font-black uppercase text-red-600 dark:text-red-400 font-mono tracking-tight sm:tracking-wider">
-                                                AISLE
-                                            </span>
-                                        </div>
-
-                                        {/* Seats 3 & 4 (PWD Priority) */}
-                                        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                                            {row1.rightSeats.map((cell, idx) => (
-                                                <div key={idx} className="shrink-0">{renderSeatButton(cell)}</div>
-                                            ))}
-                                        </div>
-
-                                        {/* Divider */}
-                                        <div className="h-8 w-[1px] bg-zinc-300 dark:bg-zinc-700 shrink-0" />
-
-                                        {/* Entrance Stairs */}
-                                        <div
-                                            className="flex h-10 w-11 sm:h-12 sm:w-16 shrink-0 flex-col items-center justify-center rounded-lg bg-[#70B0E0] text-zinc-950 font-black text-[7px] sm:text-[9px] uppercase shadow-sm border border-[#5A9AC8] select-none px-0.5"
-                                            title="Passenger Entrance & Exit Stairs"
-                                        >
-                                            <DoorOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5 mb-0.5 text-zinc-900 shrink-0" />
-                                            <span className="leading-tight text-center">ENTRANCE<br />STAIRS</span>
-                                        </div>
+                                {/* Front of Bus: Driver Cockpit & Entrance Stairs (In Front of Seats 1, 2, 3, 4) */}
+                                <div className="flex items-center justify-between gap-1.5 p-1.5 sm:p-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 mb-2">
+                                    {/* Driver Seat Flank */}
+                                    <div
+                                        className="flex h-10 w-16 sm:h-11 sm:w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-zinc-800 text-white font-black text-[7px] sm:text-[9px] uppercase shadow-sm border border-zinc-700 select-none px-1"
+                                        title="Driver's Cockpit Station"
+                                    >
+                                        <Bus className="h-3 w-3 sm:h-3.5 sm:w-3.5 mb-0.5 text-sky-400 shrink-0" />
+                                        <span className="leading-tight text-center">DRIVER<br />SEAT</span>
                                     </div>
-                                )}
 
-                                {/* Rows 2 to Rear */}
-                                {otherRows.map((row, rowIdx) => {
+                                    {/* Center Windshield Indicator */}
+                                    <div className="flex-1 flex flex-col items-center justify-center text-center px-1">
+                                        <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 font-mono">
+                                            ▲ FRONT OF BUS ▲
+                                        </span>
+                                        <span className="text-[7px] text-zinc-400 dark:text-zinc-500 uppercase font-mono">
+                                            Windshield &amp; Entry
+                                        </span>
+                                    </div>
+
+                                    {/* Entrance Stairs */}
+                                    <div
+                                        className="flex h-10 w-16 sm:h-11 sm:w-20 shrink-0 flex-col items-center justify-center rounded-lg bg-[#70B0E0] text-zinc-950 font-black text-[7px] sm:text-[9px] uppercase shadow-sm border border-[#5A9AC8] select-none px-1"
+                                        title="Passenger Entrance & Exit Stairs"
+                                    >
+                                        <DoorOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5 mb-0.5 text-zinc-900 shrink-0" />
+                                        <span className="leading-tight text-center">ENTRANCE<br />STAIRS</span>
+                                    </div>
+                                </div>
+
+                                {/* Passenger Seat Rows (Row 1: Seats 1-4 PWD Priority, Rows 2 to Rear) */}
+                                {classification.rows.map((row, rowIdx) => {
                                     const isBackRow = Boolean(row.aisleSeat);
-                                    const aisleLetterIdx = rowIdx - otherStartRowIdx;
-                                    const aisleLetter = (!isBackRow && aisleLetterIdx >= 0 && aisleLetterIdx < aisleLetters.length)
+                                    const isRow1 = row.rowNumber === 1;
+                                    const aisleLetterIdx = rowIdx - startRowIdx;
+                                    const aisleLetter = (!isBackRow && !isRow1 && aisleLetterIdx >= 0 && aisleLetterIdx < aisleLetters.length)
                                         ? aisleLetters[aisleLetterIdx]
                                         : null;
 
                                     return (
-                                        <div key={row.rowNumber} className="flex items-center justify-between gap-1 sm:gap-1.5 px-1 sm:px-1.5 py-0.5">
-                                            {/* Left spacer aligning with Driver Seat */}
-                                            <div className="h-9 w-11 sm:h-11 sm:w-16 shrink-0 flex items-center justify-center font-mono text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-600">
+                                        <div
+                                            key={row.rowNumber}
+                                            className={`flex items-center justify-between gap-1 sm:gap-1.5 px-1 sm:px-1.5 py-0.5 rounded-lg transition-colors ${
+                                                isRow1
+                                                    ? "bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50"
+                                                    : ""
+                                            }`}
+                                        >
+                                            {/* Row Marker */}
+                                            <div className="w-7 sm:w-9 shrink-0 flex items-center justify-center font-mono text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-600">
                                                 <span>R{row.rowNumber}</span>
                                             </div>
-
-                                            <div className="h-8 w-[1px] opacity-0 shrink-0" />
 
                                             {/* Left 2 Seats */}
                                             <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
@@ -344,6 +329,10 @@ export function SeatPicker({
                                             <div className="flex-1 min-w-[24px] flex items-center justify-center px-0.5">
                                                 {row.aisleSeat ? (
                                                     renderSeatButton(row.aisleSeat, true)
+                                                ) : isRow1 ? (
+                                                    <span className="text-[8px] sm:text-[10px] font-black uppercase text-red-600 dark:text-red-400 font-mono tracking-tight sm:tracking-wider">
+                                                        AISLE
+                                                    </span>
                                                 ) : (
                                                     <div className="h-9 w-5 flex items-center justify-center font-black text-xs sm:text-sm text-red-600 dark:text-red-400 select-none font-sans">
                                                         {aisleLetter || ""}
@@ -357,11 +346,6 @@ export function SeatPicker({
                                                     <div key={idx} className="shrink-0">{renderSeatButton(cell, isBackRow)}</div>
                                                 ))}
                                             </div>
-
-                                            <div className="h-8 w-[1px] opacity-0 shrink-0" />
-
-                                            {/* Right spacer aligning with Entrance Stairs */}
-                                            <div className="h-9 w-11 sm:h-11 sm:w-16 shrink-0" />
                                         </div>
                                     );
                                 })}

@@ -163,44 +163,6 @@ export async function GET(req: NextRequest) {
             }
         });
 
-        // Baseline realistic distribution if sample size is small for live testing
-        const sampleSeed = filteredBookings.length;
-        if (sampleSeed < 20) {
-            // Seed realistic hourly distribution for realistic presentation
-            const hourWeights = [
-                { h: 0, s: 850, t: 1, d: 0 },
-                { h: 1, s: 0, t: 0, d: 0 },
-                { h: 2, s: 0, t: 0, d: 0 },
-                { h: 3, s: 1700, t: 2, d: 1 },
-                { h: 4, s: 4250, t: 5, d: 2 },
-                { h: 5, s: 12750, t: 15, d: 3 },
-                { h: 6, s: 22100, t: 26, d: 4 },
-                { h: 7, s: 31450, t: 37, d: 4 },
-                { h: 8, s: 44200, t: 52, d: 5 },
-                { h: 9, s: 51850, t: 61, d: 6 }, // Peak ticket selling morning
-                { h: 10, s: 46750, t: 55, d: 5 },
-                { h: 11, s: 38250, t: 45, d: 4 },
-                { h: 12, s: 29750, t: 35, d: 3 },
-                { h: 13, s: 34000, t: 40, d: 3 },
-                { h: 14, s: 41650, t: 49, d: 4 },
-                { h: 15, s: 48450, t: 57, d: 5 },
-                { h: 16, s: 55250, t: 65, d: 6 },
-                { h: 17, s: 62900, t: 74, d: 7 }, // Peak ticket selling afternoon/rush
-                { h: 18, s: 58650, t: 69, d: 7 },
-                { h: 19, s: 53550, t: 63, d: 8 },
-                { h: 20, s: 48450, t: 57, d: 9 }, // Peak bus departure night rush
-                { h: 21, s: 35700, t: 42, d: 7 },
-                { h: 22, s: 20400, t: 24, d: 5 },
-                { h: 23, s: 8500, t: 10, d: 2 },
-            ];
-
-            hourWeights.forEach(item => {
-                hourlySalesMap[item.h].sales += item.s;
-                hourlySalesMap[item.h].tickets += item.t;
-                hourlySalesMap[item.h].departures += item.d;
-            });
-        }
-
         const hourlySalesArray = Object.keys(hourlySalesMap).map(hStr => {
             const h = parseInt(hStr, 10);
             const periodLabel = h === 0 ? "12 AM" : h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`;
@@ -212,18 +174,30 @@ export async function GET(req: NextRequest) {
                 sales_amount: hourlySalesMap[h].sales,
                 ticket_count: hourlySalesMap[h].tickets,
                 passenger_volume: hourlySalesMap[h].tickets,
-                departures_count: Math.max(hourlySalesMap[h].departures, Math.ceil(hourlySalesMap[h].tickets / 35)),
+                departures_count: hourlySalesMap[h].departures,
             };
         });
 
+        // Calculate live peak metrics
+        const hasSales = hourlySalesArray.some(item => item.sales_amount > 0);
+        const hasDepartures = hourlySalesArray.some(item => item.departures_count > 0);
+
         // Determine Peak Selling Time
-        const peakSellingItem = [...hourlySalesArray].sort((a, b) => b.sales_amount - a.sales_amount)[0];
+        const peakSellingItem = hasSales
+            ? [...hourlySalesArray].sort((a, b) => b.sales_amount - a.sales_amount)[0]
+            : null;
+
         // Determine Peak Departure Time
-        const peakDepartureItem = [...hourlySalesArray].sort((a, b) => b.departures_count - a.departures_count)[0];
+        const peakDepartureItem = hasDepartures
+            ? [...hourlySalesArray].sort((a, b) => b.departures_count - a.departures_count)[0]
+            : null;
+
         // Determine Least Busy Time (filter out extreme off-hours if 0 or pick lowest)
-        const leastBusyItem = [...hourlySalesArray]
-            .filter(item => item.hour_24 >= 1 && item.hour_24 <= 5)
-            .sort((a, b) => a.sales_amount - b.sales_amount)[0] || hourlySalesArray[2];
+        const leastBusyItem = hasSales
+            ? [...hourlySalesArray]
+                .filter(item => item.hour_24 >= 1 && item.hour_24 <= 5)
+                .sort((a, b) => a.sales_amount - b.sales_amount)[0] || hourlySalesArray[2]
+            : null;
 
         // Morning vs Afternoon vs Evening Sales Breakdown
         let morningSales = 0;
@@ -315,28 +289,18 @@ export async function GET(req: NextRequest) {
             busClassMap[key].passenger_count += 1;
         });
 
-        // Add realistic baseline if low sample count
-        if (filteredBookings.length < 25) {
-            busClassMap["REGULAR_AIRCON"].passenger_count += 540;
-            busClassMap["REGULAR_AIRCON"].total_revenue += 540 * 850;
-            busClassMap["REGULAR_AIRCON"].trips_count += 12;
-
-            busClassMap["SUPER_DELUXE"].passenger_count += 410;
-            busClassMap["SUPER_DELUXE"].total_revenue += 410 * 950;
-            busClassMap["SUPER_DELUXE"].trips_count += 10;
-
-            busClassMap["FIRST_CLASS"].passenger_count += 290;
-            busClassMap["FIRST_CLASS"].total_revenue += 290 * 1100;
-            busClassMap["FIRST_CLASS"].trips_count += 8;
-        } else {
-            Object.keys(busClassMap).forEach(key => {
-                busClassMap[key].trips_count = Math.max(1, Math.ceil(busClassMap[key].passenger_count / (busClassMap[key].seat_capacity * 0.85)));
-            });
-        }
+        // Count actual trips per bus class from scheduledTrips
+        scheduledTrips.forEach(t => {
+            const rawType = ((t as any).bus?.bus_type || t.bus_type || "REGULAR_AIRCON").toUpperCase();
+            let key = "REGULAR_AIRCON";
+            if (rawType.includes("FIRST")) key = "FIRST_CLASS";
+            else if (rawType.includes("SUPER") || rawType.includes("DELUXE")) key = "SUPER_DELUXE";
+            busClassMap[key].trips_count += 1;
+        });
 
         const busPerformanceList = Object.values(busClassMap).map(item => {
-            const totalAvailableSeats = Math.max(1, item.trips_count * item.seat_capacity);
-            const occupancyRate = Math.min(96, Math.max(68, Math.round((item.passenger_count / totalAvailableSeats) * 100)));
+            const totalAvailableSeats = item.trips_count * item.seat_capacity;
+            const occupancyRate = totalAvailableSeats > 0 ? Math.min(100, Math.round((item.passenger_count / totalAvailableSeats) * 100)) : 0;
             const avgRevPerTrip = item.trips_count > 0 ? Math.round(item.total_revenue / item.trips_count) : 0;
             const avgFare = item.passenger_count > 0 ? Math.round(item.total_revenue / item.passenger_count) : 0;
 
@@ -348,8 +312,8 @@ export async function GET(req: NextRequest) {
             };
         }).sort((a, b) => b.total_revenue - a.total_revenue);
 
-        const mostPopularBusType = [...busPerformanceList].sort((a, b) => b.passenger_count - a.passenger_count)[0];
-        const leastPopularBusType = [...busPerformanceList].sort((a, b) => a.passenger_count - b.passenger_count)[0];
+        const mostPopularBusType = [...busPerformanceList].sort((a, b) => b.passenger_count - a.passenger_count)[0] || busPerformanceList[0];
+        const leastPopularBusType = [...busPerformanceList].sort((a, b) => a.passenger_count - b.passenger_count)[0] || busPerformanceList[busPerformanceList.length - 1];
 
         // =========================================================================
         // SECTION 3: TERMINAL PERFORMANCE ANALYTICS
@@ -359,21 +323,21 @@ export async function GET(req: NextRequest) {
                 name: "Cubao Central Terminal",
                 code: "CUB",
                 location: "Superlines Bus Terminal, EDSA, Cubao, Quezon City",
-                baseTrips: 24,
+                baseTrips: 0,
                 peakHours: "06:00 PM - 09:30 PM",
             },
             "Daet": {
                 name: "Daet Main Terminal",
                 code: "DAE",
                 location: "Daet Central Terminal, Camarines Norte, Bicol",
-                baseTrips: 20,
+                baseTrips: 0,
                 peakHours: "05:00 AM - 08:30 AM",
             },
             "PITX": {
                 name: "PITX Integrated Terminal",
                 code: "PTX",
                 location: "Parañaque Integrated Terminal Exchange, Bay 12",
-                baseTrips: 16,
+                baseTrips: 0,
                 peakHours: "04:30 PM - 07:30 PM",
             },
         };
@@ -404,26 +368,19 @@ export async function GET(req: NextRequest) {
                 location: terminalDefaults[tKey].location,
                 ticket_sales: 0,
                 passenger_count: 0,
-                bus_departure_frequency: terminalDefaults[tKey].baseTrips,
+                bus_departure_frequency: 0,
                 peak_hours: terminalDefaults[tKey].peakHours,
                 tellers: [],
             };
         });
 
-        // Initialize default tellers per terminal
-        terminalStatsMap["Cubao"].tellers = [
-            { name: "Maria Santos", counter: "Window 01", tickets_sold: 48, sales_amount: 40800, remittance_status: "REMITTED & VERIFIED" },
-            { name: "Jose Reyes", counter: "Window 02", tickets_sold: 42, sales_amount: 35700, remittance_status: "REMITTED & VERIFIED" },
-            { name: "Anna Dalisay", counter: "Window 03", tickets_sold: 36, sales_amount: 30600, remittance_status: "ACTIVE ON-DUTY" },
-        ];
-        terminalStatsMap["Daet"].tellers = [
-            { name: "Carlo Mendoza", counter: "Window 01", tickets_sold: 45, sales_amount: 38250, remittance_status: "REMITTED & VERIFIED" },
-            { name: "Grace Ramos", counter: "Window 02", tickets_sold: 38, sales_amount: 32300, remittance_status: "REMITTED & VERIFIED" },
-        ];
-        terminalStatsMap["PITX"].tellers = [
-            { name: "Roberto Lim", counter: "Window 01", tickets_sold: 32, sales_amount: 27200, remittance_status: "REMITTED & VERIFIED" },
-            { name: "Elena Cruz", counter: "Window 02", tickets_sold: 28, sales_amount: 23800, remittance_status: "ACTIVE ON-DUTY" },
-        ];
+        // Count actual departures per terminal from scheduledTrips
+        scheduledTrips.forEach(t => {
+            const origin = (t.origin || "").toLowerCase();
+            if (origin.includes("cubao")) terminalStatsMap["Cubao"].bus_departure_frequency += 1;
+            else if (origin.includes("daet")) terminalStatsMap["Daet"].bus_departure_frequency += 1;
+            else if (origin.includes("pitx")) terminalStatsMap["PITX"].bus_departure_frequency += 1;
+        });
 
         // Tally from filteredBookings
         filteredBookings.forEach(b => {
@@ -454,26 +411,24 @@ export async function GET(req: NextRequest) {
                     existingTeller.sales_amount += remit.net_cash_expected;
                     existingTeller.tickets_sold += remit.total_tickets;
                     existingTeller.remittance_status = remit.status === "CLOSED_RESET" ? "CLOSED & RESET" : "REMITTED";
+                } else {
+                    tellerList.push({
+                        name: remit.teller_name,
+                        counter: (remit as any).counter_window || (remit as any).counter || "Counter 1",
+                        tickets_sold: remit.total_tickets,
+                        sales_amount: remit.net_cash_expected,
+                        remittance_status: remit.status === "CLOSED_RESET" ? "CLOSED & RESET" : "REMITTED",
+                    });
                 }
             });
         }
 
-        // Add baseline values to make terminals visually distinguishable and realistic
-        if (mergedBookings.length < 30) {
-            terminalStatsMap["Cubao"].ticket_sales = Math.max(terminalStatsMap["Cubao"].ticket_sales, 485500);
-            terminalStatsMap["Cubao"].passenger_count = Math.max(terminalStatsMap["Cubao"].passenger_count, 540);
-            terminalStatsMap["Daet"].ticket_sales = Math.max(terminalStatsMap["Daet"].ticket_sales, 362100);
-            terminalStatsMap["Daet"].passenger_count = Math.max(terminalStatsMap["Daet"].passenger_count, 415);
-            terminalStatsMap["PITX"].ticket_sales = Math.max(terminalStatsMap["PITX"].ticket_sales, 248900);
-            terminalStatsMap["PITX"].passenger_count = Math.max(terminalStatsMap["PITX"].passenger_count, 295);
-        }
-
-        const networkTotalTerminalSales = Object.values(terminalStatsMap).reduce((sum, t) => sum + t.ticket_sales, 0) || 1;
-        const networkTotalPassengers = Object.values(terminalStatsMap).reduce((sum, t) => sum + t.passenger_count, 0) || 1;
+        const networkTotalTerminalSales = Object.values(terminalStatsMap).reduce((sum, t) => sum + t.ticket_sales, 0);
+        const networkTotalPassengers = Object.values(terminalStatsMap).reduce((sum, t) => sum + t.passenger_count, 0);
 
         const terminalPerformanceList = Object.values(terminalStatsMap).map(term => {
-            const sharePct = Math.round((term.ticket_sales / networkTotalTerminalSales) * 100);
-            const avgTicketVal = term.passenger_count > 0 ? Math.round(term.ticket_sales / term.passenger_count) : 850;
+            const sharePct = networkTotalTerminalSales > 0 ? Math.round((term.ticket_sales / networkTotalTerminalSales) * 100) : 0;
+            const avgTicketVal = term.passenger_count > 0 ? Math.round(term.ticket_sales / term.passenger_count) : 0;
             const isSelected = terminalFilter !== "ALL" && term.name.toLowerCase().includes(terminalFilter.toLowerCase());
             return {
                 ...term,
@@ -525,36 +480,19 @@ export async function GET(req: NextRequest) {
             }
         });
 
-        // Add realistic baseline if needed
-        if (filteredBookings.length < 25) {
-            const dayWeights = [
-                { idx: 0, s: 225000, p: 250 }, // Sunday return rush
-                { idx: 1, s: 135000, p: 155 }, // Monday work start
-                { idx: 2, s: 110000, p: 125 }, // Tuesday lowest
-                { idx: 3, s: 125000, p: 140 }, // Wednesday mid-week
-                { idx: 4, s: 160000, p: 180 }, // Thursday buildup
-                { idx: 5, s: 265000, p: 295 }, // Friday peak getaway
-                { idx: 6, s: 210000, p: 235 }, // Saturday family travel
-            ];
-            dayWeights.forEach(dw => {
-                dayStatsMap[dw.idx].sales += dw.s;
-                dayStatsMap[dw.idx].passengers += dw.p;
-            });
-        }
-
         // Order days Monday (1) through Sunday (0)
         const orderedDayIndices = [1, 2, 3, 4, 5, 6, 0];
         const dayOfWeekList = orderedDayIndices.map(dIdx => {
             const item = dayStatsMap[dIdx];
-            const avgFare = item.passengers > 0 ? Math.round(item.sales / item.passengers) : 850;
+            const avgFare = item.passengers > 0 ? Math.round(item.sales / item.passengers) : 0;
             return {
                 ...item,
                 average_fare: avgFare,
             };
         });
 
-        const peakDay = [...dayOfWeekList].sort((a, b) => b.sales - a.sales)[0];
-        const leastBusyDay = [...dayOfWeekList].sort((a, b) => a.sales - b.sales)[0];
+        const peakDay = [...dayOfWeekList].sort((a, b) => b.sales - a.sales)[0] || dayOfWeekList[0];
+        const leastBusyDay = [...dayOfWeekList].sort((a, b) => a.sales - b.sales)[0] || dayOfWeekList[1];
 
         // Weekday vs Weekend Comparison
         const weekdayItems = dayOfWeekList.filter(d => !d.is_weekend);
@@ -570,7 +508,7 @@ export async function GET(req: NextRequest) {
 
         const weekendSurgePercentage = weekdayAvgDaily > 0
             ? Math.round(((weekendAvgDaily - weekdayAvgDaily) / weekdayAvgDaily) * 100)
-            : 42;
+            : 0;
 
         return NextResponse.json({
             success: true,
@@ -583,22 +521,22 @@ export async function GET(req: NextRequest) {
             peak_sales_time: {
                 hourly_breakdown: hourlySalesArray,
                 peak_selling_time: {
-                    hour_window: peakSellingItem.full_time_window,
-                    short_label: peakSellingItem.hour_label,
-                    sales_amount: peakSellingItem.sales_amount,
-                    ticket_count: peakSellingItem.ticket_count,
+                    hour_window: peakSellingItem?.full_time_window || "No sales yet",
+                    short_label: peakSellingItem?.hour_label || "N/A",
+                    sales_amount: peakSellingItem?.sales_amount || 0,
+                    ticket_count: peakSellingItem?.ticket_count || 0,
                 },
                 peak_departure_time: {
-                    hour_window: peakDepartureItem.full_time_window,
-                    short_label: peakDepartureItem.hour_label,
-                    departures_count: peakDepartureItem.departures_count,
-                    passenger_volume: peakDepartureItem.passenger_volume,
+                    hour_window: peakDepartureItem?.full_time_window || "No trips scheduled",
+                    short_label: peakDepartureItem?.hour_label || "N/A",
+                    departures_count: peakDepartureItem?.departures_count || 0,
+                    passenger_volume: peakDepartureItem?.passenger_volume || 0,
                 },
                 least_busy_time: {
-                    hour_window: leastBusyItem.full_time_window,
-                    short_label: leastBusyItem.hour_label,
-                    sales_amount: leastBusyItem.sales_amount,
-                    ticket_count: leastBusyItem.ticket_count,
+                    hour_window: leastBusyItem?.full_time_window || "N/A",
+                    short_label: leastBusyItem?.hour_label || "N/A",
+                    sales_amount: leastBusyItem?.sales_amount || 0,
+                    ticket_count: leastBusyItem?.ticket_count || 0,
                 },
                 time_of_day: timeOfDayBreakdown,
             },

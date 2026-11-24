@@ -152,10 +152,10 @@ export default function AdminBIAnalyticsPage() {
                             onChange={(e) => setTerminalFilter(e.target.value)}
                             className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
                         >
-                            <option value="ALL">All Stations &amp; Hubs (Network Total: ₱{(termPerf?.network_total_sales || 1096500).toLocaleString()}.00)</option>
-                            <option value="Cubao">Cubao Central Terminal (₱{(termPerf?.terminals?.find((t: any) => t.code === "CUB")?.ticket_sales || 485500).toLocaleString()} • 44.3%)</option>
-                            <option value="Daet">Daet Main Terminal (₱{(termPerf?.terminals?.find((t: any) => t.code === "DAE")?.ticket_sales || 362100).toLocaleString()} • 33.0%)</option>
-                            <option value="PITX">PITX Integrated Terminal (₱{(termPerf?.terminals?.find((t: any) => t.code === "PTX")?.ticket_sales || 248900).toLocaleString()} • 22.7%)</option>
+                            <option value="ALL">All Stations &amp; Hubs (Network Total: ₱{(termPerf?.network_total_sales || 0).toLocaleString()}.00)</option>
+                            <option value="Cubao">Cubao Central Terminal (₱{(termPerf?.terminals?.find((t: any) => t.code === "CUB")?.ticket_sales || 0).toLocaleString()})</option>
+                            <option value="Daet">Daet Main Terminal (₱{(termPerf?.terminals?.find((t: any) => t.code === "DAE")?.ticket_sales || 0).toLocaleString()})</option>
+                            <option value="PITX">PITX Integrated Terminal (₱{(termPerf?.terminals?.find((t: any) => t.code === "PTX")?.ticket_sales || 0).toLocaleString()})</option>
                         </select>
                     </div>
 
@@ -196,7 +196,7 @@ export default function AdminBIAnalyticsPage() {
                             onClick={() => setTerminalFilter("ALL")}
                             className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 font-bold"
                         >
-                            Reset to All Terminals (₱{(termPerf?.network_total_sales || 1096500).toLocaleString()})
+                            Reset to All Terminals (₱{(termPerf?.network_total_sales || 0).toLocaleString()})
                         </Button>
                     )}
                 </div>
@@ -224,10 +224,10 @@ export default function AdminBIAnalyticsPage() {
                             </span>
                         </div>
                         <div className="text-xl font-black text-foreground mt-1">
-                            ₱{(termPerf?.network_total_sales || 1096500).toLocaleString()}.00
+                            ₱{(termPerf?.network_total_sales || 0).toLocaleString()}.00
                         </div>
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1 font-mono">
-                            <span>{termPerf?.network_total_passengers || 1250} Total Pax</span>
+                            <span>{termPerf?.network_total_passengers || 0} Total Pax</span>
                             <span className="font-bold text-emerald-600">100% Network</span>
                         </div>
                     </button>
@@ -247,15 +247,15 @@ export default function AdminBIAnalyticsPage() {
                                 Cubao Central (EDSA)
                             </span>
                             <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
-                                44.3% SHARE
+                                {termPerf?.terminals?.find((t: any) => t.code === "CUB")?.share_percentage || 0}% SHARE
                             </span>
                         </div>
                         <div className="text-xl font-black text-foreground mt-1">
-                            ₱{(termPerf?.terminals?.find((t: any) => t.code === "CUB")?.ticket_sales || 485500).toLocaleString()}.00
+                            ₱{(termPerf?.terminals?.find((t: any) => t.code === "CUB")?.ticket_sales || 0).toLocaleString()}.00
                         </div>
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1 font-mono">
-                            <span>{termPerf?.terminals?.find((t: any) => t.code === "CUB")?.passenger_count || 540} Pax</span>
-                            <span className="font-bold text-blue-600">24 trips/day</span>
+                            <span>{termPerf?.terminals?.find((t: any) => t.code === "CUB")?.passenger_count || 0} Pax</span>
+                            <span className="font-bold text-blue-600">{termPerf?.terminals?.find((t: any) => t.code === "CUB")?.bus_departure_frequency || 0} trips/day</span>
                         </div>
                     </button>
 
@@ -274,15 +274,15 @@ export default function AdminBIAnalyticsPage() {
                                 Daet Main Terminal
                             </span>
                             <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
-                                33.0% SHARE
+                                {termPerf?.terminals?.find((t: any) => t.code === "DAE")?.share_percentage || 0}% SHARE
                             </span>
                         </div>
                         <div className="text-xl font-black text-foreground mt-1">
-                            ₱{(termPerf?.terminals?.find((t: any) => t.code === "DAE")?.ticket_sales || 362100).toLocaleString()}.00
+                            ₱{(termPerf?.terminals?.find((t: any) => t.code === "DAE")?.ticket_sales || 0).toLocaleString()}.00
                         </div>
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1 font-mono">
-                            <span>{termPerf?.terminals?.find((t: any) => t.code === "DAE")?.passenger_count || 415} Pax</span>
-                            <span className="font-bold text-amber-600">20 trips/day</span>
+                            <span>{termPerf?.terminals?.find((t: any) => t.code === "DAE")?.passenger_count || 0} Pax</span>
+                            <span className="font-bold text-amber-600">{termPerf?.terminals?.find((t: any) => t.code === "DAE")?.bus_departure_frequency || 0} trips/day</span>
                         </div>
                     </button>
 
@@ -301,15 +301,15 @@ export default function AdminBIAnalyticsPage() {
                                 PITX Terminal (Parañaque)
                             </span>
                             <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
-                                22.7% SHARE
+                                {termPerf?.terminals?.find((t: any) => t.code === "PTX")?.share_percentage || 0}% SHARE
                             </span>
                         </div>
                         <div className="text-xl font-black text-foreground mt-1">
-                            ₱{(termPerf?.terminals?.find((t: any) => t.code === "PTX")?.ticket_sales || 248900).toLocaleString()}.00
+                            ₱{(termPerf?.terminals?.find((t: any) => t.code === "PTX")?.ticket_sales || 0).toLocaleString()}.00
                         </div>
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1 font-mono">
-                            <span>{termPerf?.terminals?.find((t: any) => t.code === "PTX")?.passenger_count || 295} Pax</span>
-                            <span className="font-bold text-purple-600">16 trips/day</span>
+                            <span>{termPerf?.terminals?.find((t: any) => t.code === "PTX")?.passenger_count || 0} Pax</span>
+                            <span className="font-bold text-purple-600">{termPerf?.terminals?.find((t: any) => t.code === "PTX")?.bus_departure_frequency || 0} trips/day</span>
                         </div>
                     </button>
                 </div>
@@ -452,11 +452,11 @@ export default function AdminBIAnalyticsPage() {
                                 <DollarSign className="h-4 w-4 text-blue-600" />
                             </p>
                             <div className="text-lg sm:text-xl font-black text-blue-600 mt-1">
-                                {peakSales?.peak_selling_time?.hour_window || "05:00 PM - 06:00 PM"}
+                                {peakSales?.peak_selling_time?.hour_window || "No sales yet"}
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 font-mono">
-                                <span>₱{(peakSales?.peak_selling_time?.sales_amount || 62900).toLocaleString()}.00</span>
-                                <span className="font-bold text-foreground">{peakSales?.peak_selling_time?.ticket_count || 74} Tickets Sold</span>
+                                <span>₱{(peakSales?.peak_selling_time?.sales_amount || 0).toLocaleString()}.00</span>
+                                <span className="font-bold text-foreground">{peakSales?.peak_selling_time?.ticket_count || 0} Tickets Sold</span>
                             </div>
                         </Card>
 
@@ -467,11 +467,11 @@ export default function AdminBIAnalyticsPage() {
                                 <Bus className="h-4 w-4 text-emerald-600" />
                             </p>
                             <div className="text-lg sm:text-xl font-black text-emerald-600 mt-1">
-                                {peakSales?.peak_departure_time?.hour_window || "08:00 PM - 09:00 PM"}
+                                {peakSales?.peak_departure_time?.hour_window || "No scheduled departures"}
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 font-mono">
-                                <span>{peakSales?.peak_departure_time?.departures_count || 9} Buses Dispatched</span>
-                                <span className="font-bold text-foreground">{peakSales?.peak_departure_time?.passenger_volume || 57} Boarded</span>
+                                <span>{peakSales?.peak_departure_time?.departures_count || 0} Buses Dispatched</span>
+                                <span className="font-bold text-foreground">{peakSales?.peak_departure_time?.passenger_volume || 0} Boarded</span>
                             </div>
                         </Card>
 
@@ -482,7 +482,7 @@ export default function AdminBIAnalyticsPage() {
                                 <Clock className="h-4 w-4 text-zinc-500" />
                             </p>
                             <div className="text-lg sm:text-xl font-black text-zinc-700 dark:text-zinc-300 mt-1">
-                                {peakSales?.least_busy_time?.hour_window || "02:00 AM - 03:00 AM"}
+                                {peakSales?.least_busy_time?.hour_window || "N/A"}
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 font-mono">
                                 <span>₱{(peakSales?.least_busy_time?.sales_amount || 0).toLocaleString()}.00</span>
@@ -497,10 +497,10 @@ export default function AdminBIAnalyticsPage() {
                                 <TrendingUp className="h-4 w-4 text-purple-600" />
                             </p>
                             <div className="text-lg sm:text-xl font-black text-purple-600 mt-1">
-                                Afternoon &amp; Evening
+                                {(peakSales?.time_of_day?.afternoon?.sales || 0) > (peakSales?.time_of_day?.morning?.sales || 0) ? "Afternoon & Evening" : (peakSales?.time_of_day?.morning?.sales || 0) > 0 ? "Morning Shift" : "No sales yet"}
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                                68% of total ticketing happens between 12:00 PM and 10:00 PM
+                                Net sales telemetry aggregated across shifts
                             </p>
                         </Card>
                     </div>
@@ -612,20 +612,20 @@ export default function AdminBIAnalyticsPage() {
                                             Morning Shift
                                         </span>
                                         <span className="text-xs font-mono font-black text-amber-700 dark:text-amber-400">
-                                            {peakSales?.time_of_day?.morning?.percentage || 35}%
+                                            {peakSales?.time_of_day?.morning?.percentage || 0}%
                                         </span>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground font-mono mt-0.5">05:00 AM - 11:59 AM</p>
                                     <div className="text-xl font-black text-foreground mt-2">
-                                        ₱{(peakSales?.time_of_day?.morning?.sales || 247350).toLocaleString()}.00
+                                        ₱{(peakSales?.time_of_day?.morning?.sales || 0).toLocaleString()}.00
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        {peakSales?.time_of_day?.morning?.tickets || 291} Passengers Booked
+                                        {peakSales?.time_of_day?.morning?.tickets || 0} Passengers Booked
                                     </p>
                                     <div className="w-full bg-muted rounded-full h-2 mt-3 overflow-hidden">
                                         <div
                                             className="bg-amber-500 h-full rounded-full transition-all duration-500"
-                                            style={{ width: `${peakSales?.time_of_day?.morning?.percentage || 35}%` }}
+                                            style={{ width: `${peakSales?.time_of_day?.morning?.percentage || 0}%` }}
                                         />
                                     </div>
                                 </div>
@@ -637,20 +637,20 @@ export default function AdminBIAnalyticsPage() {
                                             Afternoon Shift
                                         </span>
                                         <span className="text-xs font-mono font-black text-blue-700 dark:text-blue-400">
-                                            {peakSales?.time_of_day?.afternoon?.percentage || 38}%
+                                            {peakSales?.time_of_day?.afternoon?.percentage || 0}%
                                         </span>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground font-mono mt-0.5">12:00 PM - 05:59 PM</p>
                                     <div className="text-xl font-black text-foreground mt-2">
-                                        ₱{(peakSales?.time_of_day?.afternoon?.sales || 272000).toLocaleString()}.00
+                                        ₱{(peakSales?.time_of_day?.afternoon?.sales || 0).toLocaleString()}.00
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        {peakSales?.time_of_day?.afternoon?.tickets || 320} Passengers Booked
+                                        {peakSales?.time_of_day?.afternoon?.tickets || 0} Passengers Booked
                                     </p>
                                     <div className="w-full bg-muted rounded-full h-2 mt-3 overflow-hidden">
                                         <div
                                             className="bg-blue-600 h-full rounded-full transition-all duration-500"
-                                            style={{ width: `${peakSales?.time_of_day?.afternoon?.percentage || 38}%` }}
+                                            style={{ width: `${peakSales?.time_of_day?.afternoon?.percentage || 0}%` }}
                                         />
                                     </div>
                                 </div>
@@ -662,20 +662,20 @@ export default function AdminBIAnalyticsPage() {
                                             Evening &amp; Night Shift
                                         </span>
                                         <span className="text-xs font-mono font-black text-purple-700 dark:text-purple-400">
-                                            {peakSales?.time_of_day?.evening?.percentage || 27}%
+                                            {peakSales?.time_of_day?.evening?.percentage || 0}%
                                         </span>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground font-mono mt-0.5">06:00 PM - 04:59 AM</p>
                                     <div className="text-xl font-black text-foreground mt-2">
-                                        ₱{(peakSales?.time_of_day?.evening?.sales || 189550).toLocaleString()}.00
+                                        ₱{(peakSales?.time_of_day?.evening?.sales || 0).toLocaleString()}.00
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        {peakSales?.time_of_day?.evening?.tickets || 223} Passengers Booked
+                                        {peakSales?.time_of_day?.evening?.tickets || 0} Passengers Booked
                                     </p>
                                     <div className="w-full bg-muted rounded-full h-2 mt-3 overflow-hidden">
                                         <div
                                             className="bg-purple-600 h-full rounded-full transition-all duration-500"
-                                            style={{ width: `${peakSales?.time_of_day?.evening?.percentage || 27}%` }}
+                                            style={{ width: `${peakSales?.time_of_day?.evening?.percentage || 0}%` }}
                                         />
                                     </div>
                                 </div>
@@ -710,11 +710,11 @@ export default function AdminBIAnalyticsPage() {
                                 <CheckCircle2 className="h-4 w-4 text-blue-600" />
                             </p>
                             <div className="text-lg font-black text-blue-600 mt-1">
-                                {busPerf?.most_popular?.display_name || "Regular Aircon (Standard 2x2)"}
+                                {busPerf?.most_popular?.display_name || "None yet"}
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 font-mono">
-                                <span>{busPerf?.most_popular?.passenger_count || 420} Passengers</span>
-                                <span className="font-bold text-emerald-600">{busPerf?.most_popular?.occupancy_rate || 91}% Load Factor</span>
+                                <span>{busPerf?.most_popular?.passenger_count || 0} Passengers</span>
+                                <span className="font-bold text-emerald-600">{busPerf?.most_popular?.occupancy_rate || 0}% Load Factor</span>
                             </div>
                         </Card>
 
@@ -724,11 +724,11 @@ export default function AdminBIAnalyticsPage() {
                                 <AlertCircle className="h-4 w-4 text-purple-600" />
                             </p>
                             <div className="text-lg font-black text-purple-600 mt-1">
-                                {busPerf?.least_popular?.display_name || "First Class (41 Seats • CR)"}
+                                {busPerf?.least_popular?.display_name || "None yet"}
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 font-mono">
-                                <span>{busPerf?.least_popular?.passenger_count || 290} Passengers</span>
-                                <span className="text-muted-foreground">Premier Class</span>
+                                <span>{busPerf?.least_popular?.passenger_count || 0} Passengers</span>
+                                <span className="text-muted-foreground">{busPerf?.least_popular?.occupancy_rate || 0}% Occupancy</span>
                             </div>
                         </Card>
 
@@ -741,7 +741,7 @@ export default function AdminBIAnalyticsPage() {
                                 First Class (₱1,100)
                             </div>
                             <p className="text-xs text-muted-foreground mt-1 font-mono">
-                                Yield: ₱39,875 avg revenue / trip
+                                Yield: ₱{(busPerf?.bus_types?.find((b: any) => b.bus_type === 'FIRST_CLASS')?.average_revenue_per_trip || 0).toLocaleString()} avg revenue / trip
                             </p>
                         </Card>
 
@@ -751,10 +751,15 @@ export default function AdminBIAnalyticsPage() {
                                 <Activity className="h-4 w-4 text-emerald-600" />
                             </p>
                             <div className="text-2xl font-black text-emerald-600 mt-1">
-                                89.4%
+                                {busPerf?.bus_types && busPerf.bus_types.length > 0 && busPerf.bus_types.reduce((sum: number, b: any) => sum + (b.passenger_count || 0), 0) > 0
+                                    ? Math.round(
+                                        busPerf.bus_types.reduce((sum: number, b: any) => sum + (b.occupancy_rate || 0), 0) /
+                                        busPerf.bus_types.length
+                                    ) + "%"
+                                    : "0.0%"}
                             </div>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                                Consistently high load factor across all 3 fleet classifications
+                                Fleet average seat load factor across active trips
                             </p>
                         </Card>
                     </div>
@@ -845,11 +850,11 @@ export default function AdminBIAnalyticsPage() {
                                 <ArrowUpRight className="h-4 w-4 text-emerald-600" />
                             </p>
                             <div className="text-lg font-black text-emerald-600 mt-1">
-                                {termPerf?.highest_grossing?.name || "Cubao Central Terminal"}
+                                {(termPerf?.highest_grossing?.sales || 0) > 0 ? termPerf.highest_grossing.name : "None yet"}
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 font-mono">
-                                <span>₱{(termPerf?.highest_grossing?.sales || 485500).toLocaleString()}.00</span>
-                                <span className="font-bold text-foreground">{termPerf?.highest_grossing?.passengers || 540} Pax</span>
+                                <span>₱{(termPerf?.highest_grossing?.sales || 0).toLocaleString()}.00</span>
+                                <span className="font-bold text-foreground">{termPerf?.highest_grossing?.passengers || 0} Pax</span>
                             </div>
                         </Card>
 
@@ -859,11 +864,11 @@ export default function AdminBIAnalyticsPage() {
                                 <ArrowDownRight className="h-4 w-4 text-blue-600" />
                             </p>
                             <div className="text-lg font-black text-blue-600 mt-1">
-                                {termPerf?.lowest_grossing?.name || "PITX Integrated Terminal"}
+                                {(termPerf?.lowest_grossing?.sales || 0) > 0 ? termPerf.lowest_grossing.name : "None yet"}
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 font-mono">
-                                <span>₱{(termPerf?.lowest_grossing?.sales || 248900).toLocaleString()}.00</span>
-                                <span className="font-bold text-foreground">{termPerf?.lowest_grossing?.passengers || 295} Pax</span>
+                                <span>₱{(termPerf?.lowest_grossing?.sales || 0).toLocaleString()}.00</span>
+                                <span className="font-bold text-foreground">{termPerf?.lowest_grossing?.passengers || 0} Pax</span>
                             </div>
                         </Card>
 
@@ -873,10 +878,15 @@ export default function AdminBIAnalyticsPage() {
                                 <Bus className="h-4 w-4 text-amber-600" />
                             </p>
                             <div className="text-lg font-black text-amber-600 mt-1">
-                                Cubao (24 Trips / Day)
+                                {(() => {
+                                    const maxTerm = (termPerf?.terminals || []).reduce((max: any, t: any) => (!max || t.bus_departure_frequency > max.bus_departure_frequency ? t : max), null);
+                                    return maxTerm && maxTerm.bus_departure_frequency > 0
+                                        ? `${maxTerm.name.split(" ")[0]} (${maxTerm.bus_departure_frequency} Trips / Day)`
+                                        : "0 Trips Scheduled";
+                                })()}
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                                Direct departures connecting to Daet, Naga, and Southern Luzon
+                                Scheduled daily terminal dispatch telemetry
                             </p>
                         </Card>
 
@@ -886,10 +896,10 @@ export default function AdminBIAnalyticsPage() {
                                 <Users className="h-4 w-4 text-purple-600" />
                             </p>
                             <div className="text-2xl font-black text-purple-600 mt-1">
-                                7 Active Counters
+                                {((termPerf?.terminals || []).reduce((sum: number, t: any) => sum + (t.tellers?.length || 0), 0))} Active Counters
                             </div>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                                100% daily shift remittance audit compliance
+                                Shift remittance audit compliance
                             </p>
                         </Card>
                     </div>
@@ -982,11 +992,11 @@ export default function AdminBIAnalyticsPage() {
                                 <TrendingUp className="h-4 w-4 text-rose-600" />
                             </p>
                             <div className="text-xl font-black text-rose-600 mt-1">
-                                {dayOfWeek?.peak_day?.day || "Friday"} (Weekend Getaway)
+                                {(dayOfWeek?.peak_day?.sales || 0) > 0 ? `${dayOfWeek.peak_day.day}` : "N/A"}
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 font-mono">
-                                <span>₱{(dayOfWeek?.peak_day?.sales || 265000).toLocaleString()}.00</span>
-                                <span className="font-bold text-foreground">{dayOfWeek?.peak_day?.passengers || 295} Pax</span>
+                                <span>₱{(dayOfWeek?.peak_day?.sales || 0).toLocaleString()}.00</span>
+                                <span className="font-bold text-foreground">{dayOfWeek?.peak_day?.passengers || 0} Pax</span>
                             </div>
                         </Card>
 
@@ -996,11 +1006,11 @@ export default function AdminBIAnalyticsPage() {
                                 <Calendar className="h-4 w-4 text-blue-600" />
                             </p>
                             <div className="text-xl font-black text-blue-600 mt-1">
-                                {dayOfWeek?.least_busy_day?.day || "Tuesday"}
+                                {(dayOfWeek?.least_busy_day?.sales || 0) > 0 ? `${dayOfWeek.least_busy_day.day}` : "N/A"}
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 font-mono">
-                                <span>₱{(dayOfWeek?.least_busy_day?.sales || 110000).toLocaleString()}.00</span>
-                                <span className="text-muted-foreground">{dayOfWeek?.least_busy_day?.passengers || 125} Pax</span>
+                                <span>₱{(dayOfWeek?.least_busy_day?.sales || 0).toLocaleString()}.00</span>
+                                <span className="text-muted-foreground">{dayOfWeek?.least_busy_day?.passengers || 0} Pax</span>
                             </div>
                         </Card>
 
@@ -1010,10 +1020,10 @@ export default function AdminBIAnalyticsPage() {
                                 <ArrowUpRight className="h-4 w-4 text-emerald-600" />
                             </p>
                             <div className="text-2xl font-black text-emerald-600 mt-1">
-                                +{dayOfWeek?.weekday_vs_weekend?.surge_percentage || 42}% Surge
+                                +{dayOfWeek?.weekday_vs_weekend?.surge_percentage || 0}% Surge
                             </div>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                                Fri-Sun generates significantly higher ticket throughput
+                                Weekend passenger surge telemetry
                             </p>
                         </Card>
 
@@ -1023,10 +1033,10 @@ export default function AdminBIAnalyticsPage() {
                                 <DollarSign className="h-4 w-4 text-amber-600" />
                             </p>
                             <div className="text-xl font-black text-foreground mt-1">
-                                ₱{(dayOfWeek?.weekday_vs_weekend?.weekend_avg_daily || 233333).toLocaleString()}.00
+                                ₱{(dayOfWeek?.weekday_vs_weekend?.weekend_avg_daily || 0).toLocaleString()}.00
                             </div>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                                Vs ₱{(dayOfWeek?.weekday_vs_weekend?.weekday_avg_daily || 132500).toLocaleString()}.00 on weekdays
+                                Vs ₱{(dayOfWeek?.weekday_vs_weekend?.weekday_avg_daily || 0).toLocaleString()}.00 on weekdays
                             </p>
                         </Card>
                     </div>
